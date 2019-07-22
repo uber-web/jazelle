@@ -333,6 +333,8 @@ const update /*: Update */ = async ({
       const data = JSON.stringify(missing, null, 2);
       await exec(`mkdir -p ${cwd}`);
       await write(`${cwd}/package.json`, data, 'utf8');
+      const yarnrc = '"--install.frozen-lockfile" false';
+      await write(`${cwd}/.yarnrc`, yarnrc, 'utf8');
       const install = `yarn install --ignore-scripts --ignore-engines`;
       await exec(install, {cwd}, [process.stdout, process.stderr]);
 
