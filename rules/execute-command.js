@@ -69,47 +69,13 @@ function runCommands(command, args) {
   runCommand(scripts[`post${command}`]);
 }
 
+// TODO: maybe change logic to require usage of `yarn thing` in package.json?
+// This could reduce overhead
 function runCommand(command, args = []) {
   if (command) {
-    const nodeDir = dirname(node);
-    const params = args.map(arg => `'${arg}'`).join(' ');
-    // prioritize hermetic Node version over system version
-    const binPath = `:${root}/node_modules/.bin`;
-    if (process.env.NODE_PRESERVE_SYMLINKS) {
-      const bins = readdir('node_modules/.bin');
-      const items = command.split(' ');
-      let matchingBin = null;
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (bins.includes(item)) {
-          if (
-            read(join('node_modules/.bin', item), 'utf-8')
-              .split('\n')[0]
-              .trim()
-              .endsWith('node')
-          ) {
-            matchingBin = item;
-            break;
-          }
-        }
-      }
-      if (matchingBin) {
-        const realBin = realpath(join('node_modules/.bin', matchingBin));
-        let pathToUse = join(
-          process.cwd(),
-          'node_modules',
-          realBin.split('node_modules').pop()
-        );
-
-        if (exists(pathToUse)) {
-          command = command.replace(
-            matchingBin,
-            `node --preserve-symlinks-main ${pathToUse}`
-          );
-        }
-      }
-    }
-    const script = `export PATH=${nodeDir}${binPath}:$PATH; ${command} ${params}`;
+    const matchingBin = getYarnBin(command.split(' ')[0]);
+    const yarnCmd = matchingBin ? 'run' : 'exec';
+    const script = `yarn ${yarnCmd} ${command} ${args}`;
     try {
       exec(script, {cwd: main, env: process.env, stdio: 'inherit'});
     } catch (e) {
@@ -194,5 +160,14 @@ function getStat(path) {
     return {
       isDirectory: () => false,
     };
+  }
+}
+
+function getYarnBin(command) {
+  try {
+    // TODO: replace yarn with correct executable path?
+    return exec(`yarn bin ${command}`, {cwd: main}).toString();
+  } catch (e) {
+    return null;
   }
 }

@@ -1,5 +1,6 @@
 // @flow
-const {resolve} = require('path');
+const {resolve, dirname} = require('path');
+const {spawn} = require('../utils/node-helpers');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getManifest} = require('../utils/get-manifest.js');
 const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
@@ -8,13 +9,12 @@ const {
   getErrorMessage,
 } = require('../utils/report-mismatched-top-level-deps.js');
 const {detectCyclicDeps} = require('../utils/detect-cyclic-deps.js');
-const {getAllDependencies} = require('../utils/get-all-dependencies.js');
-const {generateDepLockfiles} = require('../utils/generate-dep-lockfiles.js');
 const {generateBazelignore} = require('../utils/generate-bazelignore.js');
 const {
   generateBazelBuildRules,
 } = require('../utils/generate-bazel-build-rules.js');
-const {installDeps} = require('../utils/install-deps.js');
+const {executeHook} = require('../utils/execute-hook.js');
+const {node} = require('../utils/binary-paths.js');
 
 /*::
 export type InstallArgs = {
@@ -51,19 +51,20 @@ const install /*: Install */ = async ({
   validateDeps({deps});
   await validateVersionPolicy({root, projects, versionPolicy});
 
-  const all = await getAllDependencies({root, projects});
-  await generateDepLockfiles({
-    root,
-    deps: all,
-    ignore: all,
-    frozenLockfile,
-    conservative,
-  });
   if (workspace === 'sandbox' && frozenLockfile === false) {
     await generateBazelignore({root});
     await generateBazelBuildRules({root, deps, projects, dependencySyncRule});
   }
-  await installDeps({root, cwd, deps, ignore: all, hooks});
+  await executeHook(hooks.preinstall, root);
+  await spawn(resolve(root, '.yarn/releases/yarn-sources.cjs'), ['install'], {
+    env: {
+      ...process.env,
+      PATH: dirname(node) + ':' + String(process.env.PATH),
+    },
+    cwd: root,
+    stdio: 'inherit',
+  });
+  await executeHook(hooks.postinstall, root);
 };
 
 const validateRegistration = ({root, cwd, projects}) => {

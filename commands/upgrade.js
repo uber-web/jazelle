@@ -5,6 +5,7 @@ const {findLocalDependency} = require('../utils/find-local-dependency.js');
 const {upgrade: upgradeDep} = require('../utils/lockfile.js');
 const {read, write} = require('../utils/node-helpers.js');
 const sortPackageJson = require('../utils/sort-package-json');
+const {exec} = require('../utils/node-helpers.js');
 
 /*::
 export type UpgradeArgs = {
@@ -27,7 +28,6 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
     else externals.push({name, range: version});
   }
 
-  // upgrade local deps
   if (locals.length > 0) {
     await Promise.all(
       roots.map(async cwd => {
@@ -48,23 +48,12 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
       })
     );
   }
-
-  // upgrade external deps
-  if (externals.length > 0) {
-    const tmp = `${root}/third_party/jazelle/temp/yarn-utilities-tmp`;
-    await upgradeDep({
-      roots,
-      upgrades: externals,
-      ignore: await Promise.all(
-        projects.map(async project => {
-          const metaFile = `${root}/${project}/package.json`;
-          const data = await read(metaFile, 'utf8');
-          return JSON.parse(data).name;
-        })
-      ),
-      tmp,
-      registry,
-    });
+  for (const {name, range} of externals) {
+    let cmd = `yarn up ${name}`;
+    if (range) {
+      cmd = `${cmd}@${range}`;
+    }
+    await exec(cmd, {stdio: 'inherit'});
   }
 };
 
