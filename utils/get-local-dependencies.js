@@ -1,9 +1,11 @@
 // @flow
+const {relative} = require('path');
 const {satisfies} = require('./cached-semver');
 const {read} = require('./node-helpers.js');
 
 /*::
 export type GetLocalDependenciesArgs = {
+  root: string,
   dirs: Array<string>,
   target: string,
 };
@@ -27,6 +29,7 @@ export type PackageJson = {
 };
 */
 const getLocalDependencies /*: GetLocalDependencies */ = async ({
+  root,
   dirs,
   target,
 }) => {
@@ -36,10 +39,10 @@ const getLocalDependencies /*: GetLocalDependencies */ = async ({
       return {dir, meta, depth: 1};
     }),
   ]);
-  return unique(findDependencies(data, target));
+  return unique(findDependencies(root, data, target));
 };
 
-function findDependencies(data, target, depth = 1, set = new Set()) {
+function findDependencies(root, data, target, depth = 1, set = new Set()) {
   const output = [];
   const item = data.find(item => item.dir === target);
   if (item && !set.has(target)) {
@@ -49,12 +52,11 @@ function findDependencies(data, target, depth = 1, set = new Set()) {
       const deps = item.meta[field] || {};
       Object.keys(deps).forEach(dep => {
         const found = data.find(item => {
-          return (
-            item.meta.name === dep && satisfies(item.meta.version, deps[dep])
-          );
+          const workspace = relative(root, item.dir);
+          return deps[dep] === `workspace:${workspace}`;
         });
         if (found && !set.has(found.dir)) {
-          const children = findDependencies(data, found.dir, depth + 1, set);
+          const children = findDependencies(root, data, found.dir, depth + 1, set);
           output.push(...children, found);
         }
       });

@@ -63,7 +63,7 @@ const {
 } = require('../utils/starlark.js');
 const {shouldSync, getVersion} = require('../utils/version-onboarding.js');
 const yarnCmds = require('../utils/yarn-commands.js');
-const sortPackageJson = require('../utils/sort-package-json');
+const {sortPackageJson} = require('../utils/sort-package-json');
 
 process.on('unhandledRejection', e => {
   console.error(e.stack);
@@ -954,7 +954,9 @@ async function testGetDownstreams() {
 async function testGetLocalDependencies() {
   const cmd = `cp -r ${__dirname}/fixtures/get-local-dependencies/ ${__dirname}/tmp/get-local-dependencies`;
   await exec(cmd);
+  const root = `${__dirname}/tmp/get-local-dependencies`;
   const localDeps = await getLocalDependencies({
+    root,
     dirs: [
       `${__dirname}/tmp/get-local-dependencies/a`,
       `${__dirname}/tmp/get-local-dependencies/b`,
