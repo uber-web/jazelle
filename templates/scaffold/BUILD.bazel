@@ -4,6 +4,12 @@ load("@jazelle//:build-rules.bzl", "jazelle")
 
 jazelle(name = "jazelle", manifest = "manifest.json")
 
-exports_files([
-  "node_modules",
-])
+filegroup(
+    name = "yarn",
+    srcs = [
+        ".pnp.js",
+        ".yarn",
+        "package.json",
+        "yarn.lock",
+    ]
+)
