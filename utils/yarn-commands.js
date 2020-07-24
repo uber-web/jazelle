@@ -33,7 +33,9 @@ const buildCacheable = async ({root, dep, deps, stdio}) => {
   const cache = await checksumCache(root);
   if (!(await cache.isCached(dir))) {
     console.log(`Building ${meta.name}`);
-    await spawn(node, [yarn, 'build'], {stdio, env: process.env, cwd: dir});
+    if (meta.scripts && meta.scripts.build) {
+      await spawn(node, [yarn, 'build'], {stdio, env: process.env, cwd: dir});
+    }
 
     getDownstreams(deps, dep).forEach(d => {
       // check depth to ensure we only invalidate downstreams, not cyclical deps

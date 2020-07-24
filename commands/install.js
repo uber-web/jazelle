@@ -14,7 +14,7 @@ const {
   generateBazelBuildRules,
 } = require('../utils/generate-bazel-build-rules.js');
 const {executeHook} = require('../utils/execute-hook.js');
-const {node} = require('../utils/binary-paths.js');
+const {node, yarn} = require('../utils/binary-paths.js');
 
 /*::
 export type InstallArgs = {
@@ -36,7 +36,7 @@ const install /*: Install */ = async ({
   const {
     projects,
     versionPolicy,
-    hooks,
+    hooks = {},
     workspace,
     dependencySyncRule,
   } = /*:: await */ await getManifest({root});
@@ -56,11 +56,10 @@ const install /*: Install */ = async ({
     await generateBazelBuildRules({root, deps, projects, dependencySyncRule});
   }
   await executeHook(hooks.preinstall, root);
-  await spawn(resolve(root, '.yarn/releases/yarn-sources.cjs'), ['install'], {
-    env: {
-      ...process.env,
-      PATH: dirname(node) + ':' + String(process.env.PATH),
-    },
+  const env = process.env;
+  const path = dirname(node) + ':' + String(process.env.PATH);
+  await spawn(node, [yarn, 'install'], {
+    env: {...env, PATH: path},
     cwd: root,
     stdio: 'inherit',
   });

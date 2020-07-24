@@ -75,7 +75,7 @@ function runCommand(command, args = []) {
   if (command) {
     const matchingBin = getYarnBin(command.split(' ')[0]);
     const yarnCmd = matchingBin ? 'run' : 'exec';
-    const script = `yarn ${yarnCmd} ${command} ${args}`;
+    const script = `yarn ${yarnCmd} ${command} ${args.join(' ')}`;
     try {
       exec(script, {cwd: main, env: process.env, stdio: 'inherit'});
     } catch (e) {

@@ -3,8 +3,9 @@ const {minVersion, satisfies} = require('../utils/cached-semver');
 const {getManifest} = require('../utils/get-manifest.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
 const {read, write} = require('../utils/node-helpers.js');
-const sortPackageJson = require('../utils/sort-package-json');
+const {sortPackageJson} = require('../utils/sort-package-json.js');
 const {spawn} = require('../utils/node-helpers.js');
+const {node, yarn} = require('../utils/binary-paths.js');
 
 /*::
 export type UpgradeArgs = {
@@ -14,7 +15,7 @@ export type UpgradeArgs = {
 export type Upgrade = (UpgradeArgs) => Promise<void>;
 */
 const upgrade /*: Upgrade */ = async ({root, args}) => {
-  const {projects} = /*:: await */ await getManifest({root}); // FIXME: double await is due to Flow bug
+  const {projects, registry} = await getManifest({root});
   const roots = projects.map(dir => `${root}/${dir}`);
 
   // group by whether the dep is local (listed in manifest.json) or external (from registry)
@@ -47,9 +48,11 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
       })
     );
   }
-  for (const {name, range} of externals) {
-    const args = ['up', name + (range ? `@${range}` : ''), '-C'];
-    await spawn('yarn', args, {stdio: 'inherit'});
+  if (externals.length > 0) {
+    const deps = externals.map(({name, range}) => {
+      return name + (range ? `@${range}` : '');
+    });
+    await spawn(node, [yarn, 'up', '-C', ...deps], {cwd: root, stdio: 'inherit'});
   }
 };
 

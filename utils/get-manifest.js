@@ -32,10 +32,14 @@ const getManifest /*: GetManifest */ = async ({root}) => {
   const data = await read(manifest, 'utf8');
   const parsed = JSON.parse(data || '{}');
 
+  if (!parsed.projects) {
+    const topMeta = await read(`${root}/package.json`, 'utf8');
+    parsed.projects = JSON.parse(topMeta).workspaces || [];
+  }
+
   return {
     // defaults
     workspace: 'host',
-    projects: [],
     dependencySyncRule: 'web_library',
     ...parsed,
   };

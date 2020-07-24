@@ -4,7 +4,7 @@ const {parse, stringify} = require('../vendor/@yarnpkg/lockfile/index.js');
 const {read, exists, exec, write, mkdir} = require('./node-helpers.js');
 const {node, yarn} = require('./binary-paths.js');
 const {isYarnResolution} = require('./is-yarn-resolution.js');
-const sortPackageJson = require('../utils/sort-package-json');
+const {sortPackageJson} = require('../utils/sort-package-json');
 
 /*::
 export type Report = {

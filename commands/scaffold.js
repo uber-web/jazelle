@@ -4,7 +4,7 @@ const {getManifest} = require('../utils/get-manifest.js');
 const {spawn, exists, read, write} = require('../utils/node-helpers.js');
 const {executeHook} = require('../utils/execute-hook.js');
 const {align} = require('./align.js');
-const sortPackageJson = require('../utils/sort-package-json');
+const {sortPackageJson} = require('../utils/sort-package-json');
 
 /*::
 type ScaffoldArgs = {

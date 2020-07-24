@@ -4,7 +4,7 @@ const {getAllDependencies} = require('../utils/get-all-dependencies.js');
 const {read, write} = require('../utils/node-helpers.js');
 const {shouldSync, getVersion} = require('../utils/version-onboarding.js');
 const {install} = require('./install.js');
-const sortPackageJson = require('../utils/sort-package-json');
+const {sortPackageJson} = require('../utils/sort-package-json.js');
 
 /*::
 type AlignArgs = {

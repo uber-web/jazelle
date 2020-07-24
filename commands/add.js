@@ -1,16 +1,14 @@
 // @flow
-const {resolve} = require('path');
-const {getPassThroughArgs} = require('../utils/parse-argv.js');
+const {resolve, relative} = require('path');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
-const {getManifest} = require('../utils/get-manifest.js');
-const {getAllDependencies} = require('../utils/get-all-dependencies.js');
-const {shouldSync, getVersion} = require('../utils/version-onboarding.js');
-const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
-const {read, write} = require('../utils/node-helpers.js');
+const {getPassThroughArgs} = require('../utils/parse-argv.js');
+const {read, write, spawn} = require('../utils/node-helpers.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
-const {add: addDep} = require('../utils/lockfile.js');
-const {install} = require('./install.js');
-const sortPackageJson = require('../utils/sort-package-json');
+const {sortPackageJson} = require('../utils/sort-package-json.js');
+const {getManifest} = require('../utils/get-manifest.js');
+const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
+const {generateBazelBuildRules} = require('../utils/generate-bazel-build-rules.js');
+const {node, yarn} = require('../utils/binary-paths.js');
 
 /*
 adding local dep should:
@@ -64,43 +62,29 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
       ];
       for (const t of types) {
         if (meta[t] && meta[t][name]) {
-          meta[t][name] = local.meta.version;
+          meta[t][name] = `workspace:${local.meta.name}`;
         }
       }
-      meta[type][name] = local.meta.version;
+      meta[type][name] = `workspace:${local.meta.name}`;
     }
     await write(`${cwd}/package.json`, sortPackageJson(meta), 'utf8');
+
+    const {projects, dependencySyncRule} = /*:: await */ await getManifest({root});
+    const deps = /*:: await */ await getLocalDependencies({
+      dirs: projects.map(dir => `${root}/${dir}`),
+      target: resolve(root, cwd),
+    });
+    await generateBazelBuildRules({root, deps, projects, dependencySyncRule});
   }
 
   // add external deps
   if (externals.length > 0) {
-    const {projects, versionPolicy, registry} = await getManifest({root});
-    const unversioned = externals.filter(({range}) => !range);
-    if (unversioned.length > 0 && versionPolicy) {
-      const deps = await getAllDependencies({root, projects});
-      for (const external of unversioned) {
-        const {name} = external;
-        if (shouldSync({versionPolicy, name})) {
-          const version = getVersion({name, deps});
-          if (version !== '') external.range = version;
-        }
-      }
-    }
-    const deps = await getLocalDependencies({
-      dirs: projects.map(dir => `${root}/${dir}`),
-      target: resolve(root, cwd),
+    const deps = externals.map(({name, range}) => {
+      return name + (range ? `@${range}` : '');
     });
-    const tmp = `${root}/third_party/jazelle/temp/yarn-utilities-tmp`;
-    await addDep({
-      registry,
-      roots: [cwd],
-      additions: externals,
-      ignore: deps.map(d => d.meta.name),
-      tmp,
-    });
+    const name = relative(root, cwd);
+    await spawn(node, [yarn, 'workspace', name, 'add', ...deps], {cwd: root, stdio: 'inherit'});
   }
-
-  await install({root, cwd, conservative: false});
 };
 
 module.exports = {add};
