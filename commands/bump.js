@@ -28,6 +28,7 @@ const bump /*: Bump */ = async ({
 
   const {projects} = await getManifest({root});
   const deps = await getLocalDependencies({
+    root,
     dirs: projects.map(dir => `${root}/${dir}`),
     target: cwd,
   });

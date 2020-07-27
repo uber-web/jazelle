@@ -171,7 +171,7 @@ const exec /*: Exec */ = async ({root, deps, args, stdio = 'inherit'}) => {
   const path = process.env.PATH || '';
   const bazelDir = dirname(bazel);
   const nodeDir = dirname(node);
-  const env = {PATH: `${bazelDir}:${nodeDir}:${path}:${cwd}/node_modules/.bin`};
+  const env = {PATH: `${bazelDir}:${nodeDir}:${path}`};
   await spawn(command, params, {stdio, env, cwd});
 };
 

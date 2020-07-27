@@ -44,6 +44,7 @@ const install /*: Install */ = async ({
   validateRegistration({root, cwd, projects});
 
   const deps = /*:: await */ await getLocalDependencies({
+    root,
     dirs: projects.map(dir => `${root}/${dir}`),
     target: resolve(root, cwd),
   });

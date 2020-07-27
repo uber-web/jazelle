@@ -22,7 +22,6 @@ const doctor /*: Doctor */ = async ({root, cwd}) => {
   });
   const errors = [
     ...(await detectDanglingPeerDeps({deps})),
-    ...(await detectHoistMismatch({root, deps})),
     ...(await detectCyclicDependencies({deps})),
     ...(await detectOutdatedLockfiles({root, cwd})),
   ];
@@ -49,26 +48,6 @@ const detectDanglingPeerDeps = async ({deps}) => {
           const error = `Peer dep \`${name}\` in ${dep.meta.name} should also be a devDependency`;
           errors.push(error);
         }
-      }
-    }
-  }
-  return errors;
-};
-
-const detectHoistMismatch = async ({root, deps}) => {
-  const errors = [];
-  for (const dep of deps) {
-    for (const {name, range} of getDepEntries(dep)) {
-      const file = `${root}/node_modules/${name}/package.json`;
-      if (!(await exists(file))) continue;
-      const {version} = JSON.parse(await read(file, 'utf8'));
-      if (!satisfies(version, range)) {
-        const error =
-          `Hoisted dep version ${name}@${range} does not match ` +
-          `range specified in ${dep.dir}/package.json for ${range}. ` +
-          `This can happen if you depend on an older version of ${name} than your dependencies do. ` +
-          `Change your range to include ${version}`;
-        errors.push(error);
       }
     }
   }
