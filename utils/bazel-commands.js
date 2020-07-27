@@ -59,8 +59,8 @@ const test /*: Test */ = async ({
       ...startupFlags,
       'run',
       `//${cwd}:${name}`,
-      ...testParams,
       '--sandbox_debug',
+      ...testParams,
     ],
     {
       stdio,
@@ -95,8 +95,8 @@ const run /*: Run */ = async ({
       ...startupFlags,
       'run',
       `//${cwd}:${name}`,
-      ...runParams,
       '--sandbox_debug',
+      ...runParams,
     ],
     {
       stdio,

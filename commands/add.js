@@ -84,7 +84,10 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
       return name + (range ? `@${range}` : '');
     });
     const name = relative(root, cwd);
-    await spawn(node, [yarn, 'workspace', name, 'add', ...deps], {cwd: root, stdio: 'inherit'});
+    const flags = dev ? ['--dev'] : [];
+    const cmdArgs = [yarn, 'workspace', name, 'add', ...deps, ...flags];
+    const options = {cwd: root, stdio: 'inherit'};
+    await spawn(node, cmdArgs, options);
   }
 };
 
