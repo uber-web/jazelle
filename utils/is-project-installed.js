@@ -14,7 +14,9 @@ type Source = {|
 |};
 */
 const isProjectInstalled /*: IsProjectInstalled */ = async ({root, cwd}) => {
-  return exists(`${cwd}/BUILD.bazel`);
+  const hasBuildFile = await exists(`${cwd}/BUILD.bazel`);
+  const hasYarnBuildState = await exists(`${root}/.yarn/build-state.yml`);
+  return hasBuildFile && hasYarnBuildState;
 };
 
 module.exports = {isProjectInstalled};

@@ -11,8 +11,6 @@ const {ci} = require('./commands/ci.js');
 const {add} = require('./commands/add.js');
 const {remove} = require('./commands/remove.js');
 const {upgrade} = require('./commands/upgrade.js');
-const {dedupe} = require('./commands/dedupe.js');
-const {prune} = require('./commands/prune.js');
 const {purge} = require('./commands/purge.js');
 const {check} = require('./commands/check.js');
 const {outdated} = require('./commands/outdated.js');
@@ -115,14 +113,6 @@ const runCLI /*: RunCLI */ = async argv => {
 
         [args...]                     Packages to upgrade and optionally their version ranges. e.g., foo@^1.2.3 bar@^1.2.3`,
         async () => upgrade({root: await rootOf(args), args: rest}),
-      ],
-      dedupe: [
-        `Dedupe transitive deps across all projects`,
-        async () => dedupe({root: await rootOf(args)}),
-      ],
-      prune: [
-        `Prune unused transitive deps`,
-        async () => prune({root: await rootOf(args)}),
       ],
       purge: [
         `Remove generated files (i.e. node_modules folders and bazel output files)`,
@@ -324,8 +314,6 @@ module.exports = {
   add,
   remove,
   upgrade,
-  dedupe,
-  prune,
   purge,
   check: reportMismatchedTopLevelDeps,
   outdated,
