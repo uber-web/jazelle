@@ -4,6 +4,7 @@ const {spawn} = require('../utils/node-helpers');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getManifest} = require('../utils/get-manifest.js');
 const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
+const {getAllDependencies} = require('../utils/get-all-dependencies.js');
 const {
   reportMismatchedTopLevelDeps,
   getErrorMessage,
@@ -53,8 +54,9 @@ const install /*: Install */ = async ({
   await validateVersionPolicy({root, projects, versionPolicy});
 
   if (workspace === 'sandbox' && frozenLockfile === false) {
+    const all = await getAllDependencies({root, projects});
     await generateBazelignore({root});
-    await generateBazelBuildRules({root, deps, projects, dependencySyncRule});
+    await generateBazelBuildRules({root, deps: all, projects, dependencySyncRule});
   }
   await executeHook(hooks.preinstall, root);
   const env = process.env;

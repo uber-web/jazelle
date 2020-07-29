@@ -88,7 +88,7 @@ function runCommand(command, args = []) {
   } else {
     const binary = getYarnBin(command.split(' ')[0]);
     if (binary) {
-      exec(`${node} ${yarn} ${mode} ${command} ${params}`, options);
+      exec(`${node} ${yarn} ${command} ${params}`, options);
     }
   }
 }
