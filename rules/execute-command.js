@@ -64,18 +64,28 @@ function runCommands(command, args) {
   if (command === 'run') {
     command = args.shift();
   }
-  runCommand(scripts[`pre${command}`]);
-  runCommand(scripts[command], args);
-  runCommand(scripts[`post${command}`]);
+  if (command === 'lint') {
+    runCommand('lint', args);
+  } else {
+    runCommand(scripts[`pre${command}`]);
+    runCommand(scripts[command], args);
+    runCommand(scripts[`post${command}`]);
+  }
 }
 
 // TODO: maybe change logic to require usage of `yarn thing` in package.json?
 // This could reduce overhead
 function runCommand(command, args = []) {
   if (command) {
-    const matchingBin = getYarnBin(command.split(' ')[0]);
-    const yarnCmd = matchingBin ? 'run' : 'exec';
-    const script = `yarn ${yarnCmd} ${command} ${args.join(' ')}`;
+    let script = null;
+    if (command === 'lint') {
+      // Special case for linting because of bad eslint module resolution
+      script = 'yarn lint ' + args.join(' ');
+    } else {
+      const matchingBin = getYarnBin(command.split(' ')[0]);
+      const yarnCmd = matchingBin ? 'run' : 'exec';
+      script = `yarn ${yarnCmd} ${command} ${args.join(' ')}`;
+    }
     try {
       exec(script, {cwd: main, env: process.env, stdio: 'inherit'});
     } catch (e) {
