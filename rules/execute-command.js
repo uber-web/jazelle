@@ -8,6 +8,7 @@ const {
 } = require('fs');
 const {execSync: exec} = require('child_process');
 const {dirname, join, relative} = require('path');
+const {yarn} = require('../utils/binary-paths.js');
 
 const root = process.cwd();
 const [node, , main, , command, distPaths, gen, out, ...args] = process.argv;
@@ -59,41 +60,35 @@ if (out) {
 function runCommands(command, args) {
   if (command.startsWith('yarn ')) {
     runCommand(command.substr(5), args);
-    return;
-  }
-  if (command === 'run') {
-    command = args.shift();
-  }
-  if (command === 'lint') {
-    runCommand('lint', args);
   } else {
-    runCommand(scripts[`pre${command}`]);
-    runCommand(scripts[command], args);
-    runCommand(scripts[`post${command}`]);
+    if (command === 'run') {
+      command = args.shift();
+    }
+    runCommand(`pre${command}`);
+    runCommand(command, args);
+    runCommand(`post${command}`);
   }
 }
 
 // TODO: maybe change logic to require usage of `yarn thing` in package.json?
 // This could reduce overhead
 function runCommand(command, args = []) {
-  if (command) {
-    let script = null;
-    if (command === 'lint') {
-      // Special case for linting because of bad eslint module resolution
-      script = 'yarn lint ' + args.join(' ');
-    } else {
-      const matchingBin = getYarnBin(command.split(' ')[0]);
-      const yarnCmd = matchingBin ? 'run' : 'exec';
-      script = `yarn ${yarnCmd} ${command} ${args.join(' ')}`;
-    }
+  const params = args.map(arg => `'${arg}'`).join(' ');
+  const options = {cwd: main, env: process.env, stdio: 'inherit'};
+  if (command in scripts) {
     try {
-      exec(script, {cwd: main, env: process.env, stdio: 'inherit'});
+      exec(`${node} ${yarn} ${command} ${params}`, options);
     } catch (e) {
       if (typeof e.status === 'number') {
         process.exit(e.status);
       } else {
         process.exit(1);
       }
+    }
+  } else {
+    const binary = getYarnBin(command.split(' ')[0]);
+    if (binary) {
+      exec(`${node} ${yarn} ${mode} ${command} ${params}`, options);
     }
   }
 }
@@ -175,8 +170,7 @@ function getStat(path) {
 
 function getYarnBin(command) {
   try {
-    // TODO: replace yarn with correct executable path?
-    return exec(`yarn bin ${command}`, {cwd: main}).toString();
+    return exec(`${node} ${yarn} bin ${command}`, {cwd: main}).toString();
   } catch (e) {
     return null;
   }

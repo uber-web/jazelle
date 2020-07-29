@@ -1,5 +1,5 @@
 // @flow
-const {resolve, relative} = require('path');
+const {resolve} = require('path');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getPassThroughArgs} = require('../utils/parse-argv.js');
 const {read, write, spawn} = require('../utils/node-helpers.js');
@@ -46,9 +46,10 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
     }
   }
 
+  const meta = JSON.parse(await read(`${cwd}/package.json`, 'utf8'));
+
   // add local deps
   if (locals.length > 0) {
-    const meta = JSON.parse(await read(`${cwd}/package.json`, 'utf8'));
     if (!meta[type]) meta[type] = {};
 
     for (const {local, name} of locals) {
@@ -83,9 +84,8 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
     const deps = externals.map(({name, range}) => {
       return name + (range ? `@${range}` : '');
     });
-    const name = relative(root, cwd);
     const flags = dev ? ['--dev'] : [];
-    const cmdArgs = [yarn, 'workspace', name, 'add', ...deps, ...flags];
+    const cmdArgs = [yarn, 'workspace', meta.name, 'add', ...deps, ...flags];
     const options = {cwd: root, stdio: 'inherit'};
     await spawn(node, cmdArgs, options);
   }

@@ -33,15 +33,15 @@ const remove /*: Remove */ = async ({root, cwd, args}) => {
     }
   }
 
+  const meta = JSON.parse(await read(`${cwd}/package.json`, 'utf8'));
   if (locals.length > 0) {
     for (const name of locals) {
-      const meta = JSON.parse(await read(`${cwd}/package.json`, 'utf8'));
       removeFromSection(meta, 'dependencies', name);
       removeFromSection(meta, 'devDependencies', name);
       removeFromSection(meta, 'peerDependencies', name);
       removeFromSection(meta, 'optionalDependencies', name);
-      await write(`${cwd}/package.json`, sortPackageJson(meta), 'utf8');
     }
+    await write(`${cwd}/package.json`, sortPackageJson(meta), 'utf8');
 
     const {projects, dependencySyncRule} = /*:: await */ await getManifest({root});
     const deps = /*:: await */ await getLocalDependencies({
@@ -53,7 +53,7 @@ const remove /*: Remove */ = async ({root, cwd, args}) => {
   }
   if (externals.length > 0) {
     const name = relative(root, cwd);
-    spawn(node, [yarn, 'workspace', name, 'remove', ...deps], {cwd: root});
+    spawn(node, [yarn, 'workspace', meta.name, 'remove', ...deps], {cwd: root});
   }
 };
 
