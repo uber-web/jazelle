@@ -72,7 +72,6 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
 
     const {projects, dependencySyncRule} = /*:: await */ await getManifest({root});
     const deps = /*:: await */ await getLocalDependencies({
-      root,
       dirs: projects.map(dir => `${root}/${dir}`),
       target: resolve(root, cwd),
     });

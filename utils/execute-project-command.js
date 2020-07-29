@@ -46,7 +46,6 @@ const executeProjectCommand /*: ExecuteProjectCommand */ = async ({
     }
   } else {
     const deps = await getLocalDependencies({
-      root,
       dirs: projects.map(dir => `${root}/${dir}`),
       target: cwd,
     });
