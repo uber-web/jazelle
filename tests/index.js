@@ -376,7 +376,7 @@ async function testBump() {
 async function testScriptCommand() {
   await exec(`cp -r ${__dirname}/fixtures/script/ ${tmp}/tmp/script`);
 
-  const workspaceFile = `${tmp}/tmp/find-changed-targets/bazel/WORKSPACE`;
+  const workspaceFile = `${tmp}/tmp/script/WORKSPACE`;
   const workspace = await read(workspaceFile, 'utf8');
   const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
   await write(workspaceFile, replaced, 'utf8');
@@ -500,6 +500,12 @@ async function testBazelDummy() {
 async function testBazelBuild() {
   const cmd = `cp -r ${__dirname}/fixtures/bazel-rules/ ${tmp}/tmp/bazel-rules`;
   await exec(cmd);
+
+  const workspaceFile = `${tmp}/tmp/bazel-rules/WORKSPACE`;
+  const workspace = await read(workspaceFile, 'utf8');
+  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  await write(workspaceFile, replaced, 'utf8');
+
   await install({
     root: `${tmp}/tmp/bazel-rules`,
     cwd: `${tmp}/tmp/bazel-rules/projects/a`,
@@ -1828,7 +1834,7 @@ async function testStartCommand() {
   const cmd = `cp -r ${__dirname}/fixtures/bin ${tmp}/tmp/bin`;
   await exec(cmd);
 
-  const workspaceFile = `${tmp}/tmp/find-changed-targets/bazel/WORKSPACE`;
+  const workspaceFile = `${tmp}/tmp/bin/WORKSPACE`;
   const workspace = await read(workspaceFile, 'utf8');
   const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
   await write(workspaceFile, replaced, 'utf8');

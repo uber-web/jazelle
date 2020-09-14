@@ -1,7 +1,3 @@
 {
-  "workspace": "sandbox",
-  "projects": [
-    "projects/a",
-    "projects/b"
-  ]
+  "workspace": "sandbox"
 }
