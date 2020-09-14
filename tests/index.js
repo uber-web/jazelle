@@ -1878,6 +1878,11 @@ async function testStartCommand() {
   const cmd = `cp -r ${__dirname}/fixtures/bin ${tmp}/tmp/bin`;
   await exec(cmd);
 
+  const workspaceFile = `${tmp}/tmp/find-changed-targets/bazel/WORKSPACE`;
+  const workspace = await read(workspaceFile, 'utf8');
+  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  await write(workspaceFile, replaced, 'utf8');
+
   const cwd = `${tmp}/tmp/bin`;
   const jazelle = `${__dirname}/../bin/bootstrap.sh`;
 
