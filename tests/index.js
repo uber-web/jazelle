@@ -124,7 +124,7 @@ async function runTests() {
   await t(testBazelDummy);
   // await t(testBazelBuild);
   // await t(testInstallAddUpgradeRemove);
-  // await t(testBatchTestGroup);
+  await t(testBatchTestGroup);
   await t(testCommand);
   await t(testYarnCommand);
   await t(testBazelCommand);
@@ -413,6 +413,11 @@ async function testAssertProjectDir() {
 async function testBatchTestGroup() {
   const cmd = `cp -r ${__dirname}/fixtures/batch-test-group/ ${tmp}/tmp/batch-test-group`;
   await exec(cmd);
+
+  const workspaceFile = `${tmp}/tmp/batch-test-group/WORKSPACE`;
+  const workspace = await read(workspaceFile, 'utf8');
+  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  await write(workspaceFile, replaced, 'utf8');
 
   const streamFile = `${tmp}/tmp/batch-test-group/stdout.txt`;
   const stream = createWriteStream(streamFile);
