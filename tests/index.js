@@ -92,7 +92,7 @@ async function runTests() {
     t(testPurge),
     t(testYarn),
     // t(testBump),
-    // t(testEach),
+    t(testEach),
     t(testAssertProjectDir),
     t(testBinaryPaths),
     t(testCLI),
@@ -326,9 +326,7 @@ async function testEach() {
 
   const plan = [
     {type: 'dir', dir: 'a', action: 'exec', args: ['foo']},
-    {type: 'dir', dir: 'b', action: 'exec', args: ['foo']},
-    {type: 'dir', dir: 'c', action: 'exec', args: ['foo']},
-    {type: 'dir', dir: 'c', action: 'exec', args: ['bash', '-c', 'echo $PWD']},
+    {type: 'dir', dir: 'a', action: 'exec', args: ['bash', '-c', 'echo $PWD']},
   ];
   const failed = /*:: await */ await batchTestGroup({
     root,
@@ -336,7 +334,6 @@ async function testEach() {
     index: 0,
     cores: 8,
   });
-  console.log(failed)
   assert.equal(failed.length, 1);
   assert(failed[0].stderr.includes('spawn foo ENOENT'));
 }
@@ -1857,7 +1854,6 @@ async function testBazelDependentBuilds() {
   const workspace = await read(workspaceFile, 'utf8');
   const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
   await write(workspaceFile, replaced, 'utf8');
-  console.log(111, workspaceFile, replaced)
 
   const cwd = `${tmp}/tmp/bazel-dependent-builds`;
   const jazelle = `${__dirname}/../bin/bootstrap.sh`;
