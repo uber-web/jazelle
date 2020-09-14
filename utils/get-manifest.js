@@ -29,7 +29,7 @@ export type Hooks = {
 */
 const getManifest /*: GetManifest */ = async ({root}) => {
   const manifest = `${root}/manifest.json`;
-  const data = await read(manifest, 'utf8');
+  const data = await read(manifest, 'utf8').catch(() => null);
   const parsed = JSON.parse(data || '{}');
 
   if (!parsed.projects) {

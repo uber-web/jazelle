@@ -1,5 +1,6 @@
 // @flow
 const assert = require('assert');
+const {tmpdir} = require('os');
 const {readFileSync, createWriteStream} = require('fs');
 const {runCLI} = require('../index');
 const {init} = require('../commands/init.js');
@@ -66,6 +67,8 @@ process.on('unhandledRejection', e => {
 // $FlowFixMe flow can't handle statics of async function
 remove.fork = false;
 
+const tmp = tmpdir();
+
 runTests();
 
 async function t(test) {
@@ -77,42 +80,43 @@ async function t(test) {
 }
 
 async function runTests() {
-  await exec(`rm -rf ${__dirname}/tmp`);
-  await exec(`mkdir -p ${__dirname}/tmp`);
+  await exec(`rm -rf ${tmp}/tmp`);
+  await exec(`mkdir -p ${tmp}/tmp`);
 
   await Promise.all([
     t(testRunCLI),
     t(testInit),
     // t(testScaffold),
-    // t(testCi),
-    // // t(testUpgrade),
-    // t(testPurge),
-    // t(testYarn),
-    // // t(testBump),
-    // // t(testEach),
-    // t(testAssertProjectDir),
-    // t(testBinaryPaths),
-    // t(testCLI),
-    // t(testDetectCyclicDeps),
-    // // t(testFindChangedTargets),
-    // t(testFindLocalDependency),
-    // t(testGenerateBazelignore),
-    // t(testGenerateBazelBuildRules),
-    // t(testGenerateBazelBuildRulesUpdate),
-    // t(testGetDownstreams),
-    // t(testGetManifest),
-    // t(testGetLocalDependencies),
-    // t(testGetRootDir),
-    // t(testGetTestGroups),
-    // t(testGroupByDepsets),
-    // t(testIsYarnResolution),
-    // t(testNodeHelpers),
-    // t(testParse),
-    // t(testGetPassThroughArgs),
-    // t(testReportMismatchedTopLevelDeps),
-    // t(testStarlark),
-    // t(testVersionOnboarding),
-    // // t(testYarnCommands),
+    t(testCi),
+    // t(testUpgrade),
+    t(testPurge),
+    t(testYarn),
+    // t(testBump),
+    // t(testEach),
+    t(testAssertProjectDir),
+    t(testBinaryPaths),
+    t(testCLI),
+    t(testDetectCyclicDeps),
+    // t(testFindChangedTargets),
+    t(testFindLocalDependency),
+    t(testGenerateBazelignore),
+    t(testGenerateBazelBuildRules),
+    t(testGenerateBazelBuildRulesUpdate),
+    t(testGetDownstreams),
+    t(testGetManifest),
+    t(testGetLocalDependencies),
+    t(testGetRootDir),
+    t(testGetTestGroups),
+    t(testGroupByDepsets),
+    t(testIsDepsetSubset),
+    t(testIsYarnResolution),
+    t(testNodeHelpers),
+    t(testParse),
+    t(testGetPassThroughArgs),
+    t(testReportMismatchedTopLevelDeps),
+    t(testStarlark),
+    t(testVersionOnboarding),
+    // t(testYarnCommands),
     // t(testLockfileRegistryResolution),
     // t(testLockfileRegistryResolutionMultirepo),
     // t(testSortPackageJSON),
@@ -132,7 +136,7 @@ async function runTests() {
   // await t(testBazelDependentBuilds);
   // await t(testBazelDependentFailure);
 
-  await exec(`rm -rf ${__dirname}/tmp`);
+  await exec(`rm -rf ${tmp}/tmp`);
 
   console.log('All tests pass');
 }
@@ -140,7 +144,7 @@ async function runTests() {
 // cli
 async function testRunCLI() {
   const oldInitCwd = process.env.INIT_CWD;
-  const path = `${__dirname}/tmp/runCLI`;
+  const path = `${tmp}/tmp/runCLI`;
   await exec(`mkdir ${path}`);
   await runCLI(['setup', `--cwd=${path}`]);
   assert.equal(process.env.INIT_CWD, path);
@@ -149,60 +153,60 @@ async function testRunCLI() {
 
 // commands
 async function testInit() {
-  await exec(`mkdir ${__dirname}/tmp/init`);
-  await init({cwd: `${__dirname}/tmp/init`});
-  assert(await exists(`${__dirname}/tmp/init/WORKSPACE`));
-  assert(await exists(`${__dirname}/tmp/init/BUILD.bazel`));
-  assert(await exists(`${__dirname}/tmp/init/.bazelversion`));
-  assert(await exists(`${__dirname}/tmp/init/manifest.json`));
-  assert(await exists(`${__dirname}/tmp/init/.gitignore`));
+  await exec(`mkdir ${tmp}/tmp/init`);
+  await init({cwd: `${tmp}/tmp/init`});
+  assert(await exists(`${tmp}/tmp/init/WORKSPACE`));
+  assert(await exists(`${tmp}/tmp/init/BUILD.bazel`));
+  assert(await exists(`${tmp}/tmp/init/.bazelversion`));
+  assert(await exists(`${tmp}/tmp/init/manifest.json`));
+  assert(await exists(`${tmp}/tmp/init/.gitignore`));
 
-  const workspace = await read(`${__dirname}/tmp/init/WORKSPACE`, 'utf8');
+  const workspace = await read(`${tmp}/tmp/init/WORKSPACE`, 'utf8');
   assert(workspace.includes('0.0.0-monorepo'));
 }
 
 async function testScaffold() {
-  await exec(`cp -r ${__dirname}/fixtures/scaffold/ ${__dirname}/tmp/scaffold`);
-  const root = `${__dirname}/tmp/scaffold`;
-  const cwd = `${__dirname}/tmp/scaffold`;
+  await exec(`cp -r ${__dirname}/fixtures/scaffold/ ${tmp}/tmp/scaffold`);
+  const root = `${tmp}/tmp/scaffold`;
+  const cwd = `${tmp}/tmp/scaffold`;
   const from = 'template';
   const to = 'foo';
   const name = '@foo/foo';
   await scaffold({root, cwd, from, to, name});
 
-  assert(await exists(`${__dirname}/tmp/scaffold/foo/BUILD.bazel`));
-  assert(await exists(`${__dirname}/tmp/scaffold/foo/package.json`));
-  assert(await exists(`${__dirname}/tmp/scaffold/foo/test.txt`));
+  assert(await exists(`${tmp}/tmp/scaffold/foo/BUILD.bazel`));
+  assert(await exists(`${tmp}/tmp/scaffold/foo/package.json`));
+  assert(await exists(`${tmp}/tmp/scaffold/foo/test.txt`));
 
-  const buildFile = `${__dirname}/tmp/scaffold/foo/BUILD.bazel`;
+  const buildFile = `${tmp}/tmp/scaffold/foo/BUILD.bazel`;
   const build = await read(buildFile, 'utf8');
   assert(build.includes('name = "foo"'));
 
-  const metaFile = `${__dirname}/tmp/scaffold/foo/package.json`;
+  const metaFile = `${tmp}/tmp/scaffold/foo/package.json`;
   const meta = JSON.parse(await read(metaFile, 'utf8'));
   assert.equal(meta.name, '@foo/foo');
 
-  const manifestFile = `${__dirname}/tmp/scaffold/manifest.json`;
+  const manifestFile = `${tmp}/tmp/scaffold/manifest.json`;
   const {projects} = JSON.parse(await read(manifestFile, 'utf8'));
   assert(projects.includes('foo'));
 }
 
 async function testInstallAddUpgradeRemove() {
-  const buildFile = `${__dirname}/tmp/commands/a/BUILD.bazel`;
-  const meta = `${__dirname}/tmp/commands/a/package.json`;
+  const buildFile = `${tmp}/tmp/commands/a/BUILD.bazel`;
+  const meta = `${tmp}/tmp/commands/a/package.json`;
 
   // // install
-  await exec(`cp -r ${__dirname}/fixtures/commands/ ${__dirname}/tmp/commands`);
+  await exec(`cp -r ${__dirname}/fixtures/commands/ ${tmp}/tmp/commands`);
   await install({
-    root: `${__dirname}/tmp/commands`,
-    cwd: `${__dirname}/tmp/commands/a`,
+    root: `${tmp}/tmp/commands`,
+    cwd: `${tmp}/tmp/commands/a`,
   });
-  const binCmd = `${__dirname}/tmp/commands/node_modules/.bin/a`;
+  const binCmd = `${tmp}/tmp/commands/node_modules/.bin/a`;
   const binScript = await read(binCmd, 'utf8');
-  const bDep = `${__dirname}/tmp/commands/node_modules/b`;
-  const bindDep = `${__dirname}/tmp/commands/node_modules/function-bind`;
-  const downstreamLockfile = `${__dirname}/tmp/commands/downstream/yarn.lock`;
-  const notDownstreamLockfile = `${__dirname}/tmp/commands/not-downstream/yarn.lock`;
+  const bDep = `${tmp}/tmp/commands/node_modules/b`;
+  const bindDep = `${tmp}/tmp/commands/node_modules/function-bind`;
+  const downstreamLockfile = `${tmp}/tmp/commands/downstream/yarn.lock`;
+  const notDownstreamLockfile = `${tmp}/tmp/commands/not-downstream/yarn.lock`;
   assert.equal(binScript, 'echo 1');
   assert(await exists(bDep));
   assert(await exists(bindDep));
@@ -211,93 +215,93 @@ async function testInstallAddUpgradeRemove() {
 
   // add linked package
   await add({
-    root: `${__dirname}/tmp/commands`,
-    cwd: `${__dirname}/tmp/commands/a`,
+    root: `${tmp}/tmp/commands`,
+    cwd: `${tmp}/tmp/commands/a`,
     args: ['b', 'c'],
   });
-  assert(await exists(`${__dirname}/tmp/commands/node_modules/b`));
+  assert(await exists(`${tmp}/tmp/commands/node_modules/b`));
   assert((await read(buildFile, 'utf8')).includes('//b:b'));
-  assert(await exists(`${__dirname}/tmp/commands/node_modules/c`));
+  assert(await exists(`${tmp}/tmp/commands/node_modules/c`));
   assert((await read(buildFile, 'utf8')).includes('//c:c'));
 
   // add external package
   await add({
-    root: `${__dirname}/tmp/commands`,
-    cwd: `${__dirname}/tmp/commands/a`,
+    root: `${tmp}/tmp/commands`,
+    cwd: `${tmp}/tmp/commands/a`,
     args: ['has@1.0.3'],
   });
   assert(JSON.parse(await read(meta, 'utf8')).dependencies.has);
-  assert(await exists(`${__dirname}/tmp/commands/node_modules/has`));
+  assert(await exists(`${tmp}/tmp/commands/node_modules/has`));
 
   // upgrade linked package
   await upgrade({
-    root: `${__dirname}/tmp/commands`,
+    root: `${tmp}/tmp/commands`,
     args: ['c@0.0.0'],
   });
-  assert(await exists(`${__dirname}/tmp/commands/node_modules/c`));
+  assert(await exists(`${tmp}/tmp/commands/node_modules/c`));
   assert((await read(buildFile, 'utf8')).includes('//c:c'));
 
   // upgrade external package
   await upgrade({
-    root: `${__dirname}/tmp/commands`,
+    root: `${tmp}/tmp/commands`,
     args: ['has@1.0.3'],
   });
   assert(JSON.parse(await read(meta, 'utf8')).dependencies.has);
-  assert(await exists(`${__dirname}/tmp/commands/node_modules/has`));
+  assert(await exists(`${tmp}/tmp/commands/node_modules/has`));
 
   // remove linked package
   await remove({
-    root: `${__dirname}/tmp/commands`,
-    cwd: `${__dirname}/tmp/commands/a`,
+    root: `${tmp}/tmp/commands`,
+    cwd: `${tmp}/tmp/commands/a`,
     args: ['b', 'c'],
   });
   assert(!JSON.parse(await read(meta, 'utf8')).dependencies.b);
-  assert(!(await exists(`${__dirname}/tmp/commands/node_modules/b`)));
+  assert(!(await exists(`${tmp}/tmp/commands/node_modules/b`)));
   assert(!JSON.parse(await read(meta, 'utf8')).dependencies.c);
-  assert(!(await exists(`${__dirname}/tmp/commands/node_modules/c`)));
+  assert(!(await exists(`${tmp}/tmp/commands/node_modules/c`)));
 
   // remove external package
   await remove({
-    root: `${__dirname}/tmp/commands`,
-    cwd: `${__dirname}/tmp/commands/a`,
+    root: `${tmp}/tmp/commands`,
+    cwd: `${tmp}/tmp/commands/a`,
     args: ['has'],
   });
-  assert(!(await exists(`${__dirname}/tmp/commands/node_modules/has`)));
+  assert(!(await exists(`${tmp}/tmp/commands/node_modules/has`)));
 }
 
 async function testCi() {
-  const cmd = `cp -r ${__dirname}/fixtures/ci/ ${__dirname}/tmp/ci`;
+  const cmd = `cp -r ${__dirname}/fixtures/ci/ ${tmp}/tmp/ci`;
   await exec(cmd);
 
   await ci({
-    root: `${__dirname}/tmp/ci`,
-    cwd: `${__dirname}/tmp/ci/b`,
+    root: `${tmp}/tmp/ci`,
+    cwd: `${tmp}/tmp/ci/b`,
   });
   assert(true); // did not throw
 }
 
 async function testUpgrade() {
-  const meta = `${__dirname}/tmp/greenkeep/a/package.json`;
-  const lockfile = `${__dirname}/tmp/greenkeep/a/yarn.lock`;
-  const cmd = `cp -r ${__dirname}/fixtures/greenkeep/ ${__dirname}/tmp/greenkeep`;
+  const meta = `${tmp}/tmp/greenkeep/a/package.json`;
+  const lockfile = `${tmp}/tmp/greenkeep/a/yarn.lock`;
+  const cmd = `cp -r ${__dirname}/fixtures/greenkeep/ ${tmp}/tmp/greenkeep`;
   await exec(cmd);
 
   await upgrade({
-    root: `${__dirname}/tmp/greenkeep`,
+    root: `${tmp}/tmp/greenkeep`,
     args: ['has@1.0.3'],
   });
   assert((await read(meta, 'utf8')).includes('"has": "1.0.3"'));
   assert((await read(lockfile, 'utf8')).includes('function-bind'));
 
-  await upgrade({root: `${__dirname}/tmp/greenkeep`, args: ['b']});
+  await upgrade({root: `${tmp}/tmp/greenkeep`, args: ['b']});
   assert((await read(meta, 'utf8')).includes('"b": "1.0.0"'));
 }
 
 async function testPurge() {
-  await exec(`cp -r ${__dirname}/fixtures/purge/ ${__dirname}/tmp/purge`);
-  await purge({root: `${__dirname}/tmp/purge`, force: false});
-  const nodeModules = `${__dirname}/tmp/purge/a/node_modules`;
-  const globalNodeModules = `${__dirname}/tmp/purge/node_modules`;
+  await exec(`cp -r ${__dirname}/fixtures/purge/ ${tmp}/tmp/purge`);
+  await purge({root: `${tmp}/tmp/purge`, force: false});
+  const nodeModules = `${tmp}/tmp/purge/a/node_modules`;
+  const globalNodeModules = `${tmp}/tmp/purge/node_modules`;
   const temp = `${__dirname}/third_party/jazelle/temp`;
   assert(!(await exists(nodeModules)));
   assert(!(await exists(globalNodeModules)));
@@ -305,13 +309,13 @@ async function testPurge() {
 }
 
 async function testYarn() {
-  await exec(`cp -r ${__dirname}/fixtures/yarn/ ${__dirname}/tmp/yarn`);
+  await exec(`cp -r ${__dirname}/fixtures/yarn/ ${tmp}/tmp/yarn`);
 
-  const streamFile = `${__dirname}/tmp/yarn/stream.txt`;
+  const streamFile = `${tmp}/tmp/yarn/stream.txt`;
   const stream = createWriteStream(streamFile);
   await new Promise(resolve => stream.on('open', resolve));
   await yarnCmd({
-    cwd: `${__dirname}/tmp/yarn`,
+    cwd: `${tmp}/tmp/yarn`,
     args: ['--help'],
     stdio: ['ignore', stream, stream],
   }).catch(() => {});
@@ -319,9 +323,9 @@ async function testYarn() {
 }
 
 async function testEach() {
-  await exec(`cp -r ${__dirname}/fixtures/each/ ${__dirname}/tmp/each`);
+  await exec(`cp -r ${__dirname}/fixtures/each/ ${tmp}/tmp/each`);
 
-  const root = `${__dirname}/tmp/each`;
+  const root = `${tmp}/tmp/each`;
 
   const plan = [
     {type: 'dir', dir: 'a', action: 'exec', args: ['foo']},
@@ -340,14 +344,14 @@ async function testEach() {
 }
 
 async function testBump() {
-  await exec(`cp -r ${__dirname}/fixtures/bump/ ${__dirname}/tmp/bump`);
+  await exec(`cp -r ${__dirname}/fixtures/bump/ ${tmp}/tmp/bump`);
 
-  const root = `${__dirname}/tmp/bump`;
-  const cwd = `${__dirname}/tmp/bump/not-a-real-project`;
+  const root = `${tmp}/tmp/bump`;
+  const cwd = `${tmp}/tmp/bump/not-a-real-project`;
 
-  const pkgMeta = `${__dirname}/tmp/bump/not-a-real-project/package.json`;
-  const depMeta = `${__dirname}/tmp/bump/not-a-real-dep/package.json`;
-  const downstreamMeta = `${__dirname}/tmp/bump/not-a-real-downstream/package.json`;
+  const pkgMeta = `${tmp}/tmp/bump/not-a-real-project/package.json`;
+  const depMeta = `${tmp}/tmp/bump/not-a-real-dep/package.json`;
+  const downstreamMeta = `${tmp}/tmp/bump/not-a-real-downstream/package.json`;
 
   // do not update package.json files in CI
   // $FlowFixMe `assert` typedef is missing `rejects` method
@@ -372,12 +376,12 @@ async function testBump() {
 }
 
 async function testScriptCommand() {
-  await exec(`cp -r ${__dirname}/fixtures/script/ ${__dirname}/tmp/script`);
+  await exec(`cp -r ${__dirname}/fixtures/script/ ${tmp}/tmp/script`);
 
-  const root = `${__dirname}/tmp/script`;
-  const cwd = `${__dirname}/tmp/script/a`;
+  const root = `${tmp}/tmp/script`;
+  const cwd = `${tmp}/tmp/script/a`;
 
-  const streamFile = `${__dirname}/tmp/script/build-stream.txt`;
+  const streamFile = `${tmp}/tmp/script/build-stream.txt`;
   const stream = createWriteStream(streamFile);
   await new Promise(resolve => stream.on('open', resolve));
   await script({
@@ -407,26 +411,26 @@ async function testAssertProjectDir() {
 }
 
 async function testBatchTestGroup() {
-  const cmd = `cp -r ${__dirname}/fixtures/batch-test-group/ ${__dirname}/tmp/batch-test-group`;
+  const cmd = `cp -r ${__dirname}/fixtures/batch-test-group/ ${tmp}/tmp/batch-test-group`;
   await exec(cmd);
 
-  const streamFile = `${__dirname}/tmp/batch-test-group/stdout.txt`;
+  const streamFile = `${tmp}/tmp/batch-test-group/stdout.txt`;
   const stream = createWriteStream(streamFile);
   await new Promise(resolve => stream.on('open', resolve));
   await install({
-    root: `${__dirname}/tmp/batch-test-group`,
-    cwd: `${__dirname}/tmp/batch-test-group/a`,
+    root: `${tmp}/tmp/batch-test-group`,
+    cwd: `${tmp}/tmp/batch-test-group/a`,
   });
   await install({
-    root: `${__dirname}/tmp/batch-test-group`,
-    cwd: `${__dirname}/tmp/batch-test-group/b`,
+    root: `${tmp}/tmp/batch-test-group`,
+    cwd: `${tmp}/tmp/batch-test-group/b`,
   });
   await install({
-    root: `${__dirname}/tmp/batch-test-group`,
-    cwd: `${__dirname}/tmp/batch-test-group/b`,
+    root: `${tmp}/tmp/batch-test-group`,
+    cwd: `${tmp}/tmp/batch-test-group/b`,
   });
   await batchTestGroup({
-    root: `${__dirname}/tmp/batch-test-group`,
+    root: `${tmp}/tmp/batch-test-group`,
     data: [
       [
         {type: 'bazel', dir: 'a', action: 'flow', args: []},
@@ -453,22 +457,22 @@ async function testBatchTestGroup() {
 }
 
 async function testBazelDummy() {
-  await exec(`cp -r ${__dirname}/fixtures/bazel/ ${__dirname}/tmp/bazel`);
+  await exec(`cp -r ${__dirname}/fixtures/bazel/ ${tmp}/tmp/bazel`);
 
   await bazelCmds.build({
-    root: `${__dirname}/tmp/bazel`,
-    cwd: `${__dirname}/tmp/bazel`,
+    root: `${tmp}/tmp/bazel`,
+    cwd: `${tmp}/tmp/bazel`,
     name: 'target',
   });
-  const output = `${__dirname}/tmp/bazel/bazel-bin/target.sh`;
+  const output = `${tmp}/tmp/bazel/bazel-bin/target.sh`;
   assert.equal(await read(output, 'utf8'), 'echo target');
 
-  const testStreamFile = `${__dirname}/tmp/bazel/test-stream.txt`;
+  const testStreamFile = `${tmp}/tmp/bazel/test-stream.txt`;
   const testStream = createWriteStream(testStreamFile);
   await new Promise(resolve => testStream.on('open', resolve));
   await bazelCmds.test({
-    root: `${__dirname}/tmp/bazel`,
-    cwd: `${__dirname}/tmp/bazel`,
+    root: `${tmp}/tmp/bazel`,
+    cwd: `${tmp}/tmp/bazel`,
     args: [],
     name: 'target',
     stdio: ['ignore', testStream, 'ignore'],
@@ -476,12 +480,12 @@ async function testBazelDummy() {
   const testMessage = 'Executing tests from //:target';
   assert((await read(testStreamFile, 'utf8')).includes(testMessage));
 
-  const runStreamFile = `${__dirname}/tmp/bazel/run-stream.txt`;
+  const runStreamFile = `${tmp}/tmp/bazel/run-stream.txt`;
   const runStream = createWriteStream(runStreamFile);
   await new Promise(resolve => runStream.on('open', resolve));
   await bazelCmds.run({
-    root: `${__dirname}/tmp/bazel`,
-    cwd: `${__dirname}/tmp/bazel`,
+    root: `${tmp}/tmp/bazel`,
+    cwd: `${tmp}/tmp/bazel`,
     args: [],
     name: 'target',
     stdio: ['ignore', runStream, 'ignore'],
@@ -491,30 +495,30 @@ async function testBazelDummy() {
 }
 
 async function testBazelBuild() {
-  const cmd = `cp -r ${__dirname}/fixtures/bazel-rules/ ${__dirname}/tmp/bazel-rules`;
+  const cmd = `cp -r ${__dirname}/fixtures/bazel-rules/ ${tmp}/tmp/bazel-rules`;
   await exec(cmd);
   await install({
-    root: `${__dirname}/tmp/bazel-rules`,
-    cwd: `${__dirname}/tmp/bazel-rules/projects/a`,
+    root: `${tmp}/tmp/bazel-rules`,
+    cwd: `${tmp}/tmp/bazel-rules/projects/a`,
   });
 
   // build
   await bazelCmds.build({
-    root: `${__dirname}/tmp/bazel-rules`,
-    cwd: `${__dirname}/tmp/bazel-rules/projects/a`,
+    root: `${tmp}/tmp/bazel-rules`,
+    cwd: `${tmp}/tmp/bazel-rules/projects/a`,
     name: 'a',
   });
-  const output = `${__dirname}/tmp/bazel-rules/bazel-bin/projects/a/__jazelle__a.tgz`;
+  const output = `${tmp}/tmp/bazel-rules/bazel-bin/projects/a/__jazelle__a.tgz`;
   assert(await exists(output));
 
   // test
-  const testStreamFile = `${__dirname}/tmp/bazel-rules/test-stream.txt`;
+  const testStreamFile = `${tmp}/tmp/bazel-rules/test-stream.txt`;
   const testStream = createWriteStream(testStreamFile);
   await new Promise(resolve => testStream.on('open', resolve));
   try {
     await bazelCmds.test({
-      root: `${__dirname}/tmp/bazel-rules`,
-      cwd: `${__dirname}/tmp/bazel-rules/projects/a`,
+      root: `${tmp}/tmp/bazel-rules`,
+      cwd: `${tmp}/tmp/bazel-rules/projects/a`,
       args: [],
       name: 'test',
       stdio: ['ignore', testStream, testStream],
@@ -525,18 +529,18 @@ async function testBazelBuild() {
   }
   assert((await read(testStreamFile, 'utf8')).includes('\nb\nv8.15.1'));
 
-  const generated = `${__dirname}/tmp/bazel-rules/projects/a/generated/foo.txt`;
+  const generated = `${tmp}/tmp/bazel-rules/projects/a/generated/foo.txt`;
   assert((await read(generated, 'utf8')).includes('hello'));
-  const notSrc = `${__dirname}/tmp/bazel-rules/projects/a/generated_but_not_src/foo.txt`;
+  const notSrc = `${tmp}/tmp/bazel-rules/projects/a/generated_but_not_src/foo.txt`;
   assert(!(await exists(notSrc)));
 
   // run
-  const runStreamFile = `${__dirname}/tmp/bazel-rules/run-stream.txt`;
+  const runStreamFile = `${tmp}/tmp/bazel-rules/run-stream.txt`;
   const runStream = createWriteStream(runStreamFile);
   await new Promise(resolve => runStream.on('open', resolve));
   await bazelCmds.run({
-    root: `${__dirname}/tmp/bazel-rules`,
-    cwd: `${__dirname}/tmp/bazel-rules/projects/a`,
+    root: `${tmp}/tmp/bazel-rules`,
+    cwd: `${tmp}/tmp/bazel-rules/projects/a`,
     args: [],
     name: 'test',
     stdio: ['ignore', runStream, 'ignore'],
@@ -545,12 +549,12 @@ async function testBazelBuild() {
   assert(runData.includes('\nb\nv8.15.1'));
 
   // lint
-  const lintStreamFile = `${__dirname}/tmp/bazel-rules/lint-stream.txt`;
+  const lintStreamFile = `${tmp}/tmp/bazel-rules/lint-stream.txt`;
   const lintStream = createWriteStream(lintStreamFile);
   await new Promise(resolve => lintStream.on('open', resolve));
   await bazelCmds.lint({
-    root: `${__dirname}/tmp/bazel-rules`,
-    cwd: `${__dirname}/tmp/bazel-rules/projects/a`,
+    root: `${tmp}/tmp/bazel-rules`,
+    cwd: `${tmp}/tmp/bazel-rules/projects/a`,
     args: [],
     stdio: ['ignore', lintStream, 'ignore'],
   });
@@ -558,12 +562,12 @@ async function testBazelBuild() {
   assert(lintData.includes('\n111\n'));
 
   // flow
-  const flowStreamFile = `${__dirname}/tmp/bazel-rules/flow-stream.txt`;
+  const flowStreamFile = `${tmp}/tmp/bazel-rules/flow-stream.txt`;
   const flowStream = createWriteStream(flowStreamFile);
   await new Promise(resolve => flowStream.on('open', resolve));
   await bazelCmds.flow({
-    root: `${__dirname}/tmp/bazel-rules`,
-    cwd: `${__dirname}/tmp/bazel-rules/projects/a`,
+    root: `${tmp}/tmp/bazel-rules`,
+    cwd: `${tmp}/tmp/bazel-rules/projects/a`,
     args: [],
     stdio: ['ignore', flowStream, flowStream],
   });
@@ -571,12 +575,12 @@ async function testBazelBuild() {
   assert(flowData.includes('a:flow'));
 
   // start
-  const startStreamFile = `${__dirname}/tmp/bazel-rules/start-stream.txt`;
+  const startStreamFile = `${tmp}/tmp/bazel-rules/start-stream.txt`;
   const startStream = createWriteStream(startStreamFile);
   await new Promise(resolve => startStream.on('open', resolve));
   await bazelCmds.start({
-    root: `${__dirname}/tmp/bazel-rules`,
-    cwd: `${__dirname}/tmp/bazel-rules/projects/a`,
+    root: `${tmp}/tmp/bazel-rules`,
+    cwd: `${tmp}/tmp/bazel-rules/projects/a`,
     args: [],
     stdio: ['ignore', startStream, startStream],
   });
@@ -697,22 +701,22 @@ async function testFindChangedTargets() {
     assert.deepEqual(dirs, ['b', 'a']);
   }
   {
-    const cmd = `cp -r ${__dirname}/fixtures/find-changed-targets/ ${__dirname}/tmp/find-changed-targets`;
+    const cmd = `cp -r ${__dirname}/fixtures/find-changed-targets/ ${tmp}/tmp/find-changed-targets`;
     await exec(cmd);
 
-    const root = `${__dirname}/tmp/find-changed-targets/bazel`;
-    const files = `${__dirname}/tmp/find-changed-targets/bazel/changes.txt`;
+    const root = `${tmp}/tmp/find-changed-targets/bazel`;
+    const files = `${tmp}/tmp/find-changed-targets/bazel/changes.txt`;
     await install({
-      root: `${__dirname}/tmp/find-changed-targets/bazel`,
-      cwd: `${__dirname}/tmp/find-changed-targets/bazel/a`,
+      root: `${tmp}/tmp/find-changed-targets/bazel`,
+      cwd: `${tmp}/tmp/find-changed-targets/bazel/a`,
     });
     await install({
-      root: `${__dirname}/tmp/find-changed-targets/bazel`,
-      cwd: `${__dirname}/tmp/find-changed-targets/bazel/b`,
+      root: `${tmp}/tmp/find-changed-targets/bazel`,
+      cwd: `${tmp}/tmp/find-changed-targets/bazel/b`,
     });
     await install({
-      root: `${__dirname}/tmp/find-changed-targets/bazel`,
-      cwd: `${__dirname}/tmp/find-changed-targets/bazel/c`,
+      root: `${tmp}/tmp/find-changed-targets/bazel`,
+      cwd: `${tmp}/tmp/find-changed-targets/bazel/c`,
     });
     const targets = await findChangedTargets({root, files, format: 'targets'});
     assert.deepEqual(targets, [
@@ -748,42 +752,42 @@ async function testFindLocalDependency() {
 }
 
 async function testGenerateBazelignore() {
-  const cmd = `cp -r ${__dirname}/fixtures/generate-bazelignore/ ${__dirname}/tmp/generate-bazelignore`;
+  const cmd = `cp -r ${__dirname}/fixtures/generate-bazelignore/ ${tmp}/tmp/generate-bazelignore`;
   await exec(cmd);
   await generateBazelignore({
-    root: `${__dirname}/tmp/generate-bazelignore`,
+    root: `${tmp}/tmp/generate-bazelignore`,
     projects: ['a', 'b'],
   });
-  const bazelignoreFile = `${__dirname}/tmp/generate-bazelignore/.bazelignore`;
+  const bazelignoreFile = `${tmp}/tmp/generate-bazelignore/.bazelignore`;
   const bazelignore = await read(bazelignoreFile, 'utf8');
   assert(bazelignore.includes('node_modules'));
   assert(bazelignore.includes('third_party/jazelle/temp'));
 }
 
 async function testGenerateBazelBuildRules() {
-  const cmd = `cp -r ${__dirname}/fixtures/generate-bazel-build-rules/ ${__dirname}/tmp/generate-bazel-build-rules`;
+  const cmd = `cp -r ${__dirname}/fixtures/generate-bazel-build-rules/ ${tmp}/tmp/generate-bazel-build-rules`;
   await exec(cmd);
   await generateBazelBuildRules({
-    root: `${__dirname}/tmp/generate-bazel-build-rules`,
+    root: `${tmp}/tmp/generate-bazel-build-rules`,
     deps: [
       {
         meta: JSON.parse(
           await read(
-            `${__dirname}/tmp/generate-bazel-build-rules/a/package.json`,
+            `${tmp}/tmp/generate-bazel-build-rules/a/package.json`,
             'utf8'
           )
         ),
-        dir: `${__dirname}/tmp/generate-bazel-build-rules/a`,
+        dir: `${tmp}/tmp/generate-bazel-build-rules/a`,
         depth: 2,
       },
       {
         meta: JSON.parse(
           await read(
-            `${__dirname}/tmp/generate-bazel-build-rules/b/package.json`,
+            `${tmp}/tmp/generate-bazel-build-rules/b/package.json`,
             'utf8'
           )
         ),
-        dir: `${__dirname}/tmp/generate-bazel-build-rules/b`,
+        dir: `${tmp}/tmp/generate-bazel-build-rules/b`,
         depth: 1,
       },
     ],
@@ -791,52 +795,52 @@ async function testGenerateBazelBuildRules() {
     dependencySyncRule: 'web_library',
   });
   const code = await read(
-    `${__dirname}/tmp/generate-bazel-build-rules/a/BUILD.bazel`,
+    `${tmp}/tmp/generate-bazel-build-rules/a/BUILD.bazel`,
     'utf8'
   );
   assert(code.includes('# name: a\n'));
   assert(code.includes('# path: a\n'));
   assert(code.includes('# label: //a:a\n'));
   assert(code.includes('# dependencies: //b:b\n'));
-  const bBuild = `${__dirname}/tmp/generate-bazel-build-rules/b/BUILD.bazel`;
-  const cBuild = `${__dirname}/tmp/generate-bazel-build-rules/c/BUILD.bazel`;
-  const dBuild = `${__dirname}/tmp/generate-bazel-build-rules/d/BUILD.bazel`;
+  const bBuild = `${tmp}/tmp/generate-bazel-build-rules/b/BUILD.bazel`;
+  const cBuild = `${tmp}/tmp/generate-bazel-build-rules/c/BUILD.bazel`;
+  const dBuild = `${tmp}/tmp/generate-bazel-build-rules/d/BUILD.bazel`;
   assert(await exists(bBuild));
   assert((await read(cBuild)).includes('# this file'));
   assert(!(await exists(dBuild)));
 }
 
 async function testGenerateBazelBuildRulesUpdate() {
-  const cmd = `cp -r ${__dirname}/fixtures/generate-bazel-build-rules-update/ ${__dirname}/tmp/generate-bazel-build-rules-update`;
+  const cmd = `cp -r ${__dirname}/fixtures/generate-bazel-build-rules-update/ ${tmp}/tmp/generate-bazel-build-rules-update`;
   await exec(cmd);
   await generateBazelBuildRules({
-    root: `${__dirname}/tmp/generate-bazel-build-rules-update`,
+    root: `${tmp}/tmp/generate-bazel-build-rules-update`,
     deps: [
       {
         meta: JSON.parse(
           await read(
-            `${__dirname}/tmp/generate-bazel-build-rules-update/a/package.json`,
+            `${tmp}/tmp/generate-bazel-build-rules-update/a/package.json`,
             'utf8'
           )
         ),
-        dir: `${__dirname}/tmp/generate-bazel-build-rules-update/a`,
+        dir: `${tmp}/tmp/generate-bazel-build-rules-update/a`,
         depth: 2,
       },
       {
         meta: JSON.parse(
           await read(
-            `${__dirname}/tmp/generate-bazel-build-rules-update/b/package.json`,
+            `${tmp}/tmp/generate-bazel-build-rules-update/b/package.json`,
             'utf8'
           )
         ),
-        dir: `${__dirname}/tmp/generate-bazel-build-rules-update/b`,
+        dir: `${tmp}/tmp/generate-bazel-build-rules-update/b`,
         depth: 1,
       },
     ],
     projects: ['a', 'b', 'c'],
     dependencySyncRule: 'custom_target_rule',
   });
-  const aBuild = `${__dirname}/tmp/generate-bazel-build-rules-update/a/BUILD.bazel`;
+  const aBuild = `${tmp}/tmp/generate-bazel-build-rules-update/a/BUILD.bazel`;
   const data = await read(aBuild);
   assert(data.includes('custom_target_rule'));
   assert(data.includes('//b:b'));
@@ -847,7 +851,7 @@ async function testGenerateBazelBuildRulesUpdate() {
 async function testGetDownstreams() {
   const deps = [
     {
-      dir: `${__dirname}/tmp/get-downstreams/a`,
+      dir: `${tmp}/tmp/get-downstreams/a`,
       meta: {
         name: 'a',
         version: '0.0.0',
@@ -856,7 +860,7 @@ async function testGetDownstreams() {
       depth: 3,
     },
     {
-      dir: `${__dirname}/tmp/get-downstreams/b`,
+      dir: `${tmp}/tmp/get-downstreams/b`,
       meta: {
         name: 'b',
         version: '0.0.0',
@@ -865,7 +869,7 @@ async function testGetDownstreams() {
       depth: 2,
     },
     {
-      dir: `${__dirname}/tmp/get-downstreams/c`,
+      dir: `${tmp}/tmp/get-downstreams/c`,
       meta: {
         name: 'c',
         version: '0.0.0',
@@ -879,35 +883,35 @@ async function testGetDownstreams() {
 }
 
 async function testGetLocalDependencies() {
-  const cmd = `cp -r ${__dirname}/fixtures/get-local-dependencies/ ${__dirname}/tmp/get-local-dependencies`;
+  const cmd = `cp -r ${__dirname}/fixtures/get-local-dependencies/ ${tmp}/tmp/get-local-dependencies`;
   await exec(cmd);
   const localDeps = await getLocalDependencies({
     dirs: [
-      `${__dirname}/tmp/get-local-dependencies/a`,
-      `${__dirname}/tmp/get-local-dependencies/b`,
-      `${__dirname}/tmp/get-local-dependencies/c`,
+      `${tmp}/tmp/get-local-dependencies/a`,
+      `${tmp}/tmp/get-local-dependencies/b`,
+      `${tmp}/tmp/get-local-dependencies/c`,
     ],
-    target: `${__dirname}/tmp/get-local-dependencies/a`,
+    target: `${tmp}/tmp/get-local-dependencies/a`,
   });
   assert.deepEqual(localDeps, [
     {
       meta: JSON.parse(
         await read(
-          `${__dirname}/tmp/get-local-dependencies/b/package.json`,
+          `${tmp}/tmp/get-local-dependencies/b/package.json`,
           'utf8'
         )
       ),
-      dir: `${__dirname}/tmp/get-local-dependencies/b`,
+      dir: `${tmp}/tmp/get-local-dependencies/b`,
       depth: 2,
     },
     {
       meta: JSON.parse(
         await read(
-          `${__dirname}/tmp/get-local-dependencies/a/package.json`,
+          `${tmp}/tmp/get-local-dependencies/a/package.json`,
           'utf8'
         )
       ),
-      dir: `${__dirname}/tmp/get-local-dependencies/a`,
+      dir: `${tmp}/tmp/get-local-dependencies/a`,
       depth: 1,
     },
   ]);
@@ -933,11 +937,11 @@ async function testGetRootDir() {
 }
 
 async function testGetTestGroups() {
-  const cmd = `cp -r ${__dirname}/fixtures/get-test-groups/ ${__dirname}/tmp/get-test-groups`;
+  const cmd = `cp -r ${__dirname}/fixtures/get-test-groups/ ${tmp}/tmp/get-test-groups`;
   await exec(cmd);
 
   const bazelByTwo = await getTestGroups({
-    root: `${__dirname}/tmp/get-test-groups`,
+    root: `${tmp}/tmp/get-test-groups`,
     data: [
       `//a:test`,
       `//a:lint`,
@@ -962,7 +966,7 @@ async function testGetTestGroups() {
   ]);
 
   const bazelByFour = await getTestGroups({
-    root: `${__dirname}/tmp/get-test-groups`,
+    root: `${tmp}/tmp/get-test-groups`,
     data: [
       `//a:test`,
       `//a:lint`,
@@ -987,7 +991,7 @@ async function testGetTestGroups() {
   ]);
 
   const bazelByEight = await getTestGroups({
-    root: `${__dirname}/tmp/get-test-groups`,
+    root: `${tmp}/tmp/get-test-groups`,
     data: [
       `//a:test`,
       `//a:lint`,
@@ -1008,7 +1012,7 @@ async function testGetTestGroups() {
   ]);
 
   const dirByTwo = await getTestGroups({
-    root: `${__dirname}/tmp/get-test-groups`,
+    root: `${tmp}/tmp/get-test-groups`,
     data: [`a`, 'b', 'c'],
     nodes: 2,
   });
@@ -1026,7 +1030,7 @@ async function testGetTestGroups() {
   ]);
 
   const dirByFour = await getTestGroups({
-    root: `${__dirname}/tmp/get-test-groups`,
+    root: `${tmp}/tmp/get-test-groups`,
     data: [`a`, 'b', 'c'],
     nodes: 4,
   });
@@ -1045,10 +1049,10 @@ async function testGetTestGroups() {
 }
 
 async function testGroupByDepsets() {
-  const cmd = `cp -r ${__dirname}/fixtures/group-by-depsets/ ${__dirname}/tmp/group-by-depsets`;
+  const cmd = `cp -r ${__dirname}/fixtures/group-by-depsets/ ${tmp}/tmp/group-by-depsets`;
   await exec(cmd);
 
-  const root = `${__dirname}/tmp/group-by-depsets`;
+  const root = `${tmp}/tmp/group-by-depsets`;
   const aMeta = JSON.parse(await read(`${root}/a/package.json`, 'utf8'));
   const bMeta = JSON.parse(await read(`${root}/b/package.json`, 'utf8'));
   const cMeta = JSON.parse(await read(`${root}/c/package.json`, 'utf8'));
@@ -1184,7 +1188,7 @@ async function testIsYarnResolution() {
 }
 
 async function testNodeHelpers() {
-  const cmd = `cp -r ${__dirname}/fixtures/node-helpers/ ${__dirname}/tmp/node-helpers`;
+  const cmd = `cp -r ${__dirname}/fixtures/node-helpers/ ${tmp}/tmp/node-helpers`;
   await exec(cmd);
 
   assert.equal(await exec('echo abc'), 'abc\n');
@@ -1194,19 +1198,19 @@ async function testNodeHelpers() {
   const files = await ls(`${__dirname}/fixtures/node-helpers`);
   assert.deepEqual(files, ['file.txt']);
 
-  const file = `${__dirname}/tmp/node-helpers/file.txt`;
+  const file = `${tmp}/tmp/node-helpers/file.txt`;
   await write(file, 'hello', 'utf8');
 
   const text = readFileSync(file, 'utf8');
   assert.equal(await read(file, 'utf8'), text);
   assert.equal(text, 'hello');
 
-  const stats = await lstat(`${__dirname}/tmp/node-helpers/file.txt`);
+  const stats = await lstat(`${tmp}/tmp/node-helpers/file.txt`);
   assert.equal(stats.isFile(), true);
 
-  await exec(`mkdir -p ${__dirname}/tmp/node-helpers-remove/a/b`);
-  await rm(`${__dirname}/tmp/node-helpers-remove`);
-  assert(!(await exists(`${__dirname}/tmp/node-helpers-remove`)));
+  await exec(`mkdir -p ${tmp}/tmp/node-helpers-remove/a/b`);
+  await rm(`${tmp}/tmp/node-helpers-remove`);
+  assert(!(await exists(`${tmp}/tmp/node-helpers-remove`)));
 }
 
 async function testParse() {
@@ -1224,11 +1228,11 @@ async function testGetPassThroughArgs() {
 }
 
 async function testReportMismatchedTopLevelDeps() {
-  const cmd = `cp -r ${__dirname}/fixtures/report-mismatched-top-level-deps/ ${__dirname}/tmp/report-mismatched-top-level-deps`;
+  const cmd = `cp -r ${__dirname}/fixtures/report-mismatched-top-level-deps/ ${tmp}/tmp/report-mismatched-top-level-deps`;
   await exec(cmd);
 
   const withoutLockstep = await reportMismatchedTopLevelDeps({
-    root: `${__dirname}/tmp/report-mismatched-top-level-deps`,
+    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
     projects: ['packages/a', 'packages/b', 'packages/c'],
     versionPolicy: {
       lockstep: false,
@@ -1248,7 +1252,7 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withoutPartialLockstep = await reportMismatchedTopLevelDeps({
-    root: `${__dirname}/tmp/report-mismatched-top-level-deps`,
+    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
     projects: ['packages/a', 'packages/b', 'packages/c'],
     versionPolicy: {
       lockstep: false,
@@ -1264,7 +1268,7 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withLockstep = await reportMismatchedTopLevelDeps({
-    root: `${__dirname}/tmp/report-mismatched-top-level-deps`,
+    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
     projects: ['packages/a', 'packages/b', 'packages/c'],
     versionPolicy: {
       lockstep: true,
@@ -1280,7 +1284,7 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withAllExceptions = await reportMismatchedTopLevelDeps({
-    root: `${__dirname}/tmp/report-mismatched-top-level-deps`,
+    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
     projects: ['packages/a', 'packages/b', 'packages/c'],
     versionPolicy: {
       lockstep: true,
@@ -1294,7 +1298,7 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withVersionedExceptions = await reportMismatchedTopLevelDeps({
-    root: `${__dirname}/tmp/report-mismatched-top-level-deps`,
+    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
     projects: ['packages/a', 'packages/b', 'packages/c'],
     versionPolicy: {
       lockstep: false,
@@ -1311,7 +1315,7 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withAllVersionedExceptions = await reportMismatchedTopLevelDeps({
-    root: `${__dirname}/tmp/report-mismatched-top-level-deps`,
+    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
     projects: ['packages/a', 'packages/b', 'packages/c'],
     versionPolicy: {
       lockstep: false,
@@ -1328,7 +1332,7 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withLockstepVersionedExceptions = await reportMismatchedTopLevelDeps({
-    root: `${__dirname}/tmp/report-mismatched-top-level-deps`,
+    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
     projects: ['packages/a', 'packages/b', 'packages/c'],
     versionPolicy: {
       lockstep: true,
@@ -1346,7 +1350,7 @@ async function testReportMismatchedTopLevelDeps() {
 
   const withLockstepAllVersionedExceptions = await reportMismatchedTopLevelDeps(
     {
-      root: `${__dirname}/tmp/report-mismatched-top-level-deps`,
+      root: `${tmp}/tmp/report-mismatched-top-level-deps`,
       projects: ['packages/a', 'packages/b', 'packages/c'],
       versionPolicy: {
         lockstep: true,
@@ -1371,9 +1375,9 @@ async function testReportMismatchedTopLevelDeps() {
 }
 
 async function testStarlark() {
-  await exec(`cp -r ${__dirname}/fixtures/starlark/ ${__dirname}/tmp/starlark`);
+  await exec(`cp -r ${__dirname}/fixtures/starlark/ ${tmp}/tmp/starlark`);
   {
-    const buildFile = `${__dirname}/tmp/starlark/indented/BUILD.bazel`;
+    const buildFile = `${tmp}/tmp/starlark/indented/BUILD.bazel`;
     const indented = await read(buildFile, 'utf8');
     assert.deepEqual(getCallArgItems(indented, 'web_library', 'deps'), [
       '"//a:a"',
@@ -1405,7 +1409,7 @@ web_library(
   }
 
   {
-    const buildFile = `${__dirname}/tmp/starlark/inline/BUILD.bazel`;
+    const buildFile = `${tmp}/tmp/starlark/inline/BUILD.bazel`;
     const inline = await read(buildFile, 'utf8');
     const added = addCallArgItem(inline, 'web_library', 'deps', '"//c:c"');
     const expected = `
@@ -1416,7 +1420,7 @@ web_library(
     assert.equal(added.trim(), expected.trim());
   }
   {
-    const buildFile = `${__dirname}/tmp/starlark/comments/BUILD.bazel`;
+    const buildFile = `${tmp}/tmp/starlark/comments/BUILD.bazel`;
     const commented = await read(buildFile, 'utf8');
     const added = addCallArgItem(commented, 'web_library', 'deps', '"//c:c"');
     const trimmed = added
@@ -1673,21 +1677,21 @@ async function testVersionOnboarding() {
 }
 
 async function testYarnCommands() {
-  const cmd = `cp -r ${__dirname}/fixtures/yarn-commands ${__dirname}/tmp/yarn-commands`;
+  const cmd = `cp -r ${__dirname}/fixtures/yarn-commands ${tmp}/tmp/yarn-commands`;
   await exec(cmd);
   const deps = [
     {
-      dir: `${__dirname}/tmp/yarn-commands/a`,
+      dir: `${tmp}/tmp/yarn-commands/a`,
       meta: JSON.parse(
-        await read(`${__dirname}/tmp/yarn-commands/a/package.json`, 'utf8')
+        await read(`${tmp}/tmp/yarn-commands/a/package.json`, 'utf8')
       ),
       depth: 1,
     },
   ];
-  const root = `${__dirname}/tmp/yarn-commands`;
+  const root = `${tmp}/tmp/yarn-commands`;
 
   // build
-  const buildStreamFile = `${__dirname}/tmp/yarn-commands/build-stream.txt`;
+  const buildStreamFile = `${tmp}/tmp/yarn-commands/build-stream.txt`;
   const buildStream = createWriteStream(buildStreamFile);
   await new Promise(resolve => buildStream.on('open', resolve));
   await yarnCmds.build({
@@ -1704,7 +1708,7 @@ async function testYarnCommands() {
   assert((await read(buildStreamFile, 'utf8')).match(/\n111\n/g).length === 1);
 
   // dev
-  const devStreamFile = `${__dirname}/tmp/yarn-commands/dev-stream.txt`;
+  const devStreamFile = `${tmp}/tmp/yarn-commands/dev-stream.txt`;
   const devStream = createWriteStream(devStreamFile);
   await new Promise(resolve => devStream.on('open', resolve));
   await yarnCmds.dev({
@@ -1716,7 +1720,7 @@ async function testYarnCommands() {
   assert((await read(devStreamFile, 'utf8')).includes('\n333\n'));
 
   // test
-  const testStreamFile = `${__dirname}/tmp/yarn-commands/test-stream.txt`;
+  const testStreamFile = `${tmp}/tmp/yarn-commands/test-stream.txt`;
   const testStream = createWriteStream(testStreamFile);
   await new Promise(resolve => testStream.on('open', resolve));
   await yarnCmds.test({
@@ -1728,7 +1732,7 @@ async function testYarnCommands() {
   assert((await read(testStreamFile, 'utf8')).includes('\n444\n'));
 
   // lint
-  const lintStreamFile = `${__dirname}/tmp/yarn-commands/lint-stream.txt`;
+  const lintStreamFile = `${tmp}/tmp/yarn-commands/lint-stream.txt`;
   const lintStream = createWriteStream(lintStreamFile);
   await new Promise(resolve => lintStream.on('open', resolve));
   await yarnCmds.lint({
@@ -1740,7 +1744,7 @@ async function testYarnCommands() {
   assert((await read(lintStreamFile, 'utf8')).includes('\n555\n'));
 
   // flow
-  const flowStreamFile = `${__dirname}/tmp/yarn-commands/flow-stream.txt`;
+  const flowStreamFile = `${tmp}/tmp/yarn-commands/flow-stream.txt`;
   const flowStream = createWriteStream(flowStreamFile);
   await new Promise(resolve => flowStream.on('open', resolve));
   await yarnCmds.flow({
@@ -1752,7 +1756,7 @@ async function testYarnCommands() {
   assert((await read(flowStreamFile, 'utf8')).includes('\n666\n'));
 
   // start
-  const startStreamFile = `${__dirname}/tmp/yarn-commands/start-stream.txt`;
+  const startStreamFile = `${tmp}/tmp/yarn-commands/start-stream.txt`;
   const startStream = createWriteStream(startStreamFile);
   await new Promise(resolve => startStream.on('open', resolve));
   await yarnCmds.start({
@@ -1766,65 +1770,65 @@ async function testYarnCommands() {
 
 async function testLockfileRegistryResolution() {
   {
-    const cmd = `cp -r ${__dirname}/fixtures/lockfile-registry-resolution/ ${__dirname}/tmp/lockfile-registry-resolution`;
+    const cmd = `cp -r ${__dirname}/fixtures/lockfile-registry-resolution/ ${tmp}/tmp/lockfile-registry-resolution`;
     await exec(cmd);
     await install({
-      root: `${__dirname}/tmp/lockfile-registry-resolution`,
-      cwd: `${__dirname}/tmp/lockfile-registry-resolution/a`,
+      root: `${tmp}/tmp/lockfile-registry-resolution`,
+      cwd: `${tmp}/tmp/lockfile-registry-resolution/a`,
     });
 
-    const bLock = `${__dirname}/tmp/lockfile-registry-resolution/b/yarn.lock`;
+    const bLock = `${tmp}/tmp/lockfile-registry-resolution/b/yarn.lock`;
     assert((await read(bLock, 'utf8')).includes('registry.yarnpkg.com'));
 
-    const cLock = `${__dirname}/tmp/lockfile-registry-resolution/c/yarn.lock`;
+    const cLock = `${tmp}/tmp/lockfile-registry-resolution/c/yarn.lock`;
     assert((await read(cLock, 'utf8')).includes('registry.yarnpkg.com'));
   }
   // Test with default registry
-  await exec(`rm -rf ${__dirname}/tmp/lockfile-registry-resolution`);
+  await exec(`rm -rf ${tmp}/tmp/lockfile-registry-resolution`);
 
   {
-    const cmd = `cp -r ${__dirname}/fixtures/lockfile-registry-resolution/ ${__dirname}/tmp/lockfile-registry-resolution`;
+    const cmd = `cp -r ${__dirname}/fixtures/lockfile-registry-resolution/ ${tmp}/tmp/lockfile-registry-resolution`;
     await exec(cmd);
-    await exec(`rm ${__dirname}/tmp/lockfile-registry-resolution/.yarnrc`);
+    await exec(`rm ${tmp}/tmp/lockfile-registry-resolution/.yarnrc`);
     await install({
-      root: `${__dirname}/tmp/lockfile-registry-resolution`,
-      cwd: `${__dirname}/tmp/lockfile-registry-resolution/a`,
+      root: `${tmp}/tmp/lockfile-registry-resolution`,
+      cwd: `${tmp}/tmp/lockfile-registry-resolution/a`,
     });
 
-    const bLock = `${__dirname}/tmp/lockfile-registry-resolution/b/yarn.lock`;
+    const bLock = `${tmp}/tmp/lockfile-registry-resolution/b/yarn.lock`;
     assert((await read(bLock, 'utf8')).includes('registry.npmjs.org'));
 
-    const cLock = `${__dirname}/tmp/lockfile-registry-resolution/c/yarn.lock`;
+    const cLock = `${tmp}/tmp/lockfile-registry-resolution/c/yarn.lock`;
     assert((await read(cLock, 'utf8')).includes('registry.npmjs.org'));
   }
 }
 
 async function testLockfileRegistryResolutionMultirepo() {
   await exec(
-    `cp -r ${__dirname}/fixtures/lockfile-registry-resolution-multirepo/ ${__dirname}/tmp/lockfile-registry-resolution-multirepo`
+    `cp -r ${__dirname}/fixtures/lockfile-registry-resolution-multirepo/ ${tmp}/tmp/lockfile-registry-resolution-multirepo`
   );
   await install({
-    root: `${__dirname}/tmp/lockfile-registry-resolution-multirepo`,
-    cwd: `${__dirname}/tmp/lockfile-registry-resolution-multirepo/first/a`,
+    root: `${tmp}/tmp/lockfile-registry-resolution-multirepo`,
+    cwd: `${tmp}/tmp/lockfile-registry-resolution-multirepo/first/a`,
   });
   // Expect that even though multiple projects are pinned to the same dependency version,
   // install will honor the existence of any registry overrides and write those preferences
   // back to the individual lock files
-  const aLock = `${__dirname}/tmp/lockfile-registry-resolution-multirepo/first/a/yarn.lock`;
+  const aLock = `${tmp}/tmp/lockfile-registry-resolution-multirepo/first/a/yarn.lock`;
   assert((await read(aLock, 'utf8')).includes('registry.yarnpkg.com'));
 
-  const bLock = `${__dirname}/tmp/lockfile-registry-resolution-multirepo/second/b/yarn.lock`;
+  const bLock = `${tmp}/tmp/lockfile-registry-resolution-multirepo/second/b/yarn.lock`;
   assert((await read(bLock, 'utf8')).includes('registry.npmjs.org'));
 }
 
 async function testCommand() {
-  const cmd = `cp -r ${__dirname}/fixtures/bin ${__dirname}/tmp/bin`;
+  const cmd = `cp -r ${__dirname}/fixtures/bin ${tmp}/tmp/bin`;
   await exec(cmd);
 
-  const cwd = `${__dirname}/tmp/bin`;
+  const cwd = `${tmp}/tmp/bin`;
   const jazelle = `${__dirname}/../bin/bootstrap.sh`;
 
-  const streamFile = `${__dirname}/tmp/bin/stream.txt`;
+  const streamFile = `${tmp}/tmp/bin/stream.txt`;
   const stream = createWriteStream(streamFile);
   await new Promise(resolve => stream.on('open', resolve));
   await exec(`${jazelle}`, {cwd}, [stream, stream]);
@@ -1832,19 +1836,19 @@ async function testCommand() {
 }
 
 async function testYarnCommand() {
-  const cmd = `cp -r ${__dirname}/fixtures/bin ${__dirname}/tmp/bin`;
+  const cmd = `cp -r ${__dirname}/fixtures/bin ${tmp}/tmp/bin`;
   await exec(cmd);
 
-  const cwd = `${__dirname}/tmp/bin`;
+  const cwd = `${tmp}/tmp/bin`;
   const jazelle = `${__dirname}/../bin/bootstrap.sh`;
 
-  const yarnStreamFile = `${__dirname}/tmp/bin/yarn-stream.txt`;
+  const yarnStreamFile = `${tmp}/tmp/bin/yarn-stream.txt`;
   const yarnStream = createWriteStream(yarnStreamFile);
   await new Promise(resolve => yarnStream.on('open', resolve));
   await exec(`${jazelle} yarn --version --cwd a`, {cwd}, [yarnStream]);
   assert((await read(yarnStreamFile, 'utf8')).includes('.'));
 
-  const cwdStreamFile = `${__dirname}/tmp/bin/cwd-stream.txt`;
+  const cwdStreamFile = `${tmp}/tmp/bin/cwd-stream.txt`;
   const cwdStream = createWriteStream(cwdStreamFile);
   await new Promise(resolve => cwdStream.on('open', resolve));
   await exec(`${jazelle} yarn --version`, {cwd: `${cwd}/a`}, [cwdStream]);
@@ -1852,13 +1856,13 @@ async function testYarnCommand() {
 }
 
 async function testBazelCommand() {
-  const cmd = `cp -r ${__dirname}/fixtures/bin ${__dirname}/tmp/bin`;
+  const cmd = `cp -r ${__dirname}/fixtures/bin ${tmp}/tmp/bin`;
   await exec(cmd);
 
-  const cwd = `${__dirname}/tmp/bin`;
+  const cwd = `${tmp}/tmp/bin`;
   const jazelle = `${__dirname}/../bin/bootstrap.sh`;
 
-  const bazelStreamFile = `${__dirname}/tmp/bin/bazel-stream.txt`;
+  const bazelStreamFile = `${tmp}/tmp/bin/bazel-stream.txt`;
   const bazelStream = createWriteStream(bazelStreamFile);
   await new Promise(resolve => bazelStream.on('open', resolve));
   await exec(`${jazelle} bazel version`, {cwd}, [bazelStream]);
@@ -1866,13 +1870,13 @@ async function testBazelCommand() {
 }
 
 async function testStartCommand() {
-  const cmd = `cp -r ${__dirname}/fixtures/bin ${__dirname}/tmp/bin`;
+  const cmd = `cp -r ${__dirname}/fixtures/bin ${tmp}/tmp/bin`;
   await exec(cmd);
 
-  const cwd = `${__dirname}/tmp/bin`;
+  const cwd = `${tmp}/tmp/bin`;
   const jazelle = `${__dirname}/../bin/bootstrap.sh`;
 
-  const startStreamFile = `${__dirname}/tmp/bin/start-stream.txt`;
+  const startStreamFile = `${tmp}/tmp/bin/start-stream.txt`;
   const startStream = createWriteStream(startStreamFile);
   await new Promise(resolve => startStream.on('open', resolve));
   await exec(`${jazelle} start`, {cwd: `${cwd}/a`}, [startStream]);
@@ -1880,13 +1884,13 @@ async function testStartCommand() {
 }
 
 async function testBazelDependentBuilds() {
-  const cmd = `cp -r ${__dirname}/fixtures/bazel-dependent-builds ${__dirname}/tmp/bazel-dependent-builds`;
+  const cmd = `cp -r ${__dirname}/fixtures/bazel-dependent-builds ${tmp}/tmp/bazel-dependent-builds`;
   await exec(cmd);
 
-  const cwd = `${__dirname}/tmp/bazel-dependent-builds`;
+  const cwd = `${tmp}/tmp/bazel-dependent-builds`;
   const jazelle = `${__dirname}/../bin/bootstrap.sh`;
 
-  const startStreamFile = `${__dirname}/tmp/bazel-dependent-builds/start-stream.txt`;
+  const startStreamFile = `${tmp}/tmp/bazel-dependent-builds/start-stream.txt`;
   const startStream = createWriteStream(startStreamFile);
   await new Promise(resolve => startStream.on('open', resolve));
 
@@ -1904,13 +1908,13 @@ async function testBazelDependentBuilds() {
 }
 
 async function testBazelDependentFailure() {
-  const cmd = `cp -r ${__dirname}/fixtures/bazel-dependent-failure ${__dirname}/tmp/bazel-dependent-failure`;
+  const cmd = `cp -r ${__dirname}/fixtures/bazel-dependent-failure ${tmp}/tmp/bazel-dependent-failure`;
   await exec(cmd);
 
-  const cwd = `${__dirname}/tmp/bazel-dependent-failure`;
+  const cwd = `${tmp}/tmp/bazel-dependent-failure`;
   const jazelle = `${__dirname}/../bin/bootstrap.sh`;
 
-  const startStreamFile = `${__dirname}/tmp/bazel-dependent-failure/start-stream.txt`;
+  const startStreamFile = `${tmp}/tmp/bazel-dependent-failure/start-stream.txt`;
   const startStream = createWriteStream(startStreamFile);
   await new Promise(resolve => startStream.on('open', resolve));
 
@@ -1977,10 +1981,10 @@ async function testSortPackageJSON() {
 }
 
 async function testLocalize() {
-  const cmd = `cp -r ${__dirname}/fixtures/localize ${__dirname}/tmp/localize`;
+  const cmd = `cp -r ${__dirname}/fixtures/localize ${tmp}/tmp/localize`;
   await exec(cmd);
 
-  const root = `${__dirname}/tmp/localize`;
+  const root = `${tmp}/tmp/localize`;
   await localize({root});
   const meta = JSON.parse(await read(`${root}/b/package.json`, 'utf8'));
   assert.equal(meta.dependencies.a, '0.0.0-monorepo');
@@ -1988,10 +1992,10 @@ async function testLocalize() {
 }
 
 async function testCheck() {
-  const cmd = `cp -r ${__dirname}/fixtures/check ${__dirname}/tmp/check`;
+  const cmd = `cp -r ${__dirname}/fixtures/check ${tmp}/tmp/check`;
   await exec(cmd);
 
-  const root = `${__dirname}/tmp/check`;
+  const root = `${tmp}/tmp/check`;
 
   // Check default
   let result = await check({
