@@ -1,5 +1,6 @@
 // @flow
-const {resolve} = require('path');
+const {existsSync, writeFileSync, readFileSync} = require('fs');
+const {resolve, join} = require('path');
 const {getRootDir} = require('./utils/get-root-dir.js');
 const {parse} = require('./utils/parse-argv.js');
 const {cli} = require('./utils/cli.js');
@@ -50,6 +51,7 @@ const runCLI /*: RunCLI */ = async argv => {
   const args = parse(rest);
   args.cwd = args.cwd ? resolve(process.cwd(), args.cwd) : process.cwd();
   setGlobalEnvVars(args);
+  checkGlobalYarnConfig();
   await cli(
     command,
     args,
@@ -300,6 +302,25 @@ function setGlobalEnvVars(args) {
 
 async function rootOf(args) {
   return getRootDir({dir: args.cwd});
+}
+
+function checkGlobalYarnConfig() {
+  // $FlowFixMe
+  const globalYarnConfigPath = join(process.env.HOME, '.yarnrc.yml');
+  // $FlowFixMe
+  const globalNpmConfigPath = join(process.env.HOME, '.npmrc');
+  if (!existsSync(globalYarnConfigPath) && existsSync(globalNpmConfigPath)) {
+    const npmrc = readFileSync(globalNpmConfigPath, 'utf-8');
+    const lines = npmrc.split('\n');
+
+    for (let line of lines) {
+      if (line.includes('_auth')) {
+        const [, token] = line.split('=');
+        writeFileSync(globalYarnConfigPath, `npmAuthIdent: ${token.trim()}`);
+        return;
+      }
+    }
+  }
 }
 
 // FIXME eslint is being dumb in CI

@@ -9,8 +9,6 @@ const {add} = require('../commands/add.js');
 const {upgrade} = require('../commands/upgrade.js');
 const {remove} = require('../commands/remove.js');
 const {ci} = require('../commands/ci.js');
-const {dedupe} = require('../commands/dedupe.js');
-const {prune} = require('../commands/prune.js');
 const {purge} = require('../commands/purge.js');
 const {yarn: yarnCmd} = require('../commands/yarn.js');
 const {bump} = require('../commands/bump.js');
@@ -39,19 +37,14 @@ const {
   generateBazelBuildRules,
 } = require('../utils/generate-bazel-build-rules.js');
 const {generateBazelignore} = require('../utils/generate-bazelignore.js');
-const {generateDepLockfiles} = require('../utils/generate-dep-lockfiles.js');
 const {getDownstreams} = require('../utils/get-downstreams.js');
 const {getManifest} = require('../utils/get-manifest.js');
 const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
 const {getRootDir} = require('../utils/get-root-dir.js');
 const {getTestGroups} = require('../utils/get-test-groups.js');
 const {groupByDepsets} = require('../utils/group-by-depsets.js');
-const {installDeps} = require('../utils/install-deps.js');
-const {isDepsetSubset} = require('../utils/is-depset-subset.js');
 const {isYarnResolution} = require('../utils/is-yarn-resolution.js');
 const {parse, getPassThroughArgs} = require('../utils/parse-argv.js');
-const {populateGraph} = require('../utils/lockfile.js');
-const {isProjectInstalled} = require('../utils/is-project-installed.js');
 
 const {
   reportMismatchedTopLevelDeps,
@@ -63,7 +56,7 @@ const {
 } = require('../utils/starlark.js');
 const {shouldSync, getVersion} = require('../utils/version-onboarding.js');
 const yarnCmds = require('../utils/yarn-commands.js');
-const sortPackageJson = require('../utils/sort-package-json');
+const {sortPackageJson} = require('../utils/sort-package-json');
 
 process.on('unhandledRejection', e => {
   console.error(e.stack);
@@ -92,8 +85,6 @@ async function runTests() {
     t(testInit),
     t(testScaffold),
     t(testCi),
-    t(testDedupe),
-    t(testPrune),
     t(testUpgrade),
     t(testPurge),
     t(testYarn),
@@ -108,15 +99,12 @@ async function runTests() {
     t(testGenerateBazelignore),
     t(testGenerateBazelBuildRules),
     t(testGenerateBazelBuildRulesUpdate),
-    t(testGenerateDepLockfiles),
     t(testGetDownstreams),
     t(testGetManifest),
     t(testGetLocalDependencies),
     t(testGetRootDir),
     t(testGetTestGroups),
     t(testGroupByDepsets),
-    t(testInstallDeps),
-    t(testIsDepsetSubset),
     t(testIsYarnResolution),
     t(testNodeHelpers),
     t(testParse),
@@ -127,11 +115,9 @@ async function runTests() {
     t(testYarnCommands),
     t(testLockfileRegistryResolution),
     t(testLockfileRegistryResolutionMultirepo),
-    t(testPopulateGraph),
     t(testSortPackageJSON),
     t(testLocalize),
     t(testCheck),
-    t(testIsProjectInstalled),
   ]);
   // run separately to avoid CI error
   await t(testBazelDummy);
@@ -288,29 +274,6 @@ async function testCi() {
     cwd: `${__dirname}/tmp/ci/b`,
   });
   assert(true); // did not throw
-}
-
-async function testDedupe() {
-  const lockfile = `${__dirname}/tmp/dedupe/a/yarn.lock`;
-  const cmd = `cp -r ${__dirname}/fixtures/dedupe/ ${__dirname}/tmp/dedupe`;
-  await exec(cmd);
-
-  await dedupe({
-    root: `${__dirname}/tmp/dedupe`,
-  });
-  assert((await read(lockfile, 'utf8')).includes('version "1.0.3"'));
-}
-
-async function testPrune() {
-  const lockfile = `${__dirname}/tmp/prune/a/yarn.lock`;
-  const cmd = `cp -r ${__dirname}/fixtures/prune/ ${__dirname}/tmp/prune`;
-  await exec(cmd);
-
-  await prune({
-    root: `${__dirname}/tmp/prune`,
-  });
-  const data = await read(lockfile, 'utf8');
-  assert(!data.includes('has@^1.0.0'));
 }
 
 async function testUpgrade() {
@@ -881,42 +844,6 @@ async function testGenerateBazelBuildRulesUpdate() {
   assert(data.includes('//external:external'));
 }
 
-async function testGenerateDepLockfiles() {
-  const cmd = `cp -r ${__dirname}/fixtures/generate-dep-lockfiles/ ${__dirname}/tmp/generate-dep-lockfiles`;
-  await exec(cmd);
-  await generateDepLockfiles({
-    root: `${__dirname}/tmp/generate-dep-lockfiles`,
-    deps: [
-      {
-        meta: JSON.parse(
-          await read(
-            `${__dirname}/tmp/generate-dep-lockfiles/a/package.json`,
-            'utf8'
-          )
-        ),
-        dir: `${__dirname}/tmp/generate-dep-lockfiles/a`,
-        depth: 1,
-      },
-    ],
-    ignore: [
-      {
-        meta: JSON.parse(
-          await read(
-            `${__dirname}/tmp/generate-dep-lockfiles/a/package.json`,
-            'utf8'
-          )
-        ),
-        dir: `${__dirname}/tmp/generate-dep-lockfiles/a`,
-        depth: 1,
-      },
-    ],
-    frozenLockfile: false,
-    conservative: true,
-  });
-  const lockfile = `${__dirname}/tmp/generate-dep-lockfiles/a/yarn.lock`;
-  assert((await read(lockfile, 'utf8')).includes('has@'));
-}
-
 async function testGetDownstreams() {
   const deps = [
     {
@@ -1156,94 +1083,6 @@ async function testGroupByDepsets() {
       {type: 'bazel', dir: 'c', action: 'flow', args: []},
     ],
   ]);
-}
-
-async function testInstallDeps() {
-  const cmd = `cp -r ${__dirname}/fixtures/install-deps/ ${__dirname}/tmp/install-deps`;
-  await exec(cmd);
-  const deps = {
-    root: `${__dirname}/tmp/install-deps`,
-    cwd: `${__dirname}/tmp/install-deps/a`,
-    deps: [
-      {
-        meta: JSON.parse(
-          await read(`${__dirname}/tmp/install-deps/b/package.json`, 'utf8')
-        ),
-        dir: `${__dirname}/tmp/install-deps/b`,
-        depth: 2,
-      },
-      {
-        meta: JSON.parse(
-          await read(`${__dirname}/tmp/install-deps/a/package.json`, 'utf8')
-        ),
-        dir: `${__dirname}/tmp/install-deps/a`,
-        depth: 1,
-      },
-    ],
-    ignore: [
-      {
-        meta: JSON.parse(
-          await read(`${__dirname}/tmp/install-deps/b/package.json`, 'utf8')
-        ),
-        dir: `${__dirname}/tmp/install-deps/b`,
-        depth: 2,
-      },
-      {
-        meta: JSON.parse(
-          await read(`${__dirname}/tmp/install-deps/a/package.json`, 'utf8')
-        ),
-        dir: `${__dirname}/tmp/install-deps/a`,
-        depth: 1,
-      },
-    ],
-  };
-  await installDeps(deps);
-  assert(await exists(`${__dirname}/tmp/install-deps/node_modules/b`));
-  assert(await exists(`${__dirname}/tmp/install-deps/node_modules/noop`));
-}
-
-async function testIsDepsetSubset() {
-  const base = {name: '', version: ''};
-  {
-    const it = {...base, dependencies: {a: '^1.0.0'}};
-    const of = {...base, dependencies: {a: '^1.0.3'}};
-    assert(isDepsetSubset({of, it}));
-  }
-  {
-    const it = {...base, dependencies: {a: '^1.2.3'}};
-    const of = {...base, dependencies: {a: '^1.0.0'}};
-    assert(isDepsetSubset({of, it}));
-  }
-  {
-    const it = {...base, dependencies: {a: '^1.0.0'}};
-    const of = {...base, dependencies: {a: '^1.0.0', b: '1.0.0'}};
-    assert(isDepsetSubset({of, it}));
-  }
-  {
-    const it = {...base, dependencies: {a: '^1.0.0', b: '1.0.0'}};
-    const of = {...base, dependencies: {a: '^1.0.0'}};
-    assert(!isDepsetSubset({of, it}));
-  }
-  {
-    const it = {...base, dependencies: {a: '^1.2.3'}};
-    const of = {...base, dependencies: {a: '^2.0.0'}};
-    assert(!isDepsetSubset({of, it}));
-  }
-  {
-    const it = {...base, dependencies: {b: '^1.0.0'}};
-    const of = {...base, dependencies: {a: '^1.0.0'}};
-    assert(!isDepsetSubset({of, it}));
-  }
-  {
-    const it = {...base, dependencies: {a: 'npm:foo@0.0.0'}};
-    const of = {...base, dependencies: {a: 'npm:bar@0.0.0'}};
-    assert(!isDepsetSubset({of, it}));
-  }
-  {
-    const it = {...base, dependencies: {a: '0.0.0'}};
-    const of = {...base, dependencies: {a: 'npm:bar@0.0.0'}};
-    assert(!isDepsetSubset({of, it}));
-  }
 }
 
 async function testIsYarnResolution() {
@@ -1978,87 +1817,6 @@ async function testLockfileRegistryResolutionMultirepo() {
   assert((await read(bLock, 'utf8')).includes('registry.npmjs.org'));
 }
 
-async function testPopulateGraph() {
-  {
-    const graph = {};
-    const name = 'foo';
-    const range = '^1.0.0';
-    const index = {
-      foo: [
-        {
-          key: 'foo@^1.0.0',
-          lockfile: {
-            'foo@^1.0.0': {version: '1.0.0', resolved: ''},
-          },
-          isExact: false,
-        },
-        {
-          key: 'foo@^1.0.0',
-          lockfile: {
-            'foo@^1.0.0': {version: '1.2.0', resolved: ''},
-          },
-          isExact: false,
-        },
-      ],
-    };
-    const registry = '';
-    populateGraph({graph, name, range, index, registry});
-    assert.equal(graph['foo@^1.0.0'].version, '1.2.0');
-  }
-  {
-    const graph = {};
-    const name = 'foo';
-    const range = '^1.0.0';
-    const index = {
-      foo: [
-        {
-          key: 'foo@^1.0.0',
-          lockfile: {
-            'foo@^1.0.0': {version: '1.2.0', resolved: ''},
-          },
-          isExact: false,
-        },
-        {
-          key: 'foo@npm:bar@^1.4.0',
-          lockfile: {
-            'foo@npm:bar@^1.4.0': {version: '1.4.0', resolved: ''},
-          },
-          isExact: true,
-        },
-      ],
-    };
-    const registry = '';
-    populateGraph({graph, name, range, index, registry});
-    assert.equal(graph['foo@^1.0.0'].version, '1.2.0');
-  }
-  {
-    const graph = {};
-    const name = 'foo';
-    const range = 'npm:bar@0.1.0';
-    const index = {
-      foo: [
-        {
-          key: 'foo@^1.0.0',
-          lockfile: {
-            'foo@^1.0.0': {version: '1.2.0', resolved: ''},
-          },
-          isExact: false,
-        },
-        {
-          key: 'foo@npm:bar@0.1.0',
-          lockfile: {
-            'foo@npm:bar@0.1.0': {version: '0.1.0', resolved: ''},
-          },
-          isExact: true,
-        },
-      ],
-    };
-    const registry = '';
-    populateGraph({graph, name, range, index, registry});
-    assert.equal(graph['foo@npm:bar@0.1.0'].version, '0.1.0');
-  }
-}
-
 async function testCommand() {
   const cmd = `cp -r ${__dirname}/fixtures/bin ${__dirname}/tmp/bin`;
   await exec(cmd);
@@ -2275,62 +2033,5 @@ async function testCheck() {
         '0.0.0': ['b'],
       },
     }
-  );
-}
-
-async function testIsProjectInstalled() {
-  const cmd = `cp -r ${__dirname}/fixtures/install-deps/ ${__dirname}/tmp/install-deps-2`;
-  await exec(cmd);
-  const root = `${__dirname}/tmp/install-deps-2`;
-  const deps = {
-    root,
-    cwd: `${root}/a`,
-    deps: [
-      {
-        meta: JSON.parse(await read(`${root}/b/package.json`, 'utf8')),
-        dir: `${root}/b`,
-        depth: 2,
-      },
-      {
-        meta: JSON.parse(await read(`${root}/a/package.json`, 'utf8')),
-        dir: `${root}/a`,
-        depth: 1,
-      },
-    ],
-    ignore: [
-      {
-        meta: JSON.parse(await read(`${root}/b/package.json`, 'utf8')),
-        dir: `${root}/b`,
-        depth: 2,
-      },
-      {
-        meta: JSON.parse(await read(`${root}/a/package.json`, 'utf8')),
-        dir: `${root}/a`,
-        depth: 1,
-      },
-    ],
-  };
-  await installDeps(deps);
-
-  // a and b should be installed
-  assert.ok(
-    await isProjectInstalled({
-      root,
-      cwd: `${root}/a`,
-    })
-  );
-  assert.ok(
-    await isProjectInstalled({
-      root,
-      cwd: `${root}/b`,
-    })
-  );
-
-  // c is not installed
-  assert.ok(
-    !(await isProjectInstalled({
-      root,
-      cwd: `${root}/c`,
-    }))
   );
 }

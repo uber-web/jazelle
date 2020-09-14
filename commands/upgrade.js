@@ -15,7 +15,7 @@ export type UpgradeArgs = {
 export type Upgrade = (UpgradeArgs) => Promise<void>;
 */
 const upgrade /*: Upgrade */ = async ({root, args}) => {
-  const {projects, registry} = await getManifest({root});
+  const {projects} = await getManifest({root});
   const roots = projects.map(dir => `${root}/${dir}`);
 
   // group by whether the dep is local (listed in manifest.json) or external (from registry)
@@ -52,7 +52,10 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
     const deps = externals.map(({name, range}) => {
       return name + (range ? `@${range}` : '');
     });
-    await spawn(node, [yarn, 'up', '-C', ...deps], {cwd: root, stdio: 'inherit'});
+    await spawn(node, [yarn, 'up', '-C', ...deps], {
+      cwd: root,
+      stdio: 'inherit',
+    });
   }
 };
 

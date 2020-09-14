@@ -15,7 +15,6 @@ const {groupByDepsets} = require('../utils/group-by-depsets.js');
 const {install} = require('../commands/install.js');
 const {executeProjectCommand} = require('../utils/execute-project-command.js');
 const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
-const {setupSymlinks} = require('../utils/setup-symlinks.js');
 
 const {root, plan, index, cores, log} = parse(process.argv.slice(2));
 
@@ -67,7 +66,6 @@ async function runMaster() {
           }
         })
       );
-      await setupSymlinks({root, deps: [...map.values()]});
 
       try {
         await Promise.all(

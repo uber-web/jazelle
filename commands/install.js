@@ -56,7 +56,12 @@ const install /*: Install */ = async ({
   if (workspace === 'sandbox' && frozenLockfile === false) {
     const all = await getAllDependencies({root, projects});
     await generateBazelignore({root});
-    await generateBazelBuildRules({root, deps: all, projects, dependencySyncRule});
+    await generateBazelBuildRules({
+      root,
+      deps: all,
+      projects,
+      dependencySyncRule,
+    });
   }
   await executeHook(hooks.preinstall, root);
   const env = process.env;

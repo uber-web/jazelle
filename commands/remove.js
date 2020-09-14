@@ -4,7 +4,9 @@ const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getPassThroughArgs} = require('../utils/parse-argv.js');
 const {getManifest} = require('../utils/get-manifest.js');
 const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
-const {generateBazelBuildRules} = require('../utils/generate-bazel-build-rules.js');
+const {
+  generateBazelBuildRules,
+} = require('../utils/generate-bazel-build-rules.js');
 const {read, spawn} = require('../utils/node-helpers.js');
 const {node, yarn} = require('../utils/binary-paths.js');
 
@@ -24,18 +26,14 @@ const remove /*: Remove */ = async ({root, cwd, args}) => {
     const cmdArgs = [yarn, 'workspace', meta.name, 'remove', ...params];
     await spawn(node, cmdArgs, {cwd: root, stdio: 'inherit'});
 
-    const {projects, dependencySyncRule} = /*:: await */ await getManifest({root});
+    const {projects, dependencySyncRule} = /*:: await */ await getManifest({
+      root,
+    });
     const deps = /*:: await */ await getLocalDependencies({
       dirs: projects.map(dir => `${root}/${dir}`),
       target: resolve(root, cwd),
     });
     await generateBazelBuildRules({root, deps, projects, dependencySyncRule});
-  }
-};
-
-const removeFromSection = (meta, type, name) => {
-  if (meta[type] && meta[type][name]) {
-    delete meta[type][name];
   }
 };
 

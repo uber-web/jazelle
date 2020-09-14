@@ -1,5 +1,5 @@
 // @flow
-const {read, exists} = require('./node-helpers.js');
+const {exists} = require('./node-helpers.js');
 
 /*::
 type IsProjectInstalledArgs = {

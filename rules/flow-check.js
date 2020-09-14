@@ -1,5 +1,5 @@
 // @flow
-const {realpathSync: realpath, existsSync: exists} = require('fs');
+const {realpathSync: realpath} = require('fs');
 const {execSync: exec, spawnSync: spawn} = require('child_process');
 const {dirname} = require('path');
 const {yarn} = require('../utils/binary-paths.js');
@@ -16,4 +16,8 @@ files.map(f => {
 });
 
 const dir = dirname(realpath(`${main}/package.json`));
-spawn(node, [yarn, 'flow', ...args], {cwd: dir, env: process.env, stdio: 'inherit'});
+spawn(node, [yarn, 'flow', ...args], {
+  cwd: dir,
+  env: process.env,
+  stdio: 'inherit',
+});

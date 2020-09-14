@@ -4,8 +4,6 @@ const {getManifest} = require('../utils/get-manifest.js');
 const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
 const {detectCyclicDeps} = require('../utils/detect-cyclic-deps.js');
 const {ci} = require('../commands/ci.js');
-const {read, exists} = require('../utils/node-helpers.js');
-const {satisfies} = require('../utils/cached-semver');
 
 /*::
 export type DoctorArgs = {
@@ -70,17 +68,6 @@ const detectOutdatedLockfiles = async ({root, cwd}) => {
     errors.push(`A lockfile is outdated. Run \`jazelle install\``);
   });
   return errors;
-};
-
-const getDepEntries = meta => {
-  const types = ['dependencies', 'devDependencies'];
-  const entries = [];
-  for (const type of types) {
-    for (const name in meta[type]) {
-      entries.push({name, range: meta[type][name], type});
-    }
-  }
-  return entries;
 };
 
 module.exports = {doctor};

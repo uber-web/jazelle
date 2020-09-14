@@ -2,12 +2,13 @@
 const {resolve} = require('path');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getPassThroughArgs} = require('../utils/parse-argv.js');
-const {read, write, spawn} = require('../utils/node-helpers.js');
+const {read, spawn} = require('../utils/node-helpers.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
-const {sortPackageJson} = require('../utils/sort-package-json.js');
 const {getManifest} = require('../utils/get-manifest.js');
 const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
-const {generateBazelBuildRules} = require('../utils/generate-bazel-build-rules.js');
+const {
+  generateBazelBuildRules,
+} = require('../utils/generate-bazel-build-rules.js');
 const {node, yarn} = require('../utils/binary-paths.js');
 
 /*
@@ -29,8 +30,6 @@ export type Add = (AddArgs) => Promise<void>;
 */
 const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
   await assertProjectDir({dir: cwd});
-
-  const type = dev ? 'devDependencies' : 'dependencies';
 
   // group by whether the dep is local (listed in manifest.json) or external (from registry)
   const additions = [];
@@ -56,10 +55,16 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
     });
     const flags = dev ? ['--dev'] : [];
     const options = {cwd: root, stdio: 'inherit'};
-    await spawn(node, [yarn, 'workspace', meta.name, 'add', ...keys, ...flags], options);
+    await spawn(
+      node,
+      [yarn, 'workspace', meta.name, 'add', ...keys, ...flags],
+      options
+    );
     await spawn(node, [yarn, 'install'], options);
 
-    const {projects, dependencySyncRule} = /*:: await */ await getManifest({root});
+    const {projects, dependencySyncRule} = /*:: await */ await getManifest({
+      root,
+    });
     const deps = /*:: await */ await getLocalDependencies({
       dirs: projects.map(dir => `${root}/${dir}`),
       target: resolve(root, cwd),
