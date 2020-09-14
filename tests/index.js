@@ -128,7 +128,7 @@ async function runTests() {
   // await t(testInstallAddUpgradeRemove);
   // await t(testBatchTestGroup);
   await t(testCommand);
-  // await t(testYarnCommand);
+  await t(testYarnCommand);
   await t(testBazelCommand);
   // await t(testStartCommand);
   // await t(testScriptCommand);
