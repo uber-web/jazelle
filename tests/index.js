@@ -116,8 +116,6 @@ async function runTests() {
     t(testStarlark),
     t(testVersionOnboarding),
     // t(testYarnCommands),
-    // t(testLockfileRegistryResolution),
-    // t(testLockfileRegistryResolutionMultirepo),
     t(testSortPackageJSON),
     t(testLocalize),
     t(testCheck),
@@ -1776,59 +1774,6 @@ async function testYarnCommands() {
     stdio: ['ignore', startStream, 'ignore'],
   });
   assert((await read(startStreamFile, 'utf8')).includes('\n777\n'));
-}
-
-async function testLockfileRegistryResolution() {
-  {
-    const cmd = `cp -r ${__dirname}/fixtures/lockfile-registry-resolution/ ${tmp}/tmp/lockfile-registry-resolution`;
-    await exec(cmd);
-    await install({
-      root: `${tmp}/tmp/lockfile-registry-resolution`,
-      cwd: `${tmp}/tmp/lockfile-registry-resolution/a`,
-    });
-
-    const bLock = `${tmp}/tmp/lockfile-registry-resolution/b/yarn.lock`;
-    assert((await read(bLock, 'utf8')).includes('registry.yarnpkg.com'));
-
-    const cLock = `${tmp}/tmp/lockfile-registry-resolution/c/yarn.lock`;
-    assert((await read(cLock, 'utf8')).includes('registry.yarnpkg.com'));
-  }
-  // Test with default registry
-  await exec(`rm -rf ${tmp}/tmp/lockfile-registry-resolution`);
-
-  {
-    const cmd = `cp -r ${__dirname}/fixtures/lockfile-registry-resolution/ ${tmp}/tmp/lockfile-registry-resolution`;
-    await exec(cmd);
-    await exec(`rm ${tmp}/tmp/lockfile-registry-resolution/.yarnrc`);
-    await install({
-      root: `${tmp}/tmp/lockfile-registry-resolution`,
-      cwd: `${tmp}/tmp/lockfile-registry-resolution/a`,
-    });
-
-    const bLock = `${tmp}/tmp/lockfile-registry-resolution/b/yarn.lock`;
-    assert((await read(bLock, 'utf8')).includes('registry.npmjs.org'));
-
-    const cLock = `${tmp}/tmp/lockfile-registry-resolution/c/yarn.lock`;
-    assert((await read(cLock, 'utf8')).includes('registry.npmjs.org'));
-  }
-}
-
-async function testLockfileRegistryResolutionMultirepo() {
-  await exec(
-    `cp -r ${__dirname}/fixtures/lockfile-registry-resolution-multirepo/ ${tmp}/tmp/lockfile-registry-resolution-multirepo`
-  );
-  await install({
-    root: `${tmp}/tmp/lockfile-registry-resolution-multirepo`,
-    cwd: `${tmp}/tmp/lockfile-registry-resolution-multirepo/first/a`,
-  });
-  // Expect that even though multiple projects are pinned to the same dependency version,
-  // install will honor the existence of any registry overrides and write those preferences
-  // back to the individual lock files
-  const aLock = `${tmp}/tmp/lockfile-registry-resolution-multirepo/first/a/yarn.lock`;
-  assert((await read(aLock, 'utf8')).includes('registry.yarnpkg.com'));
-
-  const bLock = `${tmp}/tmp/lockfile-registry-resolution-multirepo/second/b/yarn.lock`;
-  assert((await read(bLock, 'utf8')).includes('registry.npmjs.org'));
 }
 
 async function testCommand() {
