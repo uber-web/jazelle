@@ -88,7 +88,7 @@ async function runTests() {
     t(testInit),
     t(testScaffold),
     t(testCi),
-    // t(testUpgrade),
+    t(testUpgrade),
     t(testPurge),
     t(testYarn),
     // t(testBump),
@@ -280,19 +280,19 @@ async function testCi() {
 }
 
 async function testUpgrade() {
-  const meta = `${tmp}/tmp/greenkeep/a/package.json`;
-  const lockfile = `${tmp}/tmp/greenkeep/a/yarn.lock`;
-  const cmd = `cp -r ${__dirname}/fixtures/greenkeep/ ${tmp}/tmp/greenkeep`;
+  const meta = `${tmp}/tmp/upgrade/a/package.json`;
+  const lockfile = `${tmp}/tmp/upgrade/yarn.lock`;
+  const cmd = `cp -r ${__dirname}/fixtures/upgrade/ ${tmp}/tmp/upgrade`;
   await exec(cmd);
 
   await upgrade({
-    root: `${tmp}/tmp/greenkeep`,
+    root: `${tmp}/tmp/upgrade`,
     args: ['has@1.0.3'],
   });
   assert((await read(meta, 'utf8')).includes('"has": "1.0.3"'));
   assert((await read(lockfile, 'utf8')).includes('function-bind'));
 
-  await upgrade({root: `${tmp}/tmp/greenkeep`, args: ['b']});
+  await upgrade({root: `${tmp}/tmp/upgrade`, args: ['b']});
   assert((await read(meta, 'utf8')).includes('"b": "1.0.0"'));
 }
 
@@ -338,6 +338,7 @@ async function testEach() {
     index: 0,
     cores: 8,
   });
+  console.log(failed)
   assert.equal(failed.length, 1);
   assert(failed[0].stderr.includes('spawn foo ENOENT'));
 }
