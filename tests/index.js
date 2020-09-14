@@ -115,7 +115,7 @@ async function runTests() {
     t(testReportMismatchedTopLevelDeps),
     t(testStarlark),
     t(testVersionOnboarding),
-    // t(testYarnCommands),
+    t(testYarnCommands),
     t(testSortPackageJSON),
     t(testLocalize),
     t(testCheck),
@@ -1701,6 +1701,8 @@ async function testYarnCommands() {
   ];
   const root = `${tmp}/tmp/yarn-commands`;
 
+  await install({root, cwd: `${root}/a`});
+
   // build
   const buildStreamFile = `${tmp}/tmp/yarn-commands/build-stream.txt`;
   const buildStream = createWriteStream(buildStreamFile);
@@ -1716,7 +1718,7 @@ async function testYarnCommands() {
     deps,
     stdio: ['ignore', buildStream, 'ignore'],
   });
-  assert((await read(buildStreamFile, 'utf8')).match(/\n111\n/g).length === 1);
+  assert.equal(await read(buildStreamFile, 'utf8'), '111\n');
 
   // dev
   const devStreamFile = `${tmp}/tmp/yarn-commands/dev-stream.txt`;
@@ -1728,7 +1730,7 @@ async function testYarnCommands() {
     args: [],
     stdio: ['ignore', devStream, 'ignore'],
   });
-  assert((await read(devStreamFile, 'utf8')).includes('\n333\n'));
+  assert.equal(await read(devStreamFile, 'utf8'), '333\n');
 
   // test
   const testStreamFile = `${tmp}/tmp/yarn-commands/test-stream.txt`;
@@ -1740,7 +1742,7 @@ async function testYarnCommands() {
     args: [],
     stdio: ['ignore', testStream, 'ignore'],
   });
-  assert((await read(testStreamFile, 'utf8')).includes('\n444\n'));
+  assert.equal(await read(testStreamFile, 'utf8'), '444\n');
 
   // lint
   const lintStreamFile = `${tmp}/tmp/yarn-commands/lint-stream.txt`;
@@ -1752,7 +1754,7 @@ async function testYarnCommands() {
     args: [],
     stdio: ['ignore', lintStream, 'ignore'],
   });
-  assert((await read(lintStreamFile, 'utf8')).includes('\n555\n'));
+  assert.equal(await read(lintStreamFile, 'utf8'), '555\n');
 
   // flow
   const flowStreamFile = `${tmp}/tmp/yarn-commands/flow-stream.txt`;
@@ -1764,7 +1766,7 @@ async function testYarnCommands() {
     args: [],
     stdio: ['ignore', flowStream, 'ignore'],
   });
-  assert((await read(flowStreamFile, 'utf8')).includes('\n666\n'));
+  assert.equal(await read(flowStreamFile, 'utf8'), '666\n');
 
   // start
   const startStreamFile = `${tmp}/tmp/yarn-commands/start-stream.txt`;
@@ -1776,7 +1778,7 @@ async function testYarnCommands() {
     args: [],
     stdio: ['ignore', startStream, 'ignore'],
   });
-  assert((await read(startStreamFile, 'utf8')).includes('\n777\n'));
+  assert.equal(await read(startStreamFile, 'utf8'), '777\n');
 }
 
 async function testCommand() {
