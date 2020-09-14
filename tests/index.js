@@ -108,7 +108,6 @@ async function runTests() {
     t(testGetRootDir),
     t(testGetTestGroups),
     t(testGroupByDepsets),
-    t(testIsDepsetSubset),
     t(testIsYarnResolution),
     t(testNodeHelpers),
     t(testParse),
