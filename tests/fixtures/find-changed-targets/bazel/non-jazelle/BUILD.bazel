@@ -4,9 +4,7 @@ load("@jazelle//:build-rules.bzl", "web_library", "web_binary", "web_executable"
 
 web_library(
     name = "library",
-    deps = [
-        "//:node_modules",
-    ],
+    deps = [],
     srcs = glob(["**"], exclude = ["dist/**"]),
 )
 

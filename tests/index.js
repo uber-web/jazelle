@@ -97,7 +97,7 @@ async function runTests() {
     t(testBinaryPaths),
     t(testCLI),
     t(testDetectCyclicDeps),
-    // t(testFindChangedTargets),
+    t(testFindChangedTargets),
     t(testFindLocalDependency),
     t(testGenerateBazelignore),
     t(testGenerateBazelBuildRules),
@@ -703,6 +703,11 @@ async function testFindChangedTargets() {
   {
     const cmd = `cp -r ${__dirname}/fixtures/find-changed-targets/ ${tmp}/tmp/find-changed-targets`;
     await exec(cmd);
+
+    const workspaceFile = `${tmp}/tmp/find-changed-targets/bazel/WORKSPACE`;
+    const workspace = await read(workspaceFile, 'utf8');
+    const replaced = workspace.replace('path = "../../../.."', `path = "${__dirname}/.."`);
+    await write(workspaceFile, replaced, 'utf8');
 
     const root = `${tmp}/tmp/find-changed-targets/bazel`;
     const files = `${tmp}/tmp/find-changed-targets/bazel/changes.txt`;
