@@ -16,7 +16,6 @@ load("@jazelle//:build-rules.bzl", "web_library", "web_binary", "web_executable"
 web_library(
     name = "library",
     deps = [
-        "//:node_modules",
         ${dependencies.map(d => `"${d}",`).join('\n        ')}
     ],
     srcs = glob(["**"], exclude = ["dist/**"]),

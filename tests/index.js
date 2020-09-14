@@ -131,7 +131,7 @@ async function runTests() {
   // await t(testStartCommand);
   // await t(testScriptCommand);
   // await t(testBazelDependentBuilds);
-  // await t(testBazelDependentFailure);
+  await t(testBazelDependentFailure);
 
   await exec(`rm -rf ${tmp}/tmp`);
 
@@ -1875,6 +1875,11 @@ async function testBazelDependentBuilds() {
 async function testBazelDependentFailure() {
   const cmd = `cp -r ${__dirname}/fixtures/bazel-dependent-failure ${tmp}/tmp/bazel-dependent-failure`;
   await exec(cmd);
+
+  const workspaceFile = `${tmp}/tmp/bazel-dependent-failure/WORKSPACE`;
+  const workspace = await read(workspaceFile, 'utf8');
+  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  await write(workspaceFile, replaced, 'utf8');
 
   const cwd = `${tmp}/tmp/bazel-dependent-failure`;
   const jazelle = `${__dirname}/../bin/bootstrap.sh`;
