@@ -378,6 +378,11 @@ async function testBump() {
 async function testScriptCommand() {
   await exec(`cp -r ${__dirname}/fixtures/script/ ${tmp}/tmp/script`);
 
+  const workspaceFile = `${tmp}/tmp/find-changed-targets/bazel/WORKSPACE`;
+  const workspace = await read(workspaceFile, 'utf8');
+  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  await write(workspaceFile, replaced, 'utf8');
+
   const root = `${tmp}/tmp/script`;
   const cwd = `${tmp}/tmp/script/a`;
 
