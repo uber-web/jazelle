@@ -86,7 +86,7 @@ async function runTests() {
   await Promise.all([
     t(testRunCLI),
     t(testInit),
-    // t(testScaffold),
+    t(testScaffold),
     t(testCi),
     // t(testUpgrade),
     t(testPurge),

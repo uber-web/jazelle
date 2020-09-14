@@ -1,5 +1,4 @@
 {
-  "projects": [],
   "hooks": {
     "postscaffold": "echo ok > test.txt"
   }
