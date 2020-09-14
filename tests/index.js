@@ -1853,6 +1853,12 @@ async function testBazelDependentBuilds() {
   const cmd = `cp -r ${__dirname}/fixtures/bazel-dependent-builds ${tmp}/tmp/bazel-dependent-builds`;
   await exec(cmd);
 
+  const workspaceFile = `${tmp}/tmp/bazel-dependent-builds/WORKSPACE`;
+  const workspace = await read(workspaceFile, 'utf8');
+  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  await write(workspaceFile, replaced, 'utf8');
+  console.log(111, workspaceFile, replaced)
+
   const cwd = `${tmp}/tmp/bazel-dependent-builds`;
   const jazelle = `${__dirname}/../bin/bootstrap.sh`;
 

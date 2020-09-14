@@ -1,6 +1,6 @@
 local_repository(
     name = "jazelle",
-    path = "../../../",
+    path = "../../..",
 )
 
 load("@jazelle//:workspace-rules.bzl", "jazelle_dependencies")
