@@ -118,9 +118,9 @@ async function runTests() {
     // t(testYarnCommands),
     // t(testLockfileRegistryResolution),
     // t(testLockfileRegistryResolutionMultirepo),
-    // t(testSortPackageJSON),
-    // t(testLocalize),
-    // t(testCheck),
+    t(testSortPackageJSON),
+    t(testLocalize),
+    t(testCheck),
   ]);
   // run separately to avoid CI error
   await t(testBazelDummy);
