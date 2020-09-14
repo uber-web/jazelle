@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "workspaces": [
+    "a",
+    "b",
+    "c",
+    "downstream",
+    "not-downstream"
+  ]
+}

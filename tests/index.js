@@ -123,7 +123,7 @@ async function runTests() {
   // run separately to avoid CI error
   await t(testBazelDummy);
   // await t(testBazelBuild);
-  // await t(testInstallAddUpgradeRemove);
+  await t(testInstallAddUpgradeRemove);
   await t(testBatchTestGroup);
   await t(testCommand);
   await t(testYarnCommand);
@@ -194,21 +194,18 @@ async function testInstallAddUpgradeRemove() {
 
   // // install
   await exec(`cp -r ${__dirname}/fixtures/commands/ ${tmp}/tmp/commands`);
+
+  const workspaceFile = `${tmp}/tmp/commands/WORKSPACE`;
+  const workspace = await read(workspaceFile, 'utf8');
+  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  await write(workspaceFile, replaced, 'utf8');
+
   await install({
     root: `${tmp}/tmp/commands`,
     cwd: `${tmp}/tmp/commands/a`,
   });
-  const binCmd = `${tmp}/tmp/commands/node_modules/.bin/a`;
-  const binScript = await read(binCmd, 'utf8');
-  const bDep = `${tmp}/tmp/commands/node_modules/b`;
-  const bindDep = `${tmp}/tmp/commands/node_modules/function-bind`;
-  const downstreamLockfile = `${tmp}/tmp/commands/downstream/yarn.lock`;
-  const notDownstreamLockfile = `${tmp}/tmp/commands/not-downstream/yarn.lock`;
-  assert.equal(binScript, 'echo 1');
-  assert(await exists(bDep));
-  assert(await exists(bindDep));
-  assert(await exists(downstreamLockfile));
-  assert(await exists(notDownstreamLockfile));
+  const lockfile = `${tmp}/tmp/commands/yarn.lock`;
+  assert(await exists(lockfile));
 
   // add linked package
   await add({
@@ -216,9 +213,7 @@ async function testInstallAddUpgradeRemove() {
     cwd: `${tmp}/tmp/commands/a`,
     args: ['b', 'c'],
   });
-  assert(await exists(`${tmp}/tmp/commands/node_modules/b`));
   assert((await read(buildFile, 'utf8')).includes('//b:b'));
-  assert(await exists(`${tmp}/tmp/commands/node_modules/c`));
   assert((await read(buildFile, 'utf8')).includes('//c:c'));
 
   // add external package
@@ -228,14 +223,12 @@ async function testInstallAddUpgradeRemove() {
     args: ['has@1.0.3'],
   });
   assert(JSON.parse(await read(meta, 'utf8')).dependencies.has);
-  assert(await exists(`${tmp}/tmp/commands/node_modules/has`));
 
   // upgrade linked package
   await upgrade({
     root: `${tmp}/tmp/commands`,
     args: ['c@0.0.0'],
   });
-  assert(await exists(`${tmp}/tmp/commands/node_modules/c`));
   assert((await read(buildFile, 'utf8')).includes('//c:c'));
 
   // upgrade external package
@@ -244,7 +237,6 @@ async function testInstallAddUpgradeRemove() {
     args: ['has@1.0.3'],
   });
   assert(JSON.parse(await read(meta, 'utf8')).dependencies.has);
-  assert(await exists(`${tmp}/tmp/commands/node_modules/has`));
 
   // remove linked package
   await remove({
@@ -253,9 +245,7 @@ async function testInstallAddUpgradeRemove() {
     args: ['b', 'c'],
   });
   assert(!JSON.parse(await read(meta, 'utf8')).dependencies.b);
-  assert(!(await exists(`${tmp}/tmp/commands/node_modules/b`)));
   assert(!JSON.parse(await read(meta, 'utf8')).dependencies.c);
-  assert(!(await exists(`${tmp}/tmp/commands/node_modules/c`)));
 
   // remove external package
   await remove({
@@ -263,7 +253,7 @@ async function testInstallAddUpgradeRemove() {
     cwd: `${tmp}/tmp/commands/a`,
     args: ['has'],
   });
-  assert(!(await exists(`${tmp}/tmp/commands/node_modules/has`)));
+  assert(!JSON.parse(await read(meta, 'utf8')).dependencies.has);
 }
 
 async function testCi() {
