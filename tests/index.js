@@ -122,7 +122,7 @@ async function runTests() {
   ]);
   // run separately to avoid CI error
   await t(testBazelDummy);
-  // await t(testBazelBuild);
+  await t(testBazelBuild);
   await t(testInstallAddUpgradeRemove);
   await t(testBatchTestGroup);
   await t(testCommand);
@@ -547,7 +547,7 @@ async function testBazelBuild() {
     stdio: ['ignore', runStream, 'ignore'],
   });
   const runData = await read(runStreamFile, 'utf8');
-  assert(runData.includes('\nb\nv8.15.1'));
+  assert(runData.includes('\nb\nv12.16.1'));
 
   // lint
   const lintStreamFile = `${tmp}/tmp/bazel-rules/lint-stream.txt`;

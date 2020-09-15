@@ -70,14 +70,15 @@ function runCommands(command, args) {
   }
 }
 
-// TODO: maybe change logic to require usage of `yarn thing` in package.json?
-// This could reduce overhead
 function runCommand(command, args = []) {
   const params = args.map(arg => `'${arg}'`).join(' ');
   const options = {cwd: main, env: process.env, stdio: 'inherit'};
   if (command in scripts) {
+    // is it a real script in package.json
     try {
-      exec(`${node} ${yarn} ${command} ${params}`, options);
+      // yarn run [command] incorrectly runs with the original cwd instead of sandbox
+      // yarn exec [scripts[command]] runs with sandbox cwd, as expected
+      exec(`${node} ${yarn} exec ${scripts[command]} ${params}`, options);
     } catch (e) {
       if (typeof e.status === 'number') {
         process.exit(e.status);
@@ -86,6 +87,7 @@ function runCommand(command, args = []) {
       }
     }
   } else {
+    // or are we trying to run a binary off of node_modules/.bin
     const binary = getYarnBin(command.split(' ')[0]);
     if (binary) {
       try {
