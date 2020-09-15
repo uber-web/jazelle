@@ -16,7 +16,7 @@ load("@jazelle//:build-rules.bzl", "web_library", "web_binary", "web_executable"
 web_library(
     name = "library",
     deps = [
-        "//third_party/jazelle:node_modules",
+        "//:yarn",
         ${dependencies.map(d => `"${d}",`).join('\n        ')}
     ],
     srcs = glob(["**/*"], exclude = ["dist/**"]),
