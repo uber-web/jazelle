@@ -130,7 +130,7 @@ async function runTests() {
   await t(testBazelCommand);
   // await t(testStartCommand);
   // await t(testScriptCommand);
-  // await t(testBazelDependentBuilds);
+  await t(testBazelDependentBuilds);
   await t(testBazelDependentFailure);
 
   await exec(`rm -rf ${tmp}/tmp`);
@@ -1865,8 +1865,11 @@ async function testBazelDependentBuilds() {
   assert((await read(c)).includes('module.exports = 222'));
   assert((await read(b)).includes('module.exports = 111'));
   assert((await read(a)).includes('require(\\"b\\") + require(\\"c\\")'));
+
+  await install({root: cwd, cwd: `${cwd}/a`});
+
   await exec(`${jazelle} start`, {cwd: `${cwd}/a`}, [startStream]);
-  assert((await read(startStreamFile, 'utf8')).includes('\n333\n'));
+  assert.equal(await read(startStreamFile, 'utf8'), '333\n');
   assert(await exists(`${cwd}/a/foo/foo.js`));
   assert(await exists(`${cwd}/b/compiled/foo.js`));
   assert(await exists(`${cwd}/c/dist/foo.js`));
@@ -1890,10 +1893,15 @@ async function testBazelDependentFailure() {
 
   const c = `${cwd}/c/package.json`;
   assert((await read(c, 'utf8')).includes('mkdir -p dist && mkdir dist'));
+
+  await install({root: cwd, cwd: `${cwd}/a`});
+
   // $FlowFixMe `assert` typedef is missing `rejects` method
   await assert.rejects(
     exec(`${jazelle} start`, {cwd: `${cwd}/a`}, [startStream, startStream])
   );
+  const stdout = await read(startStreamFile, 'utf8');
+  assert(stdout.includes('dist: File exists'));
 }
 
 async function testSortPackageJSON() {
