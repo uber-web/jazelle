@@ -304,6 +304,7 @@ async function rootOf(args) {
 }
 
 function checkGlobalYarnConfig() {
+  if (true) return; // eslint-disable-line
   // $FlowFixMe
   const globalYarnConfigPath = join(process.env.HOME, '.yarnrc.yml');
   // $FlowFixMe
