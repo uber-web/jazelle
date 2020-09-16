@@ -128,7 +128,7 @@ async function runTests() {
   await t(testCommand);
   await t(testYarnCommand);
   await t(testBazelCommand);
-  // await t(testStartCommand);
+  await t(testStartCommand);
   // await t(testScriptCommand);
   await t(testBazelDependentBuilds);
   await t(testBazelDependentFailure);
@@ -1839,6 +1839,9 @@ async function testStartCommand() {
   const startStreamFile = `${tmp}/tmp/bin/start-stream.txt`;
   const startStream = createWriteStream(startStreamFile);
   await new Promise(resolve => startStream.on('open', resolve));
+
+  await install({root: cwd, cwd: `${cwd}/a`});
+
   await exec(`${jazelle} start`, {cwd: `${cwd}/a`}, [startStream]);
   assert((await read(startStreamFile, 'utf8')).includes('\nstart\n'));
 }
