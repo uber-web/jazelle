@@ -118,8 +118,7 @@ const runCLI /*: RunCLI */ = async argv => {
       ],
       purge: [
         `Remove generated files (i.e. node_modules folders and bazel output files)`,
-        async ({force}) =>
-          purge({root: await rootOf(args), force: Boolean(force)}),
+        async () => purge({root: await rootOf(args)}),
       ],
       check: [
         `Display deps w/ multiple versions installed across projects
