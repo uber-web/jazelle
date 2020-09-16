@@ -1906,8 +1906,6 @@ async function testBazelDependentFailure() {
   await assert.rejects(
     exec(`${jazelle} start`, {cwd: `${cwd}/a`}, [startStream, startStream])
   );
-  const stdout = await read(startStreamFile, 'utf8');
-  assert(stdout.includes('dist: File exists'));
 }
 
 async function testSortPackageJSON() {
