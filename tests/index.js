@@ -129,7 +129,7 @@ async function runTests() {
   await t(testYarnCommand);
   await t(testBazelCommand);
   await t(testStartCommand);
-  // await t(testScriptCommand);
+  await t(testScriptCommand);
   await t(testBazelDependentBuilds);
   await t(testBazelDependentFailure);
 
@@ -374,6 +374,9 @@ async function testScriptCommand() {
   const streamFile = `${tmp}/tmp/script/build-stream.txt`;
   const stream = createWriteStream(streamFile);
   await new Promise(resolve => stream.on('open', resolve));
+
+  await install({root, cwd});
+
   await script({
     root,
     cwd,
