@@ -43,7 +43,7 @@ const bump /*: Bump */ = async ({
   const options = {cwd: root, env: process.env};
   for (const dep of deps) {
     const query = `${node} ${yarn} info ${dep.meta.name} versions --json`;
-    const data = await exec(query, options).catch(() => null);
+    const data = await exec(query, {cwd: root, env: process.env}).catch(() => null);
     const version = parseVersion(data);
     const old = dep.meta.version;
     const next = type === 'none' ? version : inc(version, type);

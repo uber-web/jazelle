@@ -91,7 +91,7 @@ async function runTests() {
     t(testUpgrade),
     t(testPurge),
     t(testYarn),
-    // t(testBump),
+    t(testBump),
     t(testEach),
     t(testAssertProjectDir),
     t(testBinaryPaths),
