@@ -197,7 +197,10 @@ async function testInstallAddUpgradeRemove() {
 
   const workspaceFile = `${tmp}/tmp/commands/WORKSPACE`;
   const workspace = await read(workspaceFile, 'utf8');
-  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  const replaced = workspace.replace(
+    'path = "../../.."',
+    `path = "${__dirname}/.."`
+  );
   await write(workspaceFile, replaced, 'utf8');
 
   await install({
@@ -365,7 +368,10 @@ async function testScriptCommand() {
 
   const workspaceFile = `${tmp}/tmp/script/WORKSPACE`;
   const workspace = await read(workspaceFile, 'utf8');
-  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  const replaced = workspace.replace(
+    'path = "../../.."',
+    `path = "${__dirname}/.."`
+  );
   await write(workspaceFile, replaced, 'utf8');
 
   const root = `${tmp}/tmp/script`;
@@ -409,7 +415,10 @@ async function testBatchTestGroup() {
 
   const workspaceFile = `${tmp}/tmp/batch-test-group/WORKSPACE`;
   const workspace = await read(workspaceFile, 'utf8');
-  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  const replaced = workspace.replace(
+    'path = "../../.."',
+    `path = "${__dirname}/.."`
+  );
   await write(workspaceFile, replaced, 'utf8');
 
   const streamFile = `${tmp}/tmp/batch-test-group/stdout.txt`;
@@ -498,7 +507,10 @@ async function testBazelBuild() {
 
   const workspaceFile = `${tmp}/tmp/bazel-rules/WORKSPACE`;
   const workspace = await read(workspaceFile, 'utf8');
-  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  const replaced = workspace.replace(
+    'path = "../../.."',
+    `path = "${__dirname}/.."`
+  );
   await write(workspaceFile, replaced, 'utf8');
 
   await install({
@@ -710,7 +722,10 @@ async function testFindChangedTargets() {
 
     const workspaceFile = `${tmp}/tmp/find-changed-targets/bazel/WORKSPACE`;
     const workspace = await read(workspaceFile, 'utf8');
-    const replaced = workspace.replace('path = "../../../.."', `path = "${__dirname}/.."`);
+    const replaced = workspace.replace(
+      'path = "../../../.."',
+      `path = "${__dirname}/.."`
+    );
     await write(workspaceFile, replaced, 'utf8');
 
     const root = `${tmp}/tmp/find-changed-targets/bazel`;
@@ -905,20 +920,14 @@ async function testGetLocalDependencies() {
   assert.deepEqual(localDeps, [
     {
       meta: JSON.parse(
-        await read(
-          `${tmp}/tmp/get-local-dependencies/b/package.json`,
-          'utf8'
-        )
+        await read(`${tmp}/tmp/get-local-dependencies/b/package.json`, 'utf8')
       ),
       dir: `${tmp}/tmp/get-local-dependencies/b`,
       depth: 2,
     },
     {
       meta: JSON.parse(
-        await read(
-          `${tmp}/tmp/get-local-dependencies/a/package.json`,
-          'utf8'
-        )
+        await read(`${tmp}/tmp/get-local-dependencies/a/package.json`, 'utf8')
       ),
       dir: `${tmp}/tmp/get-local-dependencies/a`,
       depth: 1,
@@ -1833,7 +1842,10 @@ async function testStartCommand() {
 
   const workspaceFile = `${tmp}/tmp/bin/WORKSPACE`;
   const workspace = await read(workspaceFile, 'utf8');
-  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  const replaced = workspace.replace(
+    'path = "../../.."',
+    `path = "${__dirname}/.."`
+  );
   await write(workspaceFile, replaced, 'utf8');
 
   const cwd = `${tmp}/tmp/bin`;
@@ -1855,7 +1867,10 @@ async function testBazelDependentBuilds() {
 
   const workspaceFile = `${tmp}/tmp/bazel-dependent-builds/WORKSPACE`;
   const workspace = await read(workspaceFile, 'utf8');
-  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  const replaced = workspace.replace(
+    'path = "../../.."',
+    `path = "${__dirname}/.."`
+  );
   await write(workspaceFile, replaced, 'utf8');
 
   const cwd = `${tmp}/tmp/bazel-dependent-builds`;
@@ -1887,7 +1902,10 @@ async function testBazelDependentFailure() {
 
   const workspaceFile = `${tmp}/tmp/bazel-dependent-failure/WORKSPACE`;
   const workspace = await read(workspaceFile, 'utf8');
-  const replaced = workspace.replace('path = "../../.."', `path = "${__dirname}/.."`);
+  const replaced = workspace.replace(
+    'path = "../../.."',
+    `path = "${__dirname}/.."`
+  );
   await write(workspaceFile, replaced, 'utf8');
 
   const cwd = `${tmp}/tmp/bazel-dependent-failure`;

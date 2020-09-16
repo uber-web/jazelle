@@ -51,7 +51,7 @@ const runCLI /*: RunCLI */ = async argv => {
   const args = parse(rest);
   args.cwd = args.cwd ? resolve(process.cwd(), args.cwd) : process.cwd();
   setGlobalEnvVars(args);
-  // checkGlobalYarnConfig();
+  checkGlobalYarnConfig();
   await cli(
     command,
     args,
