@@ -317,7 +317,7 @@ function checkGlobalYarnConfig() {
         const [, token] = line.split('=');
         const resolved = token
           .trim()
-          .replace(/\$\{(.+?)\}/, (m, t) => process.env[t]);
+          .replace(/\$\{(.+?)\}/, (m, t) => process.env[t] || t);
         writeFileSync(globalYarnConfigPath, `npmAuthIdent: ${resolved}`);
         return;
       }
