@@ -304,7 +304,6 @@ async function rootOf(args) {
 }
 
 function checkGlobalYarnConfig() {
-  if (true) return; // eslint-disable-line
   // $FlowFixMe
   const globalYarnConfigPath = join(process.env.HOME, '.yarnrc.yml');
   // $FlowFixMe
@@ -316,7 +315,10 @@ function checkGlobalYarnConfig() {
     for (let line of lines) {
       if (line.includes('_auth')) {
         const [, token] = line.split('=');
-        writeFileSync(globalYarnConfigPath, `npmAuthIdent: ${token.trim()}`);
+        const resolved = token
+          .trim()
+          .replace(/\$\{(.+?)\}/, (m, t) => process.env[t]);
+        writeFileSync(globalYarnConfigPath, `npmAuthIdent: ${resolved}`);
         return;
       }
     }
