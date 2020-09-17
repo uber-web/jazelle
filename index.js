@@ -49,9 +49,7 @@ export type RunCLI = (Array<string>) => Promise<void>;
 const runCLI /*: RunCLI */ = async argv => {
   const [command, ...rest] = argv;
   const args = parse(rest);
-  args.cwd = args.cwd ? resolve(process.cwd(), args.cwd) : process.cwd();
-  setGlobalEnvVars(args);
-  checkGlobalYarnConfig();
+
   await cli(
     command,
     args,
@@ -294,35 +292,8 @@ const runCLI /*: RunCLI */ = async argv => {
   );
 };
 
-function setGlobalEnvVars(args) {
-  // INIT_CWD allows all subprocess to access the initial working directory.
-  process.env.INIT_CWD = args.cwd;
-}
-
 async function rootOf(args) {
   return getRootDir({dir: args.cwd});
-}
-
-function checkGlobalYarnConfig() {
-  // $FlowFixMe
-  const globalYarnConfigPath = join(process.env.HOME, '.yarnrc.yml');
-  // $FlowFixMe
-  const globalNpmConfigPath = join(process.env.HOME, '.npmrc');
-  if (!existsSync(globalYarnConfigPath) && existsSync(globalNpmConfigPath)) {
-    const npmrc = readFileSync(globalNpmConfigPath, 'utf-8');
-    const lines = npmrc.split('\n');
-
-    for (let line of lines) {
-      if (line.includes('_auth')) {
-        const [, token] = line.split('=');
-        const resolved = token
-          .trim()
-          .replace(/\$\{(.+?)\}/, (m, t) => process.env[t] || t);
-        writeFileSync(globalYarnConfigPath, `npmAuthIdent: ${resolved}`);
-        return;
-      }
-    }
-  }
 }
 
 // FIXME eslint is being dumb in CI

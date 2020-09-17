@@ -20,6 +20,12 @@ const parse /*: Parse */ = args => {
       if (!params.name) params.name = args[i];
     }
   }
+
+  // normalize cwd
+  args.cwd = args.cwd ? resolve(process.cwd(), args.cwd) : process.cwd();
+  // INIT_CWD allows all subprocess to access the initial working directory.
+  process.env.INIT_CWD = args.cwd;
+
   return params;
 };
 
