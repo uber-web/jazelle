@@ -40,7 +40,7 @@ const getPassThroughArgs /*: GetPassThroughArgs */ = args => {
 /*::
 export type Normalize = Args => Args;
 */
-const normalize = args => {
+const normalize /*: Normalize */ = args => {
   // normalize cwd
   args.cwd = args.cwd ? resolve(process.cwd(), args.cwd) : process.cwd();
   // INIT_CWD allows all subprocess to access the initial working directory.
