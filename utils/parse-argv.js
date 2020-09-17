@@ -1,4 +1,5 @@
 // @flow
+const {resolve} = require('path');
 
 /*::
 export type Parse = (Array<string>) => Args;
@@ -21,10 +22,6 @@ const parse /*: Parse */ = args => {
     }
   }
 
-  // normalize cwd
-  args.cwd = args.cwd ? resolve(process.cwd(), args.cwd) : process.cwd();
-  // INIT_CWD allows all subprocess to access the initial working directory.
-  process.env.INIT_CWD = args.cwd;
 
   return params;
 };
@@ -41,4 +38,15 @@ const getPassThroughArgs /*: GetPassThroughArgs */ = args => {
   return rest;
 };
 
-module.exports = {parse, getPassThroughArgs};
+/*::
+export type Normalize = Args => Args;
+*/
+const normalize = args => {
+  // normalize cwd
+  args.cwd = args.cwd ? resolve(process.cwd(), args.cwd) : process.cwd();
+  // INIT_CWD allows all subprocess to access the initial working directory.
+  process.env.INIT_CWD = args.cwd;
+  return args;
+}
+
+module.exports = {parse, getPassThroughArgs, normalize};

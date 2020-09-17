@@ -2,7 +2,7 @@
 const {existsSync, writeFileSync, readFileSync} = require('fs');
 const {resolve, join} = require('path');
 const {getRootDir} = require('./utils/get-root-dir.js');
-const {parse} = require('./utils/parse-argv.js');
+const {parse, normalize} = require('./utils/parse-argv.js');
 const {cli} = require('./utils/cli.js');
 const {version} = require('./commands/version.js');
 const {init} = require('./commands/init.js');
@@ -48,7 +48,7 @@ export type RunCLI = (Array<string>) => Promise<void>;
 */
 const runCLI /*: RunCLI */ = async argv => {
   const [command, ...rest] = argv;
-  const args = parse(rest);
+  const args = normalize(parse(rest));
 
   await cli(
     command,
