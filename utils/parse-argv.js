@@ -22,7 +22,6 @@ const parse /*: Parse */ = args => {
     }
   }
 
-
   return params;
 };
 
@@ -47,6 +46,6 @@ const normalize = args => {
   // INIT_CWD allows all subprocess to access the initial working directory.
   process.env.INIT_CWD = args.cwd;
   return args;
-}
+};
 
 module.exports = {parse, getPassThroughArgs, normalize};

@@ -1,6 +1,4 @@
 // @flow
-const {existsSync, writeFileSync, readFileSync} = require('fs');
-const {resolve, join} = require('path');
 const {getRootDir} = require('./utils/get-root-dir.js');
 const {parse, normalize} = require('./utils/parse-argv.js');
 const {cli} = require('./utils/cli.js');
