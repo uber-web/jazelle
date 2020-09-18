@@ -78,7 +78,7 @@ function runCommand(command, args = []) {
     try {
       // yarn run [command] incorrectly runs with the original cwd instead of sandbox
       // yarn exec [scripts[command]] runs with sandbox cwd, as expected
-      exec(`${node} ${yarn} exec ${scripts[command]} ${params}`, options);
+      exec(`${node} ${yarn} run ${command} ${params}`, options);
     } catch (e) {
       if (typeof e.status === 'number') {
         process.exit(e.status);

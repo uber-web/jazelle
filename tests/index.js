@@ -547,8 +547,6 @@ async function testBazelBuild() {
 
   const generated = `${tmp}/tmp/bazel-rules/projects/a/generated/foo.txt`;
   assert((await read(generated, 'utf8')).includes('hello'));
-  const notSrc = `${tmp}/tmp/bazel-rules/projects/a/generated_but_not_src/foo.txt`;
-  assert(!(await exists(notSrc)));
 
   // run
   const runStreamFile = `${tmp}/tmp/bazel-rules/run-stream.txt`;
