@@ -45,7 +45,9 @@ function copyToSourceFolder(file) {
 }
 
 function copy(target, real, file) {
-  if (stat(`${target}/${file}`).isDirectory()) {
+  const targetPath = `${target}/${file}`;
+  if (!exists(targetPath)) return;
+  if (stat(targetPath).isDirectory()) {
     const srcPath = `${real}/${file}`;
     if (!exists(srcPath)) mkdir(srcPath);
     for (const child of ls(srcPath)) {
