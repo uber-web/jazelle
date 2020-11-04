@@ -23,6 +23,8 @@ export type InstallArgs = {
   cwd: string,
   frozenLockfile?: boolean,
   conservative?: boolean,
+  skipPreinstall?: boolean,
+  skipPostinstall?: boolean,
 }
 export type Install = (InstallArgs) => Promise<void>
 */
@@ -31,6 +33,8 @@ const install /*: Install */ = async ({
   cwd,
   frozenLockfile = false,
   conservative = true,
+  skipPreinstall = false,
+  skipPostinstall = false,
 }) => {
   await assertProjectDir({dir: cwd});
 
@@ -63,7 +67,10 @@ const install /*: Install */ = async ({
       dependencySyncRule,
     });
   }
-  await executeHook(hooks.preinstall, root);
+
+  if (skipPreinstall === false) {
+    await executeHook(hooks.preinstall, root);
+  }
   const env = process.env;
   const path = dirname(node) + ':' + String(process.env.PATH);
   await spawn(node, [yarn, 'install'], {
@@ -71,7 +78,9 @@ const install /*: Install */ = async ({
     cwd: root,
     stdio: 'inherit',
   });
-  await executeHook(hooks.postinstall, root);
+  if (skipPostinstall === false) {
+    await executeHook(hooks.postinstall, root);
+  }
 };
 
 const validateRegistration = ({root, cwd, projects}) => {

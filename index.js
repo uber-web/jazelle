@@ -75,8 +75,16 @@ const runCLI /*: RunCLI */ = async argv => {
       install: [
         `Install all dependencies for a project, modifying lockfiles and Bazel BUILD files if necessary
 
-        --cwd [cwd]                Project directory to use`,
-        async ({cwd}) => install({root: await rootOf(args), cwd}),
+        --cwd [cwd]                Project directory to use
+        --skipPreinstall           Skip the preinstall hook
+        --skipPostinstall           Skip the postinstall hook`,
+        async ({cwd, skipPreinstall, skipPostinstall}) =>
+          install({
+            root: await rootOf(args),
+            cwd,
+            skipPreinstall: Boolean(skipPreinstall),
+            skipPostinstall: Boolean(skipPostinstall),
+          }),
       ],
       ci: [
         `Install all dependencies for a project without modifying source files
