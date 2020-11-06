@@ -25,6 +25,7 @@ export type InstallArgs = {
   conservative?: boolean,
   skipPreinstall?: boolean,
   skipPostinstall?: boolean,
+  verbose?: boolean,
 }
 export type Install = (InstallArgs) => Promise<void>
 */
@@ -35,6 +36,7 @@ const install /*: Install */ = async ({
   conservative = true,
   skipPreinstall = false,
   skipPostinstall = false,
+  verbose = false,
 }) => {
   let isRootInstall = root === cwd;
 
@@ -81,11 +83,28 @@ const install /*: Install */ = async ({
   }
   const env = process.env;
   const path = dirname(node) + ':' + String(process.env.PATH);
-  await spawn(node, [yarn, 'install'], {
-    env: {...env, PATH: path},
-    cwd: root,
-    stdio: 'inherit',
-  });
+
+  if (verbose) {
+    await spawn(node, [yarn, 'install'], {
+      env: {...env, PATH: path},
+      cwd: root,
+      stdio: 'inherit',
+    });
+  } else {
+    await spawn(node, [yarn, 'install'], {
+      // FORCE_COLOR is for the chalk package used by yarn
+      env: {...env, PATH: path, FORCE_COLOR: '1'},
+      cwd: root,
+      filterOutput(line, type) {
+        return (
+          !/doesn't provide .+ requested by /.test(line) &&
+          !/provides .+ requested by /.test(line) &&
+          !/can't be found in the cache and will be fetched/.test(line)
+        );
+      },
+    });
+  }
+
   if (skipPostinstall === false) {
     await executeHook(hooks.postinstall, root);
   }

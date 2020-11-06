@@ -11,6 +11,10 @@ const {
   lstat,
   realpath,
 } = require('fs');
+const {
+  chunksToLinesAsync,
+  streamWrite,
+} = require('../vendor/@rauschma/stringio');
 
 /*::
 import {Writable, Readable, Duplex} from 'stream';
@@ -72,14 +76,36 @@ export type SpawnOptions = void | {
   shell?: boolean | string,
   windowsVerbatimArguments?: boolean,
   windowsHide?: boolean,
+  // non-node options
+  filterOutput?: (line: string, type: 'stdout' | 'stderr') => boolean,
 };
 export type Stdio = string | Array<string | number | null | Writable | Readable | Duplex>;
 */
 // use spawn if you just need to run a command for its side effects, or if you want to pipe output straight back to the parent shell
 const spawn /*: Spawn */ = (cmd, argv, opts) => {
   const errorWithSyncStackTrace = new Error();
+
+  // filter approach ref: https://2ality.com/2018/05/child-process-streams.html#piping-between-child-processes
+  async function filter(readable, writable, type) {
+    for await (const line of chunksToLinesAsync(readable)) {
+      // $FlowFixMe
+      if (opts.filterOutput(line, type)) {
+        await streamWrite(writable, line);
+      }
+    }
+  }
+
   return new Promise((resolve, reject) => {
+    if (opts && typeof opts.filterOutput === 'function') {
+      opts.stdio = ['ignore', 'pipe', 'pipe'];
+    }
+
     const child = proc.spawn(cmd, argv, opts);
+    if (opts && typeof opts.filterOutput === 'function') {
+      filter(child.stdout, process.stdout, 'stdout');
+      filter(child.stderr, process.stderr, 'stderr');
+    }
+
     child.on('error', e => {
       reject(new Error(e));
     });
