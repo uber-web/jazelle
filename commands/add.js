@@ -1,10 +1,12 @@
 // @flow
 const {resolve} = require('path');
+const semver = require('../utils/cached-semver');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getPassThroughArgs} = require('../utils/parse-argv.js');
 const {read, spawn} = require('../utils/node-helpers.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
 const {getManifest} = require('../utils/get-manifest.js');
+const {getAllDependencies} = require('../utils/get-all-dependencies.js');
 const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
 const {
   generateBazelBuildRules,
@@ -31,7 +33,6 @@ export type Add = (AddArgs) => Promise<void>;
 const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
   await assertProjectDir({dir: cwd});
 
-  // group by whether the dep is local (listed in manifest.json) or external (from registry)
   const additions = [];
   const params = getPassThroughArgs(args);
   await Promise.all(
@@ -45,6 +46,38 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
       }
     })
   );
+
+  const {projects, dependencySyncRule} = /*:: await */ await getManifest({
+    root,
+  });
+
+  // if dependency exists in web-code, take latest version
+  const allDeps = /*:: await */ await getAllDependencies({root, projects});
+  additions.forEach(item => {
+    if (!item.range) {
+      const existingRange = allDeps
+        .reduce((ranges, dep) => {
+          if (dep.meta.dependencies && dep.meta.dependencies[item.name]) {
+            console.log(dep.meta.name, dep.meta.dependencies[item.name]);
+            ranges.push(dep.meta.dependencies[item.name]);
+          } else if (
+            dep.meta.devDependencies &&
+            dep.meta.devDependencies[item.name]
+          ) {
+            console.log(dep.meta.name, dep.meta.devDependencies[item.name]);
+            ranges.push(dep.meta.devDependencies[item.name]);
+          }
+          return ranges;
+        }, [])
+        .sort((l, r) => {
+          return semver.compare(semver.coerce(l), semver.coerce(r));
+        })
+        .pop();
+      if (existingRange) {
+        item.range = existingRange;
+      }
+    }
+  });
 
   const meta = JSON.parse(await read(`${cwd}/package.json`, 'utf8'));
 
@@ -62,10 +95,8 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
     );
     await spawn(node, [yarn, 'install'], options);
 
-    const {projects, dependencySyncRule} = /*:: await */ await getManifest({
-      root,
-    });
     const deps = /*:: await */ await getLocalDependencies({
+      data: allDeps,
       dirs: projects.map(dir => `${root}/${dir}`),
       target: resolve(root, cwd),
     });

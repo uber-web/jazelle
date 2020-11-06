@@ -36,7 +36,11 @@ const install /*: Install */ = async ({
   skipPreinstall = false,
   skipPostinstall = false,
 }) => {
-  await assertProjectDir({dir: cwd});
+  let isRootInstall = root === cwd;
+
+  if (!isRootInstall) {
+    await assertProjectDir({dir: cwd});
+  }
 
   const {
     projects,
@@ -46,19 +50,23 @@ const install /*: Install */ = async ({
     dependencySyncRule,
   } = /*:: await */ await getManifest({root});
 
-  validateRegistration({root, cwd, projects});
+  if (!isRootInstall) {
+    validateRegistration({root, cwd, projects});
+  }
+  const all = await getAllDependencies({root, projects});
 
-  const deps = /*:: await */ await getLocalDependencies({
-    root,
-    dirs: projects.map(dir => `${root}/${dir}`),
-    target: resolve(root, cwd),
-  });
+  const deps = isRootInstall
+    ? all
+    : /*:: await */ await getLocalDependencies({
+        data: all,
+        dirs: projects.map(dir => `${root}/${dir}`),
+        target: resolve(root, cwd),
+      });
 
   validateDeps({deps});
   await validateVersionPolicy({root, projects, versionPolicy});
 
   if (workspace === 'sandbox' && frozenLockfile === false) {
-    const all = await getAllDependencies({root, projects});
     await generateBazelignore({root});
     await generateBazelBuildRules({
       root,

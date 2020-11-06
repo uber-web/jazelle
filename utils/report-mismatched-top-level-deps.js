@@ -55,6 +55,7 @@ const reportMismatchedTopLevelDeps /*: ReportMismatchedTopLevelDeps */ = async (
     .reduce((obj, dep /*: string */) => {
       const meta /*: ExceptionMetadata */ = (policy.exceptions /*: any */)
         .filter(meta => meta.name === dep)[0];
+
       if (!meta) {
         // for blanket exemptions, include all reportedly mismatched versions
         obj[dep] = reported[dep];

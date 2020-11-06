@@ -6,6 +6,7 @@ const {read} = require('./node-helpers.js');
 export type GetLocalDependenciesArgs = {
   dirs: Array<string>,
   target: string,
+  data?: Array<Metadata>,
 };
 export type GetLocalDependencies = (GetLocalDependenciesArgs) => Promise<Array<Metadata>>;
 export type Metadata = {
@@ -29,13 +30,16 @@ export type PackageJson = {
 const getLocalDependencies /*: GetLocalDependencies */ = async ({
   dirs,
   target,
+  data,
 }) => {
-  const data = await Promise.all([
-    ...dirs.map(async dir => {
-      const meta = JSON.parse(await read(`${dir}/package.json`, 'utf8'));
-      return {dir, meta, depth: 1};
-    }),
-  ]);
+  if (!data) {
+    data = await Promise.all([
+      ...dirs.map(async dir => {
+        const meta = JSON.parse(await read(`${dir}/package.json`, 'utf8'));
+        return {dir, meta, depth: 1};
+      }),
+    ]);
+  }
   return unique(findDependencies(data, target));
 };
 
