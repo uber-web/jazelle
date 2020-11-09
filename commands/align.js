@@ -10,10 +10,17 @@ const {sortPackageJson} = require('../utils/sort-package-json.js');
 type AlignArgs = {
   root: string,
   cwd: string,
+  skipPreinstall?: boolean,
+  skipPostinstall?: boolean,
 }
 type Align = (AlignArgs) => Promise<void>
 */
-const align /*: Align */ = async ({root, cwd}) => {
+const align /*: Align */ = async ({
+  root,
+  cwd,
+  skipPreinstall = false,
+  skipPostinstall = false,
+}) => {
   const {projects, versionPolicy} = /*:: await */ await getManifest({root});
   if (versionPolicy) {
     const deps = await getAllDependencies({root, projects});
@@ -38,7 +45,13 @@ const align /*: Align */ = async ({root, cwd}) => {
       await write(`${cwd}/package.json`, sortPackageJson(meta), 'utf8');
     }
   }
-  await install({root, cwd, conservative: true});
+  await install({
+    root,
+    cwd,
+    conservative: true,
+    skipPreinstall,
+    skipPostinstall,
+  });
 };
 
 module.exports = {align};

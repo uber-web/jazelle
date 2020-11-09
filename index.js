@@ -62,14 +62,18 @@ const runCLI /*: RunCLI */ = async argv => {
         async () => {},
       ],
       scaffold: [
-        `Scaffolds a project from a template`,
-        async ({from, to, name}) =>
+        `Scaffolds a project from a template
+        --skipPreinstall           Skip the preinstall hook
+        --skipPostinstall          Skip the postinstall hook`,
+        async ({from, to, name, skipPreinstall, skipPostinstall}) =>
           scaffold({
             root: await rootOf(args),
             cwd: process.cwd(),
             from,
             to,
             name,
+            skipPreinstall: Boolean(skipPreinstall),
+            skipPostinstall: Boolean(skipPostinstall),
           }),
       ],
       install: [
@@ -149,8 +153,16 @@ const runCLI /*: RunCLI */ = async argv => {
       align: [
         `Align a project's dependency versions to respect the version policy, if there is one
 
-        --cwd [cwd]                Project directory to use`,
-        async ({cwd}) => await align({root: await rootOf(args), cwd}),
+        --cwd [cwd]                Project directory to use
+        --skipPreinstall           Skip the preinstall hook
+        --skipPostinstall          Skip the postinstall hook`,
+        async ({cwd, skipPreinstall, skipPostinstall}) =>
+          await align({
+            root: await rootOf(args),
+            cwd,
+            skipPreinstall: Boolean(skipPreinstall),
+            skipPostinstall: Boolean(skipPostinstall),
+          }),
       ],
       localize: [
         `Align dependency versions to local versions, if a local version exists`,

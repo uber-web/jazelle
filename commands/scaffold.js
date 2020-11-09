@@ -1,5 +1,5 @@
 // @flow
-const {resolve, relative, basename} = require('path');
+const {resolve, relative, basename, join} = require('path');
 const {getManifest} = require('../utils/get-manifest.js');
 const {spawn, exists, read, write} = require('../utils/node-helpers.js');
 const {executeHook} = require('../utils/execute-hook.js');
@@ -13,11 +13,23 @@ type ScaffoldArgs = {
   from: string,
   to: string,
   name?: string,
+  skipPreinstall?: boolean,
+  skipPostinstall?: boolean,
 };
 type Scaffold = (ScaffoldArgs) => Promise<void>
 */
-const scaffold /*: Scaffold */ = async ({root, cwd, from, to, name}) => {
+const scaffold /*: Scaffold */ = async ({
+  root,
+  cwd,
+  from,
+  to,
+  name,
+  skipPreinstall = false,
+  skipPostinstall = false,
+}) => {
   const manifest = /*:: await */ await getManifest({root});
+  const pkgPath = join(root, 'package.json');
+  const pkg = JSON.parse(await read(pkgPath));
   const {hooks} = manifest;
 
   const absoluteFrom = resolve(cwd, from);
@@ -27,7 +39,8 @@ const scaffold /*: Scaffold */ = async ({root, cwd, from, to, name}) => {
 
   await spawn('cp', ['-r', absoluteFrom, absoluteTo]);
 
-  if (hooks) await executeHook(hooks.prescaffold, absoluteTo);
+  if (hooks && skipPreinstall === false)
+    await executeHook(hooks.prescaffold, absoluteTo);
 
   const metaFile = `${absoluteTo}/package.json`;
   const meta = JSON.parse(await read(metaFile, 'utf8'));
@@ -43,12 +56,14 @@ const scaffold /*: Scaffold */ = async ({root, cwd, from, to, name}) => {
   }
 
   manifest.projects = [...new Set([...manifest.projects, relativeTo])].sort();
+  pkg.workspaces = manifest.projects;
   const manifestFile = `${root}/manifest.json`;
+  await write(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
   await write(manifestFile, JSON.stringify(manifest, null, 2), 'utf8');
+  await align({root, cwd: absoluteTo, skipPreinstall, skipPostinstall});
 
-  await align({root, cwd: absoluteTo});
-
-  if (hooks) await executeHook(hooks.postscaffold, absoluteTo);
+  if (hooks && skipPostinstall === false)
+    await executeHook(hooks.postscaffold, absoluteTo);
 };
 
 module.exports = {scaffold};
