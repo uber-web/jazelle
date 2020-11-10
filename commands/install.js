@@ -83,15 +83,19 @@ const install /*: Install */ = async ({
   }
   const env = process.env;
   const path = dirname(node) + ':' + String(process.env.PATH);
+  const spawnArgs = [yarn, 'install'];
+  if (frozenLockfile) {
+    spawnArgs.push('--immutable');
+  }
 
   if (verbose) {
-    await spawn(node, [yarn, 'install'], {
+    await spawn(node, spawnArgs, {
       env: {...env, PATH: path},
       cwd: root,
       stdio: 'inherit',
     });
   } else {
-    await spawn(node, [yarn, 'install'], {
+    await spawn(node, spawnArgs, {
       // FORCE_COLOR is for the chalk package used by yarn
       env: {...env, PATH: path, FORCE_COLOR: '1'},
       cwd: root,
