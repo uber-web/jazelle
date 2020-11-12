@@ -159,7 +159,8 @@ async function testInit() {
   assert(await exists(`${tmp}/tmp/init/.gitignore`));
 
   const workspace = await read(`${tmp}/tmp/init/WORKSPACE`, 'utf8');
-  assert(workspace.includes('0.0.0-monorepo'));
+  const jazelleVersion = require('../package.json').version;
+  assert(workspace.includes(jazelleVersion));
 }
 
 async function testScaffold() {

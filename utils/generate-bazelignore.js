@@ -19,10 +19,7 @@ const generateBazelignore /*: GenerateBazelignore */ = async ({root}) => {
       ...bazelignore.split('\n'),
     ]),
   ];
-  const updated = ignorePaths
-    .sort()
-    .filter(Boolean)
-    .join('\n');
+  const updated = ignorePaths.sort().filter(Boolean).join('\n');
   if (bazelignore.trim() !== updated.trim()) {
     await write(`${root}/.bazelignore`, updated + '\n', 'utf8');
   }

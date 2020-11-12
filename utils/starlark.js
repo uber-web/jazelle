@@ -47,8 +47,9 @@ const addCallArgItem /*: AddCallArgItem */ = (code, caller, argName, value) => {
         list = list.replace(/#.*$/gm, '');
         const [space] = list.match(/^\s*/) || [' '];
         const [dedent] = list.match(/\s*$/) || [' '];
-        return `[${list.trimRight().replace(/,\s*$/, '')},${space ||
-          ' '}${value},${dedent}]`.replace(/,]/, ']');
+        return `[${list.trimRight().replace(/,\s*$/, '')},${
+          space || ' '
+        }${value},${dedent}]`.replace(/,]/, ']');
       });
     });
   });
