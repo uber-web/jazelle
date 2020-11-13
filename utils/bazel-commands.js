@@ -2,8 +2,18 @@
 const {relative, basename, dirname} = require('path');
 const {bazel, node} = require('./binary-paths.js');
 const {spawn} = require('./node-helpers.js');
+const {spawnFiltered} = require('./spawn-filtered.js');
 
 const startupFlags = ['--host_jvm_args=-Xmx15g'];
+
+// when using `spawnFiltered` with bazel, `--color=yes` needs to be passed
+// to force terminal colors
+function ensureColorArg(args) {
+  if (!args.find(arg => arg.includes('--color'))) {
+    args.push('--color=yes');
+  }
+  return args;
+}
 
 /*::
 import type {Stdio} from './node-helpers.js';
@@ -13,6 +23,7 @@ export type BuildArgs = {
   cwd: string,
   name?: string,
   stdio?: Stdio,
+  verbose?: boolean,
 };
 export type Build = (BuildArgs) => Promise<void>;
 */
@@ -20,16 +31,25 @@ const build /*: Build */ = async ({
   root,
   cwd,
   name = basename(cwd),
-  stdio = 'inherit',
+  stdio,
+  verbose = false,
 }) => {
   cwd = relative(root, cwd);
-  await spawn(
+  await spawnFiltered(
     bazel,
-    [...startupFlags, 'build', `//${cwd}:${name}`, '--sandbox_debug'],
+    ensureColorArg([
+      ...startupFlags,
+      'build',
+      `//${cwd}:${name}`,
+      '--sandbox_debug',
+    ]),
     {
-      stdio,
-      env: process.env,
-      cwd: root,
+      spawnOpts: {
+        stdio,
+        env: process.env,
+        cwd: root,
+      },
+      verbose,
     }
   );
 };
@@ -41,6 +61,7 @@ export type TestArgs = {
   args: Array<string>,
   name?: string,
   stdio?: Stdio,
+  verbose?: boolean,
 };
 type Test = (TestArgs) => Promise<void>;
 */
@@ -49,11 +70,12 @@ const test /*: Test */ = async ({
   cwd,
   args,
   name = 'test',
-  stdio = 'inherit',
+  stdio,
+  verbose = false,
 }) => {
   cwd = relative(root, cwd);
   const testParams = args.map(arg => `--test_arg=${arg}`);
-  await spawn(
+  await spawnFiltered(
     bazel,
     [
       ...startupFlags,
@@ -63,9 +85,12 @@ const test /*: Test */ = async ({
       ...testParams,
     ],
     {
-      stdio,
-      env: process.env,
-      cwd: root,
+      spawnOpts: {
+        stdio,
+        env: process.env,
+        cwd: root,
+      },
+      verbose,
     }
   );
 };
@@ -77,6 +102,7 @@ export type RunArgs = {
   args: Array<string>,
   name?: string,
   stdio?: Stdio,
+  verbose?: boolean,
 };
 type Run = (RunArgs) => Promise<void>;
 */
@@ -85,23 +111,27 @@ const run /*: Run */ = async ({
   cwd,
   args,
   name = basename(cwd),
-  stdio = 'inherit',
+  stdio,
+  verbose = false,
 }) => {
   cwd = relative(root, cwd);
   const runParams = args.length > 0 ? ['--', ...args] : [];
-  await spawn(
+  await spawnFiltered(
     bazel,
-    [
+    ensureColorArg([
       ...startupFlags,
       'run',
       `//${cwd}:${name}`,
       '--sandbox_debug',
       ...runParams,
-    ],
+    ]),
     {
-      stdio,
-      env: process.env,
-      cwd: root,
+      spawnOpts: {
+        stdio,
+        env: process.env,
+        cwd: root,
+      },
+      verbose,
     }
   );
 };
@@ -112,11 +142,12 @@ export type DevArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 };
 type Dev = (DevArgs) => Promise<void>;
 */
-const dev /*: Dev */ = async ({root, cwd, args, stdio = 'inherit'}) => {
-  await run({root, cwd, args, name: 'dev', stdio});
+const dev /*: Dev */ = async ({root, cwd, args, stdio, verbose = false}) => {
+  await run({root, cwd, args, name: 'dev', stdio, verbose});
 };
 
 /*::
@@ -125,11 +156,12 @@ export type LintArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 };
 type Lint = (LintArgs) => Promise<void>;
 */
-const lint /*: Lint */ = async ({root, cwd, args, stdio = 'inherit'}) => {
-  await run({root, cwd, args, name: 'lint', stdio});
+const lint /*: Lint */ = async ({root, cwd, args, stdio, verbose = false}) => {
+  await run({root, cwd, args, name: 'lint', stdio, verbose});
 };
 
 /*::
@@ -138,11 +170,12 @@ export type FlowArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 };
 type Flow = (FlowArgs) => Promise<void>;
 */
-const flow /*: Flow */ = async ({root, cwd, args, stdio = 'inherit'}) => {
-  await run({root, cwd, args, name: 'flow', stdio});
+const flow /*: Flow */ = async ({root, cwd, args, stdio, verbose = false}) => {
+  await run({root, cwd, args, name: 'flow', stdio, verbose});
 };
 
 /*::
@@ -151,11 +184,18 @@ export type StartArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 };
 type Start = (StartArgs) => Promise<void>;
 */
-const start /*: Start */ = async ({root, cwd, args, stdio = 'inherit'}) => {
-  await run({root, cwd, args, stdio});
+const start /*: Start */ = async ({
+  root,
+  cwd,
+  args,
+  stdio,
+  verbose = false,
+}) => {
+  await run({root, cwd, args, stdio, verbose});
 };
 
 /*::
@@ -164,10 +204,11 @@ export type ExecArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 }
 export type Exec = (ExecArgs) => Promise<void>;
 */
-const exec /*: Exec */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+const exec /*: Exec */ = async ({root, cwd, args, stdio, verbose = false}) => {
   const [command, ...params] = args;
   const path = process.env.PATH || '';
   const bazelDir = dirname(bazel);
@@ -186,6 +227,7 @@ export type ScriptArgs = {
   command: string,
   args: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 };
 type Script = (ScriptArgs) => Promise<void>;
 */
@@ -194,9 +236,17 @@ const script /*: Script */ = async ({
   cwd,
   command,
   args,
-  stdio = 'inherit',
+  stdio,
+  verbose = false,
 }) => {
-  await run({root, cwd, args: [command, ...args], name: 'script', stdio});
+  await run({
+    root,
+    cwd,
+    args: [command, ...args],
+    name: 'script',
+    stdio,
+    verbose,
+  });
 };
 
 module.exports = {

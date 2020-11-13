@@ -10,10 +10,17 @@ export type StartArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 }
 export type Start = (StartArgs) => Promise<void>
 */
-const start /*: Start */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+const start /*: Start */ = async ({
+  root,
+  cwd,
+  args,
+  stdio,
+  verbose = false,
+}) => {
   await assertProjectDir({dir: cwd});
 
   const params = getPassThroughArgs(args);
@@ -23,6 +30,7 @@ const start /*: Start */ = async ({root, cwd, args, stdio = 'inherit'}) => {
     command: 'start',
     args: params,
     stdio,
+    verbose,
   });
 };
 

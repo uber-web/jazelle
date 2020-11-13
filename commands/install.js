@@ -1,6 +1,5 @@
 // @flow
 const {resolve, dirname} = require('path');
-const {spawn} = require('../utils/node-helpers');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getManifest} = require('../utils/get-manifest.js');
 const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
@@ -16,6 +15,7 @@ const {
 } = require('../utils/generate-bazel-build-rules.js');
 const {executeHook} = require('../utils/execute-hook.js');
 const {node, yarn} = require('../utils/binary-paths.js');
+const {spawnFiltered} = require('../utils/spawn-filtered.js');
 
 /*::
 export type InstallArgs = {
@@ -88,26 +88,13 @@ const install /*: Install */ = async ({
     spawnArgs.push('--immutable');
   }
 
-  if (verbose) {
-    await spawn(node, spawnArgs, {
+  await spawnFiltered(node, spawnArgs, {
+    spawnOpts: {
       env: {...env, PATH: path},
       cwd: root,
-      stdio: 'inherit',
-    });
-  } else {
-    await spawn(node, spawnArgs, {
-      // FORCE_COLOR is for the chalk package used by yarn
-      env: {...env, PATH: path, FORCE_COLOR: '1'},
-      cwd: root,
-      filterOutput(line, type) {
-        return (
-          !/doesn't provide .+ requested by /.test(line) &&
-          !/provides .+ requested by /.test(line) &&
-          !/can't be found in the cache and will be fetched/.test(line)
-        );
-      },
-    });
-  }
+    },
+    verbose,
+  });
 
   if (skipPostinstall === false) {
     await executeHook(hooks.postinstall, root);

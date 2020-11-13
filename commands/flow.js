@@ -10,10 +10,11 @@ export type FlowArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 }
 export type Flow = (FlowArgs) => Promise<void>
 */
-const flow /*: Flow */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+const flow /*: Flow */ = async ({root, cwd, args, stdio, verbose = false}) => {
   await assertProjectDir({dir: cwd});
 
   const params = getPassThroughArgs(args);
@@ -23,6 +24,7 @@ const flow /*: Flow */ = async ({root, cwd, args, stdio = 'inherit'}) => {
     command: 'flow',
     args: params,
     stdio,
+    verbose,
   });
 };
 

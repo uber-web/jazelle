@@ -82,7 +82,7 @@ const runCLI /*: RunCLI */ = async argv => {
         --cwd [cwd]                Project directory to use
         --skipPreinstall           Skip the preinstall hook
         --skipPostinstall          Skip the postinstall hook
-        --verbose`,
+        --verbose                  Show noisy stdout/stderr that's normally filtered`,
         async ({cwd, skipPreinstall, skipPostinstall, verbose}) =>
           install({
             root: await rootOf(args),
@@ -95,21 +95,25 @@ const runCLI /*: RunCLI */ = async argv => {
       ci: [
         `Install all dependencies for a project without modifying source files
 
-        --cwd [cwd]                Project directory to use`,
-        async ({cwd}) => ci({root: await rootOf(args), cwd}),
+        --cwd [cwd]                Project directory to use
+        --verbose                  Show noisy stdout/stderr that's normally filtered`,
+        async ({cwd, verbose}) =>
+          ci({root: await rootOf(args), cwd, verbose: Boolean(verbose)}),
       ],
       add: [
         `Install a package and any packages that it depends on
 
         [deps...]                  Package(s) to add at a specific version. ie., foo@1.2.3
         --dev                      Whether to install as devDependency
-        --cwd [cwd]                Project directory to use`,
-        async ({cwd, dev}) =>
+        --cwd [cwd]                Project directory to use
+        --verbose                  Show noisy stdout/stderr that's normally filtered`,
+        async ({cwd, dev, verbose = false}) =>
           add({
             root: await rootOf(args),
             cwd,
             args: rest.filter(arg => arg != '--dev'), // if dev is passed before name, resolve to correct value
             dev: Boolean(dev), // FIXME all args can technically be boolean, but we don't want Flow complaining about it everywhere
+            verbose: Boolean(verbose),
           }),
       ],
       remove: [
@@ -123,8 +127,14 @@ const runCLI /*: RunCLI */ = async argv => {
       upgrade: [
         `Upgrade a package version across all projects
 
-        [args...]                     Packages to upgrade and optionally their version ranges. e.g., foo@^1.2.3 bar@^1.2.3`,
-        async () => upgrade({root: await rootOf(args), args: rest}),
+        [args...]                  Packages to upgrade and optionally their version ranges. e.g., foo@^1.2.3 bar@^1.2.3
+        --verbose                  Show noisy stdout/stderr that's normally filtered`,
+        async ({verbose}) =>
+          upgrade({
+            root: await rootOf(args),
+            args: rest,
+            verbose: Boolean(verbose),
+          }),
       ],
       purge: [
         `Remove generated files (i.e. node_modules folders and bazel output files)`,
@@ -196,38 +206,75 @@ const runCLI /*: RunCLI */ = async argv => {
       build: [
         `Build a project
 
-        --cwd [cwd]                Project directory to use`,
-        async ({cwd}) => build({root: await rootOf(args), cwd}),
+        --cwd [cwd]                Project directory to use
+        --verbose                  Show noisy stdout/stderr that's normally filtered`,
+        async ({cwd, verbose}) =>
+          build({root: await rootOf(args), cwd, verbose: Boolean(verbose)}),
       ],
       dev: [
         `Run a project
 
-        --cwd [cwd]                Project directory to use`,
-        async ({cwd}) => dev({root: await rootOf(args), cwd, args: rest}),
+        --cwd [cwd]                Project directory to use
+        --verbose                  Show noisy stdout/stderr that's normally filtered`,
+        async ({cwd, verbose}) =>
+          dev({
+            root: await rootOf(args),
+            cwd,
+            args: rest,
+            verbose: Boolean(verbose),
+          }),
       ],
       test: [
         `Test a project
 
-        --cwd [cwd]                Project directory to use`,
-        async ({cwd}) => test({root: await rootOf(args), cwd, args: rest}),
+        --cwd [cwd]                Project directory to use
+        --verbose                  Show noisy stdout/stderr that's normally filtered`,
+        async ({cwd, verbose}) =>
+          test({
+            root: await rootOf(args),
+            cwd,
+            args: rest,
+            verbose: Boolean(verbose),
+          }),
       ],
       lint: [
         `Lint a project
 
-        --cwd [cwd]                Project directory to use`,
-        async ({cwd}) => lint({root: await rootOf(args), cwd, args: rest}),
+        --cwd [cwd]                Project directory to use
+        --verbose                  Show noisy stdout/stderr that's normally filtered`,
+        async ({cwd, verbose}) =>
+          lint({
+            root: await rootOf(args),
+            cwd,
+            args: rest,
+            verbose: Boolean(verbose),
+          }),
       ],
       flow: [
         `Typecheck a project
 
-        --cwd [cwd]                Project directory to use`,
-        async ({cwd}) => flow({root: await rootOf(args), cwd, args: rest}),
+        --cwd [cwd]                Project directory to use
+        --verbose                  Show noisy stdout/stderr that's normally filtered`,
+        async ({cwd, verbose}) =>
+          flow({
+            root: await rootOf(args),
+            cwd,
+            args: rest,
+            verbose: Boolean(verbose),
+          }),
       ],
       start: [
         `Run a project
 
-        --cwd [cwd]                Project directory to use`,
-        async ({cwd}) => start({root: await rootOf(args), cwd, args: rest}),
+        --cwd [cwd]                Project directory to use
+        --verbose                  Show noisy stdout/stderr that's normally filtered`,
+        async ({cwd, verbose}) =>
+          start({
+            root: await rootOf(args),
+            cwd,
+            args: rest,
+            verbose: Boolean(verbose),
+          }),
       ],
       'bin-path': [
         `Print the local path of a binary
@@ -294,12 +341,14 @@ const runCLI /*: RunCLI */ = async argv => {
         `Runs a npm script
 
         [args...]                  A space separated list of arguments
-        --cwd [cwd]                Project directory to use`,
-        async ({cwd}) =>
+        --cwd [cwd]                Project directory to use
+        --verbose                  Show noisy stdout/stderr that's normally filtered`,
+        async ({cwd, verbose}) =>
           script({
             root: await rootOf(args),
             cwd,
             args: rest,
+            verbose: Boolean(verbose),
           }),
       ],
     },

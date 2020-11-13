@@ -3,7 +3,7 @@ const {resolve} = require('path');
 const semver = require('../utils/cached-semver');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getPassThroughArgs} = require('../utils/parse-argv.js');
-const {read, spawn} = require('../utils/node-helpers.js');
+const {read} = require('../utils/node-helpers.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
 const {getManifest} = require('../utils/get-manifest.js');
 const {getAllDependencies} = require('../utils/get-all-dependencies.js');
@@ -11,6 +11,7 @@ const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
 const {
   generateBazelBuildRules,
 } = require('../utils/generate-bazel-build-rules.js');
+const {spawnFiltered} = require('../utils/spawn-filtered.js');
 const {node, yarn} = require('../utils/binary-paths.js');
 
 /*
@@ -27,10 +28,17 @@ export type AddArgs = {
   args: Array<string>,
   version?: string,
   dev?: boolean,
+  verbose?: boolean,
 };
 export type Add = (AddArgs) => Promise<void>;
 */
-const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
+const add /*: Add */ = async ({
+  root,
+  cwd,
+  args,
+  dev = false,
+  verbose = false,
+}) => {
   await assertProjectDir({dir: cwd});
 
   const additions = [];
@@ -87,8 +95,8 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
       return name + (range ? `@${range}` : '');
     });
     const flags = dev ? ['--dev'] : [];
-    const options = {cwd: root, stdio: 'inherit'};
-    await spawn(
+    const options = {spawnOpts: {cwd: root}, verbose};
+    await spawnFiltered(
       node,
       [yarn, 'workspace', meta.name, 'add', ...keys, ...flags],
       options
@@ -97,7 +105,7 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
     allDeps.find(item => item.dir === cwd).meta = JSON.parse(
       await read(`${cwd}/package.json`)
     );
-    await spawn(node, [yarn, 'install'], options);
+    await spawnFiltered(node, [yarn, 'install'], options);
 
     const deps = /*:: await */ await getLocalDependencies({
       data: allDeps,

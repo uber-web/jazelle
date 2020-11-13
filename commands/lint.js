@@ -10,10 +10,11 @@ export type LintArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 }
 export type Lint = (LintArgs) => Promise<void>
 */
-const lint /*: Lint */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+const lint /*: Lint */ = async ({root, cwd, args, stdio, verbose = false}) => {
   await assertProjectDir({dir: cwd});
 
   const params = getPassThroughArgs(args);
@@ -23,6 +24,7 @@ const lint /*: Lint */ = async ({root, cwd, args, stdio = 'inherit'}) => {
     command: 'lint',
     args: params,
     stdio,
+    verbose,
   });
 };
 

@@ -10,10 +10,11 @@ export type DevArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 }
 export type Dev = (DevArgs) => Promise<void>
 */
-const dev /*: Dev */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+const dev /*: Dev */ = async ({root, cwd, args, stdio, verbose = false}) => {
   await assertProjectDir({dir: cwd});
 
   const params = getPassThroughArgs(args);
@@ -23,6 +24,7 @@ const dev /*: Dev */ = async ({root, cwd, args, stdio = 'inherit'}) => {
     command: 'dev',
     args: params,
     stdio,
+    verbose,
   });
 };
 

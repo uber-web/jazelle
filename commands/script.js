@@ -10,10 +10,17 @@ type ScriptArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 };
 type Script = (ScriptArgs) => Promise<void>;
 */
-const script /*: Script */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+const script /*: Script */ = async ({
+  root,
+  cwd,
+  args,
+  stdio,
+  verbose = false,
+}) => {
   await assertProjectDir({dir: cwd});
 
   const params = getPassThroughArgs(args);
@@ -23,6 +30,7 @@ const script /*: Script */ = async ({root, cwd, args, stdio = 'inherit'}) => {
     command: 'script',
     args: params,
     stdio,
+    verbose,
   });
 };
 

@@ -12,6 +12,7 @@ export type ExecuteProjectCommandArgs = {
   command: string,
   args?: Array<string>,
   stdio?: Stdio,
+  verbose?: boolean,
 }
 export type ExecuteProjectCommand = (ExecuteProjectCommandArgs) => Promise<void>
 */
@@ -20,28 +21,36 @@ const executeProjectCommand /*: ExecuteProjectCommand */ = async ({
   cwd,
   command,
   args = [],
-  stdio = 'inherit',
+  stdio,
+  verbose = false,
 }) => {
   const {projects, workspace} = await getManifest({root});
   if (workspace === 'sandbox') {
     switch (command) {
       case 'dev':
-        return bazel.dev({root, cwd, args});
+        return bazel.dev({root, cwd, args, verbose});
       case 'test':
-        return bazel.test({root, cwd, args, stdio});
+        return bazel.test({root, cwd, args, stdio, verbose});
       case 'lint':
-        return bazel.lint({root, cwd, args, stdio});
+        return bazel.lint({root, cwd, args, stdio, verbose});
       case 'flow':
-        return bazel.flow({root, cwd, args, stdio});
+        return bazel.flow({root, cwd, args, stdio, verbose});
       case 'build':
-        return bazel.build({root, cwd});
+        return bazel.build({root, cwd, verbose});
       case 'start':
-        return bazel.start({root, cwd, args});
+        return bazel.start({root, cwd, args, verbose});
       case 'exec':
-        return bazel.exec({root, cwd, args, stdio});
+        return bazel.exec({root, cwd, args, stdio, verbose});
       case 'script': {
         const [cmd, ...rest] = args;
-        return bazel.script({root, cwd, command: cmd, args: rest, stdio});
+        return bazel.script({
+          root,
+          cwd,
+          command: cmd,
+          args: rest,
+          stdio,
+          verbose,
+        });
       }
     }
   } else {
