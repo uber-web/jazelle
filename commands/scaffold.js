@@ -37,7 +37,8 @@ const scaffold /*: Scaffold */ = async ({
   const relativeFrom = relative(root, absoluteFrom);
   const relativeTo = relative(root, absoluteTo);
 
-  await spawn('cp', ['-r', absoluteFrom, absoluteTo]);
+  await spawn('mkdir', ['-p', absoluteTo]);
+  await spawn('cp', ['-r', absoluteFrom + '/', absoluteTo]);
 
   if (hooks && skipPreinstall === false)
     await executeHook(hooks.prescaffold, absoluteTo);
