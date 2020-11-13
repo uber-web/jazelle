@@ -1,0 +1,19 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*.*.*
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "12.x"
+          registry-url: "https://registry.npmjs.org"
+      - run: npx npm-publish-prerelease # Publish with dist-tag based on version
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
