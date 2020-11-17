@@ -826,7 +826,7 @@ async function testGenerateBazelBuildRules() {
   assert(code.includes('# name: a\n'));
   assert(code.includes('# path: a\n'));
   assert(code.includes('# label: //a:a\n'));
-  assert(code.includes('# dependencies: //b:b\n'));
+  assert(code.includes('# dependencies: //b:library\n'));
   const bBuild = `${tmp}/tmp/generate-bazel-build-rules/b/BUILD.bazel`;
   const cBuild = `${tmp}/tmp/generate-bazel-build-rules/c/BUILD.bazel`;
   const dBuild = `${tmp}/tmp/generate-bazel-build-rules/d/BUILD.bazel`;
@@ -868,7 +868,7 @@ async function testGenerateBazelBuildRulesUpdate() {
   const aBuild = `${tmp}/tmp/generate-bazel-build-rules-update/a/BUILD.bazel`;
   const data = await read(aBuild);
   assert(data.includes('custom_target_rule'));
-  assert(data.includes('//b:b'));
+  assert(data.includes('//b:library'));
   assert(!data.includes('//c:c'));
   assert(data.includes('//external:external'));
 }
