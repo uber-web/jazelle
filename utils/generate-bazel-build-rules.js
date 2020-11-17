@@ -80,8 +80,8 @@ const generateBazelBuildRules /*: GenerateBazelBuildRules */ = async ({
           });
         items.forEach(item => {
           if (!dependencies.map(d => `"${d}"`).includes(item)) {
-            const [, path, name] = item.match(/\/\/(.+?):([^"]+)/) || [];
-            if (projects.includes(path) && basename(path) === name) {
+            const [, path] = item.match(/\/\/(.+?):([^"]+)/) || [];
+            if (projects.includes(path)) {
               code = removeCallArgItem(code, dependencySyncRule, 'deps', item);
             }
           }
@@ -95,10 +95,15 @@ const generateBazelBuildRules /*: GenerateBazelBuildRules */ = async ({
 const getDepLabels = (root, depMap, dependencies = {}) => {
   return Object.keys(dependencies)
     .map(name => {
-      const {dir} = depMap[name] || {};
+      const {dir, meta} = depMap[name] || {};
       if (dir) {
         const path = relative(root, dir);
-        const name = basename(path);
+        // use library target unless a build script is specified
+        // const name = meta.scripts && meta.scripts.build ? basename(path) : 'library';
+        let name = 'library';
+        if (meta.scripts && meta.scripts.build) {
+          name = basename(path);
+        }
         return `//${path}:${name}`;
       } else {
         return null;
