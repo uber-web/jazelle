@@ -1,6 +1,6 @@
 {
   "name": "jazelle",
-  "version": "0.0.0-standalone.25",
+  "version": "0.0.0-standalone.26",
   "bin": {
     "barn": "bin/bootstrap.sh",
     "jazelle": "bin/bootstrap.sh",
