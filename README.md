@@ -1574,7 +1574,7 @@ This rule consumes transitive files from the `DefaultInfo(files)` provider of ta
 Runs a npm script (e.g. `yarn start`). Meant to be used with `bazel run`
 
 ```python
-web_test(
+web_executable(
   command = string,
   deps = [string],
 )
