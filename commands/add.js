@@ -93,6 +93,10 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
       [yarn, 'workspace', meta.name, 'add', ...keys, ...flags],
       options
     );
+    // reload package.json affected by workspace add command
+    allDeps.find(item => item.dir === cwd).meta = JSON.parse(
+      await read(`${cwd}/package.json`)
+    );
     await spawn(node, [yarn, 'install'], options);
 
     const deps = /*:: await */ await getLocalDependencies({
