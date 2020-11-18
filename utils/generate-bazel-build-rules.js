@@ -80,8 +80,10 @@ const generateBazelBuildRules /*: GenerateBazelBuildRules */ = async ({
           });
         items.forEach(item => {
           if (!dependencies.map(d => `"${d}"`).includes(item)) {
-            const [, path] = item.match(/\/\/(.+?):([^"]+)/) || [];
-            if (projects.includes(path)) {
+            const [, path, name] = item.match(/\/\/(.+?):([^"]+)/) || [];
+            // force include target allows for projects to be included as bazel deps even if they are not in package.json deps
+            // it is an edge case that should be avoided if at all possible
+            if (projects.includes(path) && name !== 'force-include') {
               code = removeCallArgItem(code, dependencySyncRule, 'deps', item);
             }
           }

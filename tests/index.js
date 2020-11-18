@@ -394,7 +394,6 @@ async function testScriptCommand() {
   });
 
   const lines = (await read(streamFile, 'utf8')).split('\n');
-  assert(lines.includes('hi'));
   assert(lines.includes('hello world'));
   assert(lines.includes('hello world foo'));
 }
