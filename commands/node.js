@@ -7,14 +7,20 @@ const {getPassThroughArgs} = require('../utils/parse-argv.js');
 import type {Stdio} from '../utils/node-helpers.js';
 
 type NodeArgs = {
+  root: string,
   cwd: string,
   args?: Array<string>,
   stdio?: Stdio,
 }
 type Node = (NodeArgs) => Promise<void>
 */
-const runNode /*: Node */ = async ({cwd, args = [], stdio = 'inherit'}) => {
-  const params = getPassThroughArgs(args);
+const runNode /*: Node */ = async ({
+  root,
+  cwd,
+  args = [],
+  stdio = 'inherit',
+}) => {
+  const params = ['-r', `${root}/.pnp.js`, ...getPassThroughArgs(args)];
   await spawn(node, params, {env: process.env, cwd, stdio});
 };
 

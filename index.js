@@ -247,7 +247,7 @@ const runCLI /*: RunCLI */ = async argv => {
 
         [args...]                  A space separated list of arguments
         --cwd [cwd]                Project directory to use`,
-        async ({cwd}) => node({cwd, args: rest}),
+        async ({cwd}) => node({root: await rootOf(args), cwd, args: rest}),
       ],
       yarn: [
         `Runs a Yarn command
