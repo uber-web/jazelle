@@ -69,14 +69,10 @@ if (out) {
 }
 
 function runCommands(command, args) {
-  if (command.startsWith('yarn ')) {
-    runCommand(command.substr(5), args);
-  } else {
-    if (command === 'run') {
-      command = args.shift();
-    }
-    runCommand(command, args);
+  if (command === 'run') {
+    command = args.shift();
   }
+  runCommand(command, args);
 }
 
 function runCommand(command, args = []) {
@@ -96,20 +92,18 @@ function runCommand(command, args = []) {
       }
     }
   } else {
-    if (command.includes('rpc-cli')) {
-      if (command.includes('${NODE}')) {
-        command = command
-          .split('${NODE}')
-          .join(`node -r ${join(rootDir, '.pnp.js')}`);
-      }
-      if (command.includes('${ROOT_DIR}')) {
-        command = command.split('${ROOT_DIR}').join(rootDir);
-      }
-      try {
-        exec(command, options);
-      } catch (e) {
-        process.exit(1);
-      }
+    if (command.includes('${NODE}')) {
+      command = command
+        .split('${NODE}')
+        .join(`node -r ${join(rootDir, '.pnp.js')}`);
+    }
+    if (command.includes('${ROOT_DIR}')) {
+      command = command.split('${ROOT_DIR}').join(rootDir);
+    }
+    try {
+      exec(command, options);
+    } catch (e) {
+      process.exit(1);
     }
   }
 }
