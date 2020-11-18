@@ -46,7 +46,7 @@ def _get_runfiles(ctx, outputs):
     export CWD=$(cd `dirname '{srcdir}'` && pwd);
     export NODE=$(cd `dirname '{node}'` && pwd)/$(basename '{node}');
     $NODE '{untar_script}' --runtime;
-    $NODE --max_old_space_size=65536 '{build}' "$CWD" "$(pwd)" '{command}' '' '{gen_srcs}' '' "$@"
+    $NODE --max_old_space_size=65536 '{build}' "$PWD" "$CWD" "$(pwd)" '{command}' '' '{gen_srcs}' '' "$@"
     """.format(
       node = ctx.files._node[0].path,
       srcdir = ctx.build_file_path,
@@ -80,7 +80,7 @@ def _web_binary_impl(ctx):
     export OUT=$(cd `dirname '{output}'` && pwd)/$(basename '{output}');
     export BAZEL_BIN_DIR=$(cd '{bindir}' && pwd);
     $NODE '{untar_script}';
-    $NODE --max_old_space_size=65536 '{build}' "$CWD" "$BAZEL_BIN_DIR" '{command}' '{dist}' '' "$OUT" $@;
+    $NODE --max_old_space_size=65536 '{build}' "$PWD" "$CWD" "$BAZEL_BIN_DIR" '{command}' '{dist}' '' "$OUT" $@;
     """.format(
       node = ctx.files._node[0].path,
       srcdir = ctx.build_file_path,

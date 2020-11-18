@@ -11,7 +11,18 @@ const {dirname, join, relative} = require('path');
 const {yarn} = require('../utils/binary-paths.js');
 
 const root = process.cwd();
-const [node, , main, , command, distPaths, gen, out, ...args] = process.argv;
+const [
+  node,
+  ,
+  rootDir,
+  main,
+  ,
+  command,
+  distPaths,
+  gen,
+  out,
+  ...args
+] = process.argv;
 
 const {scripts = {}} = JSON.parse(read(`${main}/package.json`, 'utf8'));
 
@@ -58,16 +69,10 @@ if (out) {
 }
 
 function runCommands(command, args) {
-  if (command.startsWith('yarn ')) {
-    runCommand(command.substr(5), args);
-  } else {
-    if (command === 'run') {
-      command = args.shift();
-    }
-    runCommand(`pre${command}`);
-    runCommand(command, args);
-    runCommand(`post${command}`);
+  if (command === 'run') {
+    command = args.shift();
   }
+  runCommand(command, args);
 }
 
 function runCommand(command, args = []) {
@@ -87,14 +92,18 @@ function runCommand(command, args = []) {
       }
     }
   } else {
-    // or are we trying to run a binary off of node_modules/.bin
-    const binary = getYarnBin(command.split(' ')[0]);
-    if (binary) {
-      try {
-        exec(`${node} ${yarn} run ${command} ${params}`, options);
-      } catch (e) {
-        process.exit(1);
-      }
+    if (command.includes('${NODE}')) {
+      command = command
+        .split('${NODE}')
+        .join(`node -r ${join(rootDir, '.pnp.js')}`);
+    }
+    if (command.includes('${ROOT_DIR}')) {
+      command = command.split('${ROOT_DIR}').join(rootDir);
+    }
+    try {
+      exec(command, options);
+    } catch (e) {
+      process.exit(1);
     }
   }
 }
@@ -171,13 +180,5 @@ function getStat(path) {
     return {
       isDirectory: () => false,
     };
-  }
-}
-
-function getYarnBin(command) {
-  try {
-    return exec(`${node} ${yarn} bin ${command}`, {cwd: main}).toString();
-  } catch (e) {
-    return null;
   }
 }
