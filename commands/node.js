@@ -14,12 +14,13 @@ type NodeArgs = {
 }
 type Node = (NodeArgs) => Promise<void>
 */
-const runNode /*: Node */ = async ({root, cwd, args = [], stdio = 'inherit'}) => {
-  const params = [
-    '-r',
-    `${root}/.pnp.js`,
-    ...getPassThroughArgs(args),
-  ];
+const runNode /*: Node */ = async ({
+  root,
+  cwd,
+  args = [],
+  stdio = 'inherit',
+}) => {
+  const params = ['-r', `${root}/.pnp.js`, ...getPassThroughArgs(args)];
   await spawn(node, params, {env: process.env, cwd, stdio});
 };
 
