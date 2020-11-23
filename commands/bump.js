@@ -42,7 +42,7 @@ const bump /*: Bump */ = async ({
 
   const options = {cwd: root, env: process.env};
   for (const dep of deps) {
-    const query = `${node} ${yarn} info ${dep.meta.name} versions --json`;
+    const query = `${node} ${yarn} npm info ${dep.meta.name} --json`;
     const data = await exec(query, options).catch(() => null);
     const version = parseVersion(data);
     const old = dep.meta.version;
@@ -72,7 +72,7 @@ const bump /*: Bump */ = async ({
 };
 
 const parseVersion = data => {
-  const versions = data ? JSON.parse(data).data : [];
+  const versions = data ? JSON.parse(data).versions : [];
   return versions.length > 0 ? versions.pop() : '0.0.0';
 };
 
