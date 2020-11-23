@@ -101,7 +101,7 @@ function runCommand(command, args = []) {
       command = command.split('${ROOT_DIR}').join(rootDir);
     }
     try {
-      exec(command, options);
+      exec(`if [[ -x $(which "${command}") ]]; then "${command}"; fi`, options);
     } catch (e) {
       process.exit(1);
     }
