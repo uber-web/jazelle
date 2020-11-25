@@ -59,8 +59,8 @@ else
   fi
 
   # prep for postcommand (needs to be done before payload because `jazelle prune` deletes node
-  PRECOMMAND=$("$NODE" -p "(require('$ROOT/manifest.json').hooks || {}).precommand || ':'")
-  POSTCOMMAND=$("$NODE" -p "(require('$ROOT/manifest.json').hooks || {}).postcommand || ':'")
+  PRECOMMAND=$("$NODE" -p "(require('$ROOT/manifest.json').hooks || {}).precommand || ':'" 2>/dev/null || ":")
+  POSTCOMMAND=$("$NODE" -p "(require('$ROOT/manifest.json').hooks || {}).postcommand || ':'" 2>/dev/null || ":")
   VERSION=$("$NODE" -p "require('$BIN/../package.json').version")
   BOOTSTRAP_TIME=${BOOTSTRAP_TIME-0} # default to zero
 
