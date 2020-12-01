@@ -67,6 +67,11 @@ function copy(target, real, file) {
   } else {
     // only overwrite file if it's not identical
     if (read(`${target}/${file}`) !== read(`${real}/${file}`)) {
+      const srcPath = `${real}/${file}`;
+      const srcDir = dirname(srcPath);
+      if (!exists(srcDir)) {
+        mkdir(srcDir);
+      }
       cp(`${target}/${file}`, `${real}/${file}`);
     }
   }

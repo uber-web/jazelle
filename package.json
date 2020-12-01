@@ -1,6 +1,7 @@
 {
   "name": "jazelle",
   "version": "0.0.0-standalone.30",
+  "main": "index.js",
   "bin": {
     "barn": "bin/bootstrap.sh",
     "jazelle": "bin/bootstrap.sh",
@@ -16,7 +17,6 @@
     "prettier": "^2.1.2"
   },
   "license": "UNLICENSED",
-  "main": "index.js",
   "scripts": {
     "build": "echo ok",
     "lint": "eslint .",
