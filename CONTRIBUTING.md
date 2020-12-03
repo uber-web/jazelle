@@ -2,12 +2,17 @@
 
 If you are contributing code to the Jazelle codebase, reading this document may help you get familiarized with the code structure and various core concepts.
 
+- [Vendored dependencies](#vendored-dependencies)
 - [Code structure](#code-structure)
 - [Bazel crash course](#bazel)
   - [Implementing custom rules](#implementing-custom-rules)
   - [Familiarizing with Starlark API](#familiarizing-with-starlark-api)
 - [Virtual dependency management](#virtual-dependency-management)
 - [How to work with Jazelle's codebase](#how-to-work-with-jazelles-codebase)
+
+## Vendored dependencies
+
+To avoid needing to fetch jazelle deps at install time, we vendor all runtime (production) dependencies. If you update or add a new dependencies, make sure to run `yarn update-vendor` to propagate your updates to the `vendor` directory.
 
 ## Code structure
 

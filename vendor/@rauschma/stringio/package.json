@@ -1,0 +1,27 @@
+{
+  "name": "@rauschma/stringio",
+  "version": "1.4.0",
+  "author": "Axel Rauschmayer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rauschma/stringio.git"
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "scripts": {
+    "clean": "rm -rf dist/*",
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "mocha --ui qunit",
+    "testall": "mocha --ui qunit dist/test",
+    "prepublishOnly": "tsc"
+  },
+  "//": "@types/node being a normal dependency is not ideal, but it ensures it’s installed automatically",
+  "dependencies": {
+    "@types/node": "^10.0.3"
+  },
+  "devDependencies": {
+    "@types/mocha": "^2.2.48",
+    "mocha": "^5.0.4"
+  }
+}

@@ -7,7 +7,10 @@
     "jazelle": "bin/bootstrap.sh",
     "jz": "bin/bootstrap.sh"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@rauschma/stringio": "1.4.0",
+    "semver": "^6.2.0"
+  },
   "devDependencies": {
     "babel-eslint": "^10.0.3",
     "eslint": "^6.8.0",
@@ -22,7 +25,8 @@
     "build": "echo ok",
     "lint": "eslint .",
     "flow-check": "flow check",
-    "test": "node tests/index.js"
+    "test": "node tests/index.js",
+    "update-vendor": "yarn install --production=true --modules-folder vendor"
   }
 }
 
