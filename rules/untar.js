@@ -37,8 +37,8 @@ function untarIntoSandbox(file) {
   // if we only untar into the bazel-out/ dir, other builds steps will not be able to depend
   // on the output of this build step.
   if (!runtime) {
-    const relativeDir = relative(process.env.BAZEL_BIN_DIR, target);
-    const buildTargetDir = resolve(process.env.PWD, relativeDir);
+    const relativeDir = relative(process.env.BAZEL_BIN_DIR || '', target);
+    const buildTargetDir = resolve(process.env.PWD || '', relativeDir);
     exec(`tar xzf "${file}" -C "${buildTargetDir}"`);
   }
 }
