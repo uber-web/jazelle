@@ -1,6 +1,3 @@
-// noflow
-/* eslint-disable */
-// saved from https://cdn.jsdelivr.net/npm/@rauschma/stringio@1.4.0/dist/src/index.js
 "use strict";
 var __asyncValues = (this && this.__asyncValues) || function (o) {
     if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
@@ -173,3 +170,4 @@ function onExit(childProcess) {
     });
 }
 exports.onExit = onExit;
+//# sourceMappingURL=index.js.map

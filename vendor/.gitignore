@@ -1,0 +1,15 @@
+.bin
+.yarn-integrity
+@types/
+
+# package-secific ignores to reduce the files
+# committed to this repo
+semver/*
+!semver/package.json
+!semver/semver.js
+
+@rauschma/stringio/*
+!@rauschma/stringio/package.json
+!@rauschma/stringio/dist
+@rauschma/stringio/dist/*
+!@rauschma/stringio/dist/src

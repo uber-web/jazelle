@@ -7,7 +7,7 @@ const {
   compare,
   gt,
   coerce,
-} = require('../vendor/semver/index.js');
+} = require('../vendor/semver');
 const {cachedArity1, cachedArity2} = require('./cached');
 
 module.exports = {

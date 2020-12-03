@@ -1,5 +1,5 @@
 // @flow
-const {inc} = require('../vendor/semver/index.js');
+const {inc} = require('../vendor/semver');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getManifest} = require('../utils/get-manifest.js');
 const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
