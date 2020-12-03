@@ -4,9 +4,6 @@
 .*/templates/.*
 
 [include]
-../node_modules
-../../node_modules
-../../scripts
+node_modules
 
 [libs]
-../flow-typed/
