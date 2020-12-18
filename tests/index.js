@@ -186,7 +186,11 @@ async function testScaffold() {
 
   const manifestFile = `${tmp}/tmp/scaffold/manifest.json`;
   const {projects} = JSON.parse(await read(manifestFile, 'utf8'));
-  assert(projects.includes('foo'));
+  assert(projects === undefined);
+
+  const rootMeta = `${tmp}/tmp/scaffold/package.json`;
+  const {workspaces} = JSON.parse(await read(rootMeta, 'utf8'));
+  assert(workspaces.includes('foo'));
 }
 
 // eslint-disable-next-line no-unused-vars

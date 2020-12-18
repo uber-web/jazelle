@@ -114,20 +114,20 @@ load("@jazelle//:build-rules.bzl", "jazelle")
 jazelle(name = "jazelle", manifest = "manifest.json")
 ```
 
-### Edit manifest.json file
+### package.json file
 
-Create a file called `manifest.json` at the root of the monorepo:
+There should be a `package.json` at the root of the monorepo, with a `workspaces` field:
 
 ```json
 {
-  "projects": [
+  "workspaces": [
     "path/to/project-1",
     "path/to/project-2"
   ]
 }
 ```
 
-The `projects` field in this file should list every project that you want Jazelle to manage.
+The `workspaces` field in this file should list every project that you want Jazelle to manage.
 
 ### Setup .gitignore
 
@@ -142,6 +142,7 @@ bazel-*
 
 **DO** commit
 
+- `package.json` file
 - `manifest.json` file
 - `WORKSPACE` file
 - `BUILD.bazel` files
@@ -149,7 +150,7 @@ bazel-*
 - `.bazelignore` file
 - `third_party/jazelle/BUILD.bazel` file
 - `third_party/jazelle/scripts` folder
-- projects' `yarn.lock` files
+- root `yarn.lock` file
 
 **DO NOT** commit
 
@@ -206,7 +207,7 @@ It's ok for users to have different versions of Jazelle installed. Jazelle runs 
 ### Onboarding a project
 
 - Copy and paste your project into the monorepo, at a desired path.
-- Open `manifest.json` and add the path to your project.
+- Open the root `package.json` file and add the path to your project in `workspaces`.
 - Ensure your project's package.json has `scripts` fields called `build`, `test`, `lint` and `flow`.
 - Optionally, verify that your dependency versions match the dependency versions used by other projects in the monorepo. To verify, run `jazelle check`. To upgrade a dependency, run `jazelle upgrade [the-dependency] --version [desired-version]` from your project folder.
 - Run `jazelle install` from your project folder to generate Bazel BUILD files, and install dependencies. This may take a few minutes the first time around since Bazel needs to install itself and its dependencies. Subsequent calls to `jazelle install` will be faster.
@@ -1192,13 +1193,6 @@ Note: The `manifest.json` file does **not** allow comments; they are present her
 
 ```js
 {
-  // List of active projects in the monorepo
-  "projects": [
-    // paths to projects, relative to monorepo root
-    "path/to/project-1",
-    "path/to/project-2",
-    // ...
-  ],
   // Optional workspace mode
   "workspace": "sandbox",
   // Optional installation hooks
@@ -1224,11 +1218,11 @@ Note: The `manifest.json` file does **not** allow comments; they are present her
 
 ### Projects
 
-Projects paths must be listed in the `projects` field of the `manifest.json` file. Paths must be relative to the root of the monorepo.
+Projects paths must be listed in the `workspaces` field of the root level `package.json` file. Paths must be relative to the root of the monorepo.
 
 ```js
 {
-  "projects": [
+  "workspaces": [
     "path/to/project-1",
     "path/to/project-2",
   ],
@@ -1694,7 +1688,7 @@ js_binary(
 )
 ```
 
-You can dynamically update the `deps` argument of the static analysis project BUILD.bazel file by writing a [`preinstall`](#installation-hooks) script that parses and edits the BUILD.bazel file. The list of monorepo projects is conveniently available in `manifest.json`.
+You can dynamically update the `deps` argument of the static analysis project BUILD.bazel file by writing a [`preinstall`](#installation-hooks) script that parses and edits the BUILD.bazel file. The list of monorepo projects is conveniently available in the root level `package.json` file.
 
 Note that updating `buildFileTemplate` does not change existing BUILD.bazel files (since they could contain custom rules and modifications). If you want the same changes in existing files, you will have to edit those files yourself.
 
@@ -1703,7 +1697,7 @@ Note that updating `buildFileTemplate` does not change existing BUILD.bazel file
 ## TODOS
 
 - add cli test args support to sandbox mode
-- add command to import projects (add them to manifest.json)
+- add command to import projects (add them to root level package.json)
 - add command to detect non-imported projects
 - detect WORKSPACE changes in `jazelle changes`
 - watch library -> service
