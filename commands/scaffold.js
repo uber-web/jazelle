@@ -56,11 +56,9 @@ const scaffold /*: Scaffold */ = async ({
     await write(buildFile, replaced, 'utf8');
   }
 
-  manifest.projects = [...new Set([...manifest.projects, relativeTo])].sort();
-  pkg.workspaces = manifest.projects;
-  const manifestFile = `${root}/manifest.json`;
+  const workspaces = [...new Set([...pkg.workspaces, relativeTo])].sort();
+  pkg.workspaces = workspaces;
   await write(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
-  await write(manifestFile, JSON.stringify(manifest, null, 2), 'utf8');
   await align({root, cwd: absoluteTo, skipPreinstall, skipPostinstall});
 
   if (hooks && skipPostinstall === false)
