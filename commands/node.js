@@ -20,7 +20,7 @@ const runNode /*: Node */ = async ({
   args = [],
   stdio = 'inherit',
 }) => {
-  const params = ['-r', `${root}/.pnp.js`, ...getPassThroughArgs(args)];
+  const params = ['-r', `${root}/.pnp.cjs`, ...getPassThroughArgs(args)];
   await spawn(node, params, {env: process.env, cwd, stdio});
 };
 

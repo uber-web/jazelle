@@ -95,7 +95,7 @@ function runCommand(command, args = []) {
     if (command.includes('${NODE}')) {
       command = command
         .split('${NODE}')
-        .join(`${node} -r ${join(rootDir, '.pnp.js')}`);
+        .join(`${node} -r ${join(rootDir, '.pnp.cjs')}`);
     }
     if (command.includes('${ROOT_DIR}')) {
       command = command.split('${ROOT_DIR}').join(rootDir);
