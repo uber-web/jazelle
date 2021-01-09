@@ -1,6 +1,6 @@
 {
   "name": "jazelle",
-  "version": "0.0.0-standalone.31",
+  "version": "0.0.0-standalone.32",
   "main": "index.js",
   "bin": {
     "barn": "bin/bootstrap.sh",
@@ -31,4 +31,3 @@
     "update-vendor": "yarn install --prod --flat --frozen-lockfile --modules-folder=vendor"
   }
 }
-
