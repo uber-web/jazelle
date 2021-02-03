@@ -16,6 +16,7 @@ const {bump} = require('../commands/bump.js');
 const {script} = require('../commands/script.js');
 const {localize} = require('../commands/localize.js');
 const {check} = require('../commands/check.js');
+const {outdated} = require('../commands/outdated.js');
 
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {batchTestGroup} = require('../utils/batch-test-group');
@@ -119,7 +120,9 @@ async function runTests() {
     t(testSortPackageJSON),
     t(testLocalize),
     t(testCheck),
+    t(testOutdated),
   ]);
+
   // run separately to avoid CI error
   await t(testBazelDummy);
   await t(testBazelBuild);
@@ -134,7 +137,6 @@ async function runTests() {
   await t(testBazelDependentFailure);
 
   await exec(`rm -rf ${tmp}/tmp`);
-
   console.log('All tests pass');
 }
 
@@ -2031,4 +2033,16 @@ async function testCheck() {
       },
     }
   );
+}
+
+async function testOutdated() {
+  const cmd = `cp -r ${__dirname}/fixtures/outdated ${tmp}/tmp/outdated`;
+  await exec(cmd);
+
+  let data = [];
+  const logger = (...args) => data.push(args.join(' '));
+
+  const root = `${tmp}/tmp/outdated`;
+  await outdated({root, logger});
+  assert.equal(data.join(), 'only-version-one-zero-zero 0.1.0 1.0.0');
 }

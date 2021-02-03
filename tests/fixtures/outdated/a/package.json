@@ -1,0 +1,6 @@
+{
+  "name": "a",
+  "dependencies": {
+    "only-version-one-zero-zero": "0.1.0"
+  }
+}
