@@ -8,7 +8,7 @@ const {minVersion, gt, validRange} = require('../utils/cached-semver');
 /*::
 type OutdatedArgs = {
   root: string,
-  logger?: (...data: Array<mixed>) => void
+  logger?: (...data: Array<mixed>) => void | mixed
 };
 type Outdated = (OutdatedArgs) => Promise<void>
 */
