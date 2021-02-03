@@ -114,7 +114,7 @@ function generateSources({root, main, regexes}) {
   const relSandbox = relative(root, dir);
   const real = realDir.replace(`/${relSandbox}`, '');
   for (const regex of regexes) {
-    const sandboxed = find({root, regex: new RegExp(regex)});
+    const sandboxed = find({root: main, regex: new RegExp(regex)});
     for (const item of sandboxed) {
       const rel = relative(root, item);
       const sandboxedPath = `${root}/${rel}`;
