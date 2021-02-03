@@ -14,6 +14,7 @@ type Outdated = (OutdatedArgs) => Promise<void>
 
 const outdated /*: Outdated */ = async ({root}) => {
   const {projects} = await getManifest({root});
+  console.log('A', projects);
   const locals = await getAllDependencies({root, projects});
   const map = {};
   const types = ['dependencies', 'devDependencies'];
@@ -41,10 +42,15 @@ const outdated /*: Outdated */ = async ({root}) => {
   for (const name in map) {
     const local = locals.find(local => local.meta.name === name);
     if (!local) {
-      const query = `${node} ${yarn} info ${name} version --json 2>/dev/null`;
-      const registryVersion = await exec(query);
-      if (registryVersion) {
-        const latest = JSON.parse(registryVersion).data;
+      const query = `${node} ${yarn} npm info ${name} -f version --json 2>/dev/null`;
+      let latest;
+      try {
+        const meta = JSON.parse(await exec(query));
+        latest = meta.version;
+      } catch (e) {
+        continue;
+      }
+      if (latest) {
         for (const range of map[name]) {
           if (!validRange(range) || !validRange(latest)) {
             continue;
