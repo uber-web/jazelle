@@ -2039,7 +2039,10 @@ async function testOutdated() {
   const cmd = `cp -r ${__dirname}/fixtures/outdated ${tmp}/tmp/outdated`;
   await exec(cmd);
 
+  let data = [];
+  const logger = (...args) => data.push(args.join(' '));
+
   const root = `${tmp}/tmp/outdated`;
-  const result = await outdated({root});
-  assert.equal(result, 'only-version-one-zero-zero 0.1.0 1.0.0');
+  await outdated({root, logger});
+  assert.equal(data.join(), 'only-version-one-zero-zero 0.1.0 1.0.0');
 }

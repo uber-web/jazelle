@@ -8,13 +8,13 @@ const {minVersion, gt, validRange} = require('../utils/cached-semver');
 /*::
 type OutdatedArgs = {
   root: string,
+  logger?: (...data: Array<mixed>) => void
 };
 type Outdated = (OutdatedArgs) => Promise<void>
 */
 
-const outdated /*: Outdated */ = async ({root}) => {
+const outdated /*: Outdated */ = async ({root, logger = console.log}) => {
   const {projects} = await getManifest({root});
-  console.log('A', projects);
   const locals = await getAllDependencies({root, projects});
   const map = {};
   const types = ['dependencies', 'devDependencies'];
@@ -34,7 +34,7 @@ const outdated /*: Outdated */ = async ({root}) => {
     if (local) {
       const {version} = local.meta;
       for (const range of map[name]) {
-        if (version !== range) console.log(name, range, version);
+        if (version !== range) logger(name, range, version);
       }
     }
   }
@@ -55,7 +55,7 @@ const outdated /*: Outdated */ = async ({root}) => {
           if (!validRange(range) || !validRange(latest)) {
             continue;
           }
-          if (gt(latest, minVersion(range))) console.log(name, range, latest);
+          if (gt(latest, minVersion(range))) logger(name, range, latest);
         }
       }
     }
