@@ -8,6 +8,8 @@ const {minVersion, gt, validRange} = require('../utils/cached-semver');
 /*::
 type OutdatedArgs = {
   root: string,
+  json?: boolean,
+  dedup?: boolean,
   logger?: (...data: Array<mixed>) => void | mixed
 };
 type Outdated = (OutdatedArgs) => Promise<void>
@@ -85,7 +87,12 @@ const fetchInfo = async (
   return queries;
 };
 
-const outdated /*: Outdated */ = async ({root, logger = console.log}) => {
+const outdated /*: Outdated */ = async ({
+  root,
+  json = false,
+  dedup = false,
+  logger = console.log,
+}) => {
   const {projects} = await getManifest({root});
   const locals = await getAllDependencies({root, projects});
   const getLocal = name => locals.find(local => local.meta.name === name);
@@ -125,21 +132,26 @@ const outdated /*: Outdated */ = async ({root, logger = console.log}) => {
 
   for (const name in info) {
     const latest = info[name].version;
-    if (latest && typeof latest === 'string') {
-      for (const range of map[name]) {
-        if (!validRange(range) || !validRange(latest)) {
-          continue;
+    if (latest && typeof latest === 'string' && validRange(latest)) {
+      const outdated = [];
+      for (const version of map[name]) {
+        if (validRange(version) && gt(latest, minVersion(version))) {
+          outdated.push(version);
         }
-        if (gt(latest, minVersion(range))) {
-          results.push({name, range: [range], latest});
-        }
+      }
+      if (outdated.length > 0) {
+        results.push({name, range: outdated, latest});
       }
     }
   }
 
   // report discrepancies
   for (const {name, range, latest} of results) {
-    logger(name, range[0], latest);
+    if (dedup) {
+      logger(name, range.join(' '), latest);
+    } else {
+      range.forEach(version => logger(name, version, latest));
+    }
   }
 };
 
