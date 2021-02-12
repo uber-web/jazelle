@@ -147,7 +147,7 @@ const runCLI /*: RunCLI */ = async argv => {
 
         --json                     Whether to print as JSON (e.g. for piping to jq)
         --dedup                    De-duplicates results by combining used versions into a single result`,
-        async (json, dedup) =>
+        async ({json, dedup}) =>
           outdated({
             root: await rootOf(args),
             json: Boolean(json),
