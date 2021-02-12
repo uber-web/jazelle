@@ -14,10 +14,11 @@ type OutdatedArgs = {
 };
 type Outdated = (OutdatedArgs) => Promise<void>
 
+type Version = string;
 type Result = {
-  name: string,
-  range: Array<string>,
-  latest: string,
+  packageName: string,
+  installed: Array<Version>,
+  latest: Version,
 };
 */
 
@@ -120,7 +121,11 @@ const outdated /*: Outdated */ = async ({
         (consumed /*: string */) => consumed !== version
       );
       if (outOfDate.length > 0) {
-        results.push({name, range: outOfDate, latest: version});
+        results.push({
+          packageName: name,
+          installed: outOfDate,
+          latest: version,
+        });
       }
     }
   }
@@ -140,18 +145,30 @@ const outdated /*: Outdated */ = async ({
         }
       }
       if (outdated.length > 0) {
-        results.push({name, range: outdated, latest});
+        results.push({packageName: name, installed: outdated, latest});
       }
     }
   }
 
   // report discrepancies
-  for (const {name, range, latest} of results) {
+  for (const result of results) {
+    const formatted = [];
     if (dedup) {
-      logger(name, range.join(' '), latest);
+      formatted.push(result);
     } else {
-      range.forEach(version => logger(name, version, latest));
+      result.installed.forEach(version =>
+        formatted.push({
+          ...result,
+          installed: [version],
+        })
+      );
     }
+
+    formatted.forEach(entry =>
+      json
+        ? logger(JSON.stringify(entry))
+        : logger(entry.packageName, entry.installed.join(' '), entry.latest)
+    );
   }
 };
 
