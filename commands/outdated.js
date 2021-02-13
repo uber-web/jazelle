@@ -164,11 +164,15 @@ const outdated /*: Outdated */ = async ({
       );
     }
 
-    formatted.forEach(entry =>
+    if (json) logger('[');
+    formatted.forEach((entry, i) =>
       json
-        ? logger(JSON.stringify(entry))
+        ? logger(
+            JSON.stringify(entry) + (i !== formatted.length - 1 ? ',' : '')
+          )
         : logger(entry.packageName, entry.installed.join(' '), entry.latest)
     );
+    if (json) logger(']');
   }
 };
 

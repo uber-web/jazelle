@@ -83,7 +83,6 @@ async function t(test) {
 async function runTests() {
   await exec(`rm -rf ${tmp}/tmp`);
   await exec(`mkdir -p ${tmp}/tmp`);
-
   await Promise.all([
     t(testRunCLI),
     t(testInit),
@@ -2058,17 +2057,18 @@ async function testOutdated() {
 
   // Test --json option w/ --dedup
   await outdated({root, logger, json: true, dedup: true});
-  assert.equal(data.length, 1);
   let parsed /*: ?{[string]: string} */;
   try {
-    parsed = JSON.parse(data[0]);
+    parsed = JSON.parse(data.join(''));
   } catch (e) {
     // $FlowFixMe
-    assert.fail(`Unable to call JSON.parse on data: ${data}`);
+    assert.fail(`Unable to call JSON.parse on data: ${data.join('')}`);
   }
-  assert.deepEqual(parsed, {
-    packageName: 'only-version-one-zero-zero',
-    installed: ['0.1.0', '0.2.0'],
-    latest: '1.0.0',
-  });
+  assert.deepEqual(parsed, [
+    {
+      packageName: 'only-version-one-zero-zero',
+      installed: ['0.1.0', '0.2.0'],
+      latest: '1.0.0',
+    },
+  ]);
 }
