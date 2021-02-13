@@ -83,7 +83,6 @@ async function t(test) {
 async function runTests() {
   await exec(`rm -rf ${tmp}/tmp`);
   await exec(`mkdir -p ${tmp}/tmp`);
-
   await Promise.all([
     t(testRunCLI),
     t(testInit),
@@ -2039,10 +2038,37 @@ async function testOutdated() {
   const cmd = `cp -r ${__dirname}/fixtures/outdated ${tmp}/tmp/outdated`;
   await exec(cmd);
 
-  let data = [];
+  const data = [];
+  const flush = () => data.splice(0);
   const logger = (...args) => data.push(args.join(' '));
 
   const root = `${tmp}/tmp/outdated`;
+
+  // Sanity check
   await outdated({root, logger});
-  assert.equal(data.join(), 'only-version-one-zero-zero 0.1.0 1.0.0');
+  assert.equal(data[0], 'only-version-one-zero-zero 0.1.0 1.0.0');
+  assert.equal(data[1], 'only-version-one-zero-zero 0.2.0 1.0.0');
+  flush();
+
+  // Test --dedup option
+  await outdated({root, logger, dedup: true});
+  assert.equal(data.join(), 'only-version-one-zero-zero 0.1.0 0.2.0 1.0.0');
+  flush();
+
+  // Test --json option w/ --dedup
+  await outdated({root, logger, json: true, dedup: true});
+  let parsed /*: ?{[string]: string} */;
+  try {
+    parsed = JSON.parse(data.join(''));
+  } catch (e) {
+    // $FlowFixMe
+    assert.fail(`Unable to call JSON.parse on data: ${data.join('')}`);
+  }
+  assert.deepEqual(parsed, [
+    {
+      packageName: 'only-version-one-zero-zero',
+      installed: ['0.1.0', '0.2.0'],
+      latest: '1.0.0',
+    },
+  ]);
 }
