@@ -14,7 +14,10 @@ const purge /*: Purge */ = async ({root}) => {
   await Promise.all([
     ...projects.map(project => remove(`${root}/${project}/node_modules`)),
     remove(`${root}/third_party/jazelle/temp`),
-    remove(`${root}/node_modules`),
+    remove(`${root}/.yarn/cache`),
+    remove(`${root}/.yarn/unplugged`),
+    remove(`${root}/.yarn/build-state.yml`),
+    remove(`${root}/.yarn/install-state.gz`),
     spawn(bazel, ['clean', '--expunge'], {
       cwd: root,
       stdio: 'inherit',
