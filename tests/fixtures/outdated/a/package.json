@@ -1,0 +1,7 @@
+{
+  "name": "a",
+  "dependencies": {
+    "only-version-one-zero-zero": "0.1.0",
+    "@alexmsmithca/does-not-exist": "1.0.0"
+  }
+}
