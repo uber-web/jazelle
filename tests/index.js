@@ -76,7 +76,12 @@ async function t(test) {
   const match = (process.argv[2] || '').toLowerCase();
   if (test.name.toLowerCase().indexOf(match) > -1) {
     if (match) console.log(`Testing ${test.name}`);
-    return test();
+    try {
+      await test();
+    } catch (e) {
+      console.error(`\n\nTest "${test.name}" failed with error:`);
+      throw e;
+    }
   }
 }
 
