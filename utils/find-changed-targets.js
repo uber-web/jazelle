@@ -94,6 +94,7 @@ const findChangedBazelTargets = async ({root, files}) => {
       const representatives = getTargetRepresentatives(lines);
       const [missing, exists] = await scan(root, representatives);
       const recoveredMissing = await batch(root, missing, async file => {
+        // $FlowFixMe: flow thinks `file` is an array for some reason
         const find = `${bazel} query "${file}"`;
         const result = await exec(find, opts).catch(async e => {
           // if file doesn't exist, find which package it would've belong to, and find another file in the same package
