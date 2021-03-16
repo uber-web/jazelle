@@ -1,4 +1,5 @@
 // @flow
+const {dirname} = require('path');
 const {getManifest} = require('./get-manifest.js');
 const {exec} = require('./node-helpers.js');
 const {bazel} = require('./binary-paths.js');
@@ -74,7 +75,7 @@ const findChangedBazelTargets = async ({root, files}) => {
   if (invalid) throw new Error(`File path cannot contain spaces: ${invalid}`);
 
   const {projects, workspace} = await getManifest({root});
-  const opts = {cwd: root, maxBuffer: 1e8};
+  const opts = {cwd: root, maxBuffer: 1e9};
   if (workspace === 'sandbox') {
     if (lines.includes('WORKSPACE') || lines.includes('.bazelversion')) {
       const cmd = `${bazel} query 'kind(".*_test rule", "...")'`;
@@ -90,8 +91,10 @@ const findChangedBazelTargets = async ({root, files}) => {
         Separate files into two categories: files that exist and files that have been deleted
         For files that have been deleted, try to recover some other file in the package
       */
-      const [missing, exists] = await scan(root, lines);
+      const representatives = getTargetRepresentatives(lines);
+      const [missing, exists] = await scan(root, representatives);
       const recoveredMissing = await batch(root, missing, async file => {
+        // $FlowFixMe: flow thinks `file` is an array for some reason
         const find = `${bazel} query "${file}"`;
         const result = await exec(find, opts).catch(async e => {
           // if file doesn't exist, find which package it would've belong to, and find another file in the same package
@@ -102,7 +105,7 @@ const findChangedBazelTargets = async ({root, files}) => {
           const [, pkg = ''] = e.message.match(regex) || [];
           if (pkg === '') return '';
           const cmd = `${bazel} query 'kind("source file", //${pkg}:*)' | head -n 1`;
-          return exec(cmd).catch(() => '');
+          return exec(cmd, opts).catch(() => '');
         });
         return result;
       });
@@ -189,5 +192,16 @@ async function batch(root, items, fn) {
     ),
   ].filter(Boolean);
 }
+
+// for each folder, we typically only need to check one file,
+// since all files will generally map to the same target
+// given how jazelle generates BUILD.bazel files
+const getTargetRepresentatives = files => {
+  const map = new Map();
+  for (const file of files) {
+    map.set(dirname(file), file);
+  }
+  return [...map.values()];
+};
 
 module.exports = {findChangedTargets};
