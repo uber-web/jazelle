@@ -201,6 +201,6 @@ const getTargetRepresentatives = files => {
     map.set(dirname(file), file);
   }
   return [...map.values()];
-}
+};
 
 module.exports = {findChangedTargets};
