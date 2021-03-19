@@ -44,7 +44,7 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
           update(meta, 'peerDependencies', name, local.meta.version);
           update(meta, 'optionalDependencies', name, local.meta.version);
         }
-        await write(`${cwd}/package.json`, sortPackageJson(meta), 'utf8');
+        await write(`${cwd}/package.json`, meta, 'utf8');
       })
     );
   }
