@@ -1,6 +1,4 @@
 // @flow
-const {inc} = require('../vendor/semver');
-const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getManifest} = require('../utils/get-manifest.js');
 const {getAllDependencies} = require('../utils/get-all-dependencies.js');
 const {sortPackageJson} = require('../utils/sort-package-json.js');
@@ -16,9 +14,9 @@ type Sort = (SortArgs) => Promise<void>
 const sort /*: Sort */ = async ({root}) => {
   const {projects} = await getManifest({root});
   const deps = await getAllDependencies({root, projects});
-	
+
   for (const dep of deps) {
-		await write(`${dep.dir}/package.json`, sortPackageJson(dep.meta), 'utf8');
+    await write(`${dep.dir}/package.json`, sortPackageJson(dep.meta), 'utf8');
   }
 };
 
