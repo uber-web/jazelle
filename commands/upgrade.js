@@ -3,7 +3,6 @@ const {minVersion, satisfies} = require('../utils/cached-semver');
 const {getManifest} = require('../utils/get-manifest.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
 const {read, write} = require('../utils/node-helpers.js');
-const {sortPackageJson} = require('../utils/sort-package-json.js');
 const {spawn} = require('../utils/node-helpers.js');
 const {node, yarn} = require('../utils/binary-paths.js');
 
