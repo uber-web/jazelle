@@ -3,7 +3,6 @@ const {minVersion, satisfies} = require('../utils/cached-semver');
 const {getManifest} = require('../utils/get-manifest.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
 const {read, write} = require('../utils/node-helpers.js');
-const {sortPackageJson} = require('../utils/sort-package-json.js');
 const {spawn} = require('../utils/node-helpers.js');
 const {node, yarn} = require('../utils/binary-paths.js');
 
@@ -44,7 +43,11 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
           update(meta, 'peerDependencies', name, local.meta.version);
           update(meta, 'optionalDependencies', name, local.meta.version);
         }
-        await write(`${cwd}/package.json`, sortPackageJson(meta), 'utf8');
+        await write(
+          `${cwd}/package.json`,
+          JSON.stringify(meta, null, 2) + '\n',
+          'utf8'
+        );
       })
     );
   }

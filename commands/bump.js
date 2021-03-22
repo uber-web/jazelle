@@ -6,7 +6,6 @@ const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
 const {exec, write} = require('../utils/node-helpers.js');
 const {node, yarn} = require('../utils/binary-paths.js');
 const {upgrade} = require('./upgrade.js');
-const {sortPackageJson} = require('../utils/sort-package-json');
 
 /*::
 type BumpArgs = {
@@ -60,7 +59,11 @@ const bump /*: Bump */ = async ({
         console.log(
           `${dep.meta.name} is a dependency of ${cwd} but it is marked as private, thus cannot be published.`
         );
-      await write(`${dep.dir}/package.json`, sortPackageJson(dep.meta), 'utf8');
+      await write(
+        `${dep.dir}/package.json`,
+        JSON.stringify(dep.meta, null, 2),
+        'utf8'
+      );
 
       await upgrade({
         root,

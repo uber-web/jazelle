@@ -14,6 +14,7 @@ const {purge} = require('./commands/purge.js');
 const {check} = require('./commands/check.js');
 const {outdated} = require('./commands/outdated.js');
 const {resolutions} = require('./commands/resolutions.js');
+const {sort} = require('./commands/sort.js');
 const {align} = require('./commands/align.js');
 const {localize} = require('./commands/localize.js');
 const {changes} = require('./commands/changes.js');
@@ -157,6 +158,10 @@ const runCLI /*: RunCLI */ = async argv => {
       resolutions: [
         `Displays list of yarn resolutions`,
         async () => console.log(await resolutions({root: await rootOf(args)})),
+      ],
+      sort: [
+        `Sorts package.json fields`,
+        async () => await sort({root: await rootOf(args)}),
       ],
       align: [
         `Align a project's dependency versions to respect the version policy, if there is one
@@ -338,6 +343,7 @@ module.exports = {
   check: reportMismatchedTopLevelDeps,
   outdated,
   resolutions,
+  sort,
   align,
   localize,
   changes: findChangedTargets,
