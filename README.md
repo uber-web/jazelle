@@ -493,7 +493,11 @@ Shows a report of out-of-sync top level dependencies across projects
 
 List packages that are outdated and their versions
 
-`jazelle outdated`
+`jazelle outdated --json --dedup --limit [number]`
+
+- `--json` - Whether to output as JSON.  Useful for piping to `jq`.  Defaults to `false.`
+- `--dedup` - De-duplicates results by combining used versions into a single result.  Defaults to `false`.
+- `--limit` - Limits the number of external packages to simultaneously resolve with requests to npm.  Defaults to `100`.
 
 ### `jazelle resolutions`
 
