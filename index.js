@@ -147,13 +147,16 @@ const runCLI /*: RunCLI */ = async argv => {
         `Displays deps whose version is behind the latest version
 
         --json                     Whether to print as JSON (e.g. for piping to jq)
-        --dedup                    De-duplicates results by combining used versions into a single result`,
-        async ({json, dedup}) =>
-          outdated({
+        --dedup                    De-duplicates results by combining used versions into a single result
+        --limit                    Limits the number of external packages to simultaneously resolve with requests to npm`,
+        async ({json, dedup, limit}) => {
+          return outdated({
             root: await rootOf(args),
             json: Boolean(json),
             dedup: Boolean(dedup),
-          }),
+            limit: limit ? Number(limit) : undefined,
+          });
+        },
       ],
       resolutions: [
         `Displays list of yarn resolutions`,

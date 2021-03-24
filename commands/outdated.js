@@ -10,6 +10,7 @@ type OutdatedArgs = {
   root: string,
   json?: boolean,
   dedup?: boolean,
+  limit?: number,
   logger?: (...data: Array<mixed>) => void | mixed
 };
 type Outdated = (OutdatedArgs) => Promise<void>
@@ -92,6 +93,7 @@ const outdated /*: Outdated */ = async ({
   root,
   json = false,
   dedup = false,
+  limit = 100,
   logger = console.log,
 }) => {
   const {projects} = await getManifest({root});
@@ -131,9 +133,13 @@ const outdated /*: Outdated */ = async ({
   }
 
   // handle registry discrepancies
-  const info = await fetchInfo(
-    Object.keys(map).filter((pckg /*: string */) => !getLocal(pckg))
+  const externalPackages = Object.keys(map).filter(
+    (pckg /*: string */) => !getLocal(pckg)
   );
+  let info /*: { [string]: { [string]: mixed } } */ = {};
+  for (const part of partition(externalPackages, limit)) {
+    Object.assign(info, await fetchInfo(part));
+  }
 
   for (const name in info) {
     const latest = info[name].version;
