@@ -1,5 +1,7 @@
 // @flow
 const path = require('path');
+const fs = require('fs');
+const {getRootDir} = require('../utils/get-root-dir');
 
 const paths = {
   bazel: `${__dirname}/../bin/bazelisk`,
@@ -9,6 +11,17 @@ const paths = {
     process.env.YARN || `${__dirname}/../bin/yarn.js` // this env var is created by rules/jazelle.bzl, the yarn binary is put there by preinstall hook
   ),
 };
+
+try {
+  const berryPath = path.join(
+    getRootDir({dir: process.cwd()}),
+    '.yarn/releases/yarn-sources.cjs'
+  );
+  if (fs.existsSync(berryPath)) {
+    paths.yarn = berryPath;
+  }
+  /* eslint-disable-next-line no-empty */
+} catch (e) {}
 
 /*::
 export type BinName = string

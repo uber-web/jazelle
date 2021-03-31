@@ -1,16 +1,16 @@
 // @flow
 const {resolve, dirname} = require('path');
-const {exists} = require('./node-helpers.js');
+const {existsSync} = require('fs');
 
 /*::
 export type GetRootDirArgs = {
   dir: string
 }
-export type GetRootDir = (GetRootDirArgs) => Promise<string>
+export type GetRootDir = (GetRootDirArgs) => string
 */
-const getRootDir /*: GetRootDir */ = async ({dir}) => {
+const getRootDir /*: GetRootDir */ = ({dir}) => {
   dir = resolve(dir);
-  if (await exists(`${dir}/manifest.json`)) {
+  if (existsSync(`${dir}/manifest.json`)) {
     return dir;
   } else if (dir !== '/') {
     return getRootDir({dir: dirname(dir)});
