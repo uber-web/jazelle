@@ -958,9 +958,7 @@ async function testGetManifest() {
 
 async function testGetRootDir() {
   const dir = `${__dirname}/fixtures/get-root-dir/a`;
-  const t = () => true;
-  const f = () => false;
-  const result = await getRootDir({dir}).then(t, f);
+  const result = getRootDir({dir});
   assert(result);
 }
 
