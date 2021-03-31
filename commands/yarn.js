@@ -18,6 +18,7 @@ const runYarn /*: Yarn */ = async ({cwd, args = [], stdio = 'inherit'}) => {
   if (typeof process.env.NODE_OPTIONS !== 'string') {
     process.env.NODE_OPTIONS = '--max_old_space_size=8192';
   } else if (!process.env.NODE_OPTIONS.includes('--max_old_space_size')) {
+    // $FlowFixMe
     process.env.NODE_OPTIONS += ' --max_old_space_size=8192';
   }
   await spawn(node, params, {env: process.env, cwd, stdio});
