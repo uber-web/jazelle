@@ -1,5 +1,6 @@
 // @flow
 const {check: checkDeps} = require('./lockfile.js');
+const {red} = require('./red');
 
 /*::
 import type {VersionPolicy, ExceptionMetadata} from './get-manifest.js';
@@ -79,23 +80,27 @@ export type GetErrorMessage = (Report, boolean) => string;
 */
 const getErrorMessage /*: GetErrorMessage */ = (result, json = false) => {
   if (!result.valid) {
-    const policy = result.policy;
-    const exceptions = Object.keys(result.reported).filter(dep =>
-      policy.exceptions.includes(dep)
+    const message = red(
+      `Version policy violation. Use \`jazelle upgrade\` to ensure all projects use the same dependency version`
     );
-    const message = `Version policy violation. Use \`jazelle upgrade\` to ensure all projects use the same dependency version`;
-    const positiveSpecifier =
-      policy.exceptions.length > 0
-        ? ` for deps other than ${policy.exceptions
-            .map(exception => exception.name || exception)
-            .join(', ')}`
-        : '';
-    const negativeSpecifier =
-      exceptions.length > 0 ? ` for ${exceptions.join(', ')}` : '';
-    const modifier = policy.lockstep ? positiveSpecifier : negativeSpecifier;
     const report = JSON.stringify(result.reported, null, 2);
-    const violations = `\nViolations:\n${report}`;
-    return json ? report : message + modifier + violations;
+    let violations = `\nViolations:\n${report}`;
+    for (const dep in result.reported) {
+      const group = result.reported[dep];
+      const versions = Object.keys(group);
+      if (versions.length === 2) {
+        const [correctVersion, incorrectVersion] =
+          group[versions[0]].length > group[versions[1]].length
+            ? [versions[0], versions[1]]
+            : [versions[1], versions[0]];
+        violations = red(
+          `\nWorkpaces: ${group[incorrectVersion].join(
+            ', '
+          )} have incorrect version of ${dep}\nShould be using ${correctVersion} instead of ${incorrectVersion}`
+        );
+      }
+    }
+    return json ? report : message + violations;
   } else {
     return json ? '{}' : '';
   }
