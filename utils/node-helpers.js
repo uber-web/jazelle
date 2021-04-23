@@ -82,7 +82,13 @@ export type SpawnOptions = void | {
 export type Stdio = string | Array<string | number | null | Writable | Readable | Duplex>;
 */
 // use spawn if you just need to run a command for its side effects, or if you want to pipe output straight back to the parent shell
-const spawn /*: Spawn */ = (cmd, argv, opts) => {
+const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
+  if (typeof process.env.NODE_OPTIONS !== 'string') {
+    process.env.NODE_OPTIONS = '--max_old_space_size=16384';
+  } else if (!process.env.NODE_OPTIONS.includes('--max_old_space_size')) {
+    // $FlowFixMe
+    process.env.NODE_OPTIONS += ' --max_old_space_size=16384';
+  }
   const errorWithSyncStackTrace = new Error();
 
   // filter approach ref: https://2ality.com/2018/05/child-process-streams.html#piping-between-child-processes
@@ -98,6 +104,12 @@ const spawn /*: Spawn */ = (cmd, argv, opts) => {
   return new Promise((resolve, reject) => {
     if (opts && typeof opts.filterOutput === 'function') {
       opts.stdio = ['ignore', 'pipe', 'pipe'];
+    }
+
+    if (opts.env == null) {
+      opts.env = process.env;
+    } else {
+      opts.env.NODE_OPTIONS = process.env.NODE_OPTIONS;
     }
 
     const child = proc.spawn(cmd, argv, opts);
