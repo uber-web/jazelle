@@ -60,7 +60,7 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
       cwd: root,
       stdio: 'inherit',
     });
-    await install({root, cwd, frozenLockfile: true, conservative: true});
+    await install({root, cwd: root, frozenLockfile: true, conservative: true});
   }
 };
 
