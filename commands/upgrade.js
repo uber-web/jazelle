@@ -5,6 +5,7 @@ const {findLocalDependency} = require('../utils/find-local-dependency.js');
 const {read, write} = require('../utils/node-helpers.js');
 const {spawn} = require('../utils/node-helpers.js');
 const {node, yarn} = require('../utils/binary-paths.js');
+const {install} = require('./install.js');
 
 /*::
 export type UpgradeArgs = {
@@ -59,6 +60,7 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
       cwd: root,
       stdio: 'inherit',
     });
+    await install({root, cwd, frozenLockfile: true, conservative: true});
   }
 };
 
