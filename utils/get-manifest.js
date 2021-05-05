@@ -12,6 +12,7 @@ export type Manifest = {
   versionPolicy?: VersionPolicy,
   hooks?: Hooks,
   workspace: "host" | "sandbox",
+  hasSandboxIO?: boolean,
 }
 export type ExceptionMetadata = {
   name: string,
