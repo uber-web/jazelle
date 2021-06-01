@@ -70,6 +70,7 @@ else
   (cd "$ROOT" && VERSION="$VERSION" DURATION="$DURATION" COMMAND="$1" COMMAND_ARGS="${@:2}" EXIT_CODE=$EXIT_CODE eval "$PRECOMMAND")
 
   # payload
+  export NODE_NO_WARNINGS=1 # hide [MODULE_NOT_FOUND] errors
   "$NODE" --max_old_space_size=65536 "$JAZELLE" "$@"
   EXIT_CODE=$?
 
