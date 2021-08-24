@@ -17,6 +17,11 @@ const test /*: Test */ = async ({root, cwd, args, stdio = 'inherit'}) => {
   await assertProjectDir({dir: cwd});
 
   const params = getPassThroughArgs(args);
+  if (params.includes('--watch')) {
+    throw new Error(
+      'Watch flag not supported with jazelle test. Try using jazelle yarn test --watch instead'
+    );
+  }
   await executeProjectCommand({
     root,
     cwd,
