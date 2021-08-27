@@ -1,7 +1,7 @@
 {
   "private": true,
   "workspaces": [
-    "not-a-real-downstream",
+    "not-a-real-upstream",
     "not-a-real-project",
     "not-a-real-dep"
   ]

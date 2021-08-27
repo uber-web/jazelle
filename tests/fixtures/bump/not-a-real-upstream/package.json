@@ -1,5 +1,5 @@
 {
-  "name": "not-a-real-downstream",
+  "name": "not-a-real-upstream",
   "version": "0.0.0",
   "dependencies": {
     "not-a-real-project": "0.0.0"

@@ -2,34 +2,25 @@
 const {inc} = require('../vendor/semver');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getManifest} = require('../utils/get-manifest.js');
-const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
-const {exec, write} = require('../utils/node-helpers.js');
-const {node, yarn} = require('../utils/binary-paths.js');
-const {upgrade} = require('./upgrade.js');
+const {write} = require('../utils/node-helpers.js');
+const {getUpstreams} = require('../utils/get-upstreams.js');
 
 /*::
 type BumpArgs = {
   root: string,
   cwd: string,
   type: string,
-  frozenPackageJson?: boolean,
 }
 type Bump = (BumpArgs) => Promise<void>
 */
 
-const bump /*: Bump */ = async ({
-  root,
-  cwd,
-  type,
-  frozenPackageJson = false,
-}) => {
+const bump /*: Bump */ = async ({root, cwd, type}) => {
   await assertProjectDir({dir: cwd});
 
   const {projects} = await getManifest({root});
-  const deps = await getLocalDependencies({
-    root,
-    dirs: projects.map(dir => `${root}/${dir}`),
+  const upstreams = await getUpstreams({
     target: cwd,
+    dirs: projects.map(dir => `${root}/${dir}`),
   });
 
   const types = /^(major|premajor|minor|preminor|patch|prepatch|prerelease|none)$/;
@@ -39,44 +30,28 @@ const bump /*: Bump */ = async ({
     );
   }
 
-  const options = {cwd: root, env: process.env};
-  for (const dep of deps) {
-    const query = `${node} ${yarn} npm info ${dep.meta.name} --json`;
-    const data = await exec(query, options).catch(() => null);
-    const version = parseVersion(data);
-    const old = dep.meta.version;
-    const next = type === 'none' ? version : inc(version, type);
-
-    if (next !== old) {
-      if (frozenPackageJson) {
-        throw new Error(
-          `Cannot bump version when frozenPackageJson is true. You most likely forgot to bump a dependency's version locally`
-        );
+  for (const dep of upstreams) {
+    const version = dep.meta.version;
+    const nextVersion =
+      type === 'none' || dep.meta.private ? version : inc(version, type);
+    dep.meta.version = nextVersion;
+    for (const nestedDep of upstreams) {
+      const fields = ['dependencies', 'devDependencies'];
+      for (const field of fields) {
+        const deps = nestedDep.meta[field] || {};
+        if (deps[dep.meta.name]) {
+          nestedDep.meta[field][dep.meta.name] = nextVersion;
+        }
       }
-
-      if (!dep.meta.private) dep.meta.version = next;
-      else
-        console.log(
-          `${dep.meta.name} is a dependency of ${cwd} but it is marked as private, thus cannot be published.`
-        );
-      await write(
-        `${dep.dir}/package.json`,
-        JSON.stringify(dep.meta, null, 2),
-        'utf8'
-      );
-
-      await upgrade({
-        root,
-        cwd,
-        args: [`${dep.meta.name}@${dep.meta.version}`],
-      });
     }
   }
-};
-
-const parseVersion = data => {
-  const versions = data ? JSON.parse(data).versions : [];
-  return versions.length > 0 ? versions.pop() : '0.0.0';
+  for (const dep of upstreams) {
+    await write(
+      `${dep.dir}/package.json`,
+      JSON.stringify(dep.meta, null, 2),
+      'utf8'
+    );
+  }
 };
 
 module.exports = {bump};

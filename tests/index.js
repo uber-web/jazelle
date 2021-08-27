@@ -352,13 +352,8 @@ async function testBump() {
 
   const pkgMeta = `${tmp}/tmp/bump/not-a-real-project/package.json`;
   const depMeta = `${tmp}/tmp/bump/not-a-real-dep/package.json`;
-  const downstreamMeta = `${tmp}/tmp/bump/not-a-real-downstream/package.json`;
+  const downstreamMeta = `${tmp}/tmp/bump/not-a-real-upstream/package.json`;
 
-  // do not update package.json files in CI
-  // $FlowFixMe `assert` typedef is missing `rejects` method
-  await assert.rejects(
-    bump({root, cwd, type: 'preminor', frozenPackageJson: true})
-  );
   assert(JSON.parse(await read(pkgMeta)).version, '0.0.0');
   assert(JSON.parse(await read(depMeta)).version, '0.0.0');
 
@@ -374,6 +369,7 @@ async function testBump() {
   // downstream is greenkept
   const meta = JSON.parse(await read(downstreamMeta));
   assert(meta.dependencies['not-a-real-project'], '0.1.0-0');
+  assert(meta.version, '0.1.0-0');
 }
 
 async function testScriptCommand() {
