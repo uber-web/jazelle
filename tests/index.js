@@ -368,12 +368,13 @@ async function testBump() {
 
   // command should be idempotent
   await bump({root, cwd, type: 'preminor'});
-  assert(JSON.parse(await read(pkgMeta)).version, '0.1.0-0');
-  assert(JSON.parse(await read(depMeta)).version, '0.1.0-0');
+  assert.equal(JSON.parse(await read(pkgMeta)).version, '0.1.0-0');
+  assert.equal(JSON.parse(await read(depMeta)).version, '0.0.0');
 
   // downstream is greenkept
   const meta = JSON.parse(await read(downstreamMeta));
-  assert(meta.dependencies['not-a-real-project'], '0.1.0-0');
+  assert.equal(meta.dependencies['not-a-real-project'], '0.1.0-0');
+  assert.equal(meta.version, '0.1.0-0');
 }
 
 async function testScriptCommand() {

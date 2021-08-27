@@ -2,8 +2,8 @@
 const {inc} = require('../vendor/semver');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getManifest} = require('../utils/get-manifest.js');
-const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
-const {exec, write} = require('../utils/node-helpers.js');
+const {getDownstreams} = require('../utils/get-downstreams.js');
+const {exec, write, read} = require('../utils/node-helpers.js');
 const {node, yarn} = require('../utils/binary-paths.js');
 const {upgrade} = require('./upgrade.js');
 
@@ -25,12 +25,18 @@ const bump /*: Bump */ = async ({
 }) => {
   await assertProjectDir({dir: cwd});
 
-  const {projects} = await getManifest({root});
-  const deps = await getLocalDependencies({
-    root,
-    dirs: projects.map(dir => `${root}/${dir}`),
-    target: cwd,
-  });
+  const {projects} = await /*:: await */ getManifest({root});
+
+  const dirs = projects.map(dir => `${root}/${dir}`);
+  const deps = await Promise.all([
+    ...dirs.map(async dir => {
+      const meta = JSON.parse(await read(`${dir}/package.json`, 'utf8'));
+      return {dir, meta, depth: 1};
+    }),
+  ]);
+  const dep = deps.find(({dir}) => dir === cwd);
+  const downstreams = await getDownstreams(deps, dep);
+  downstreams.push(dep);
 
   const types = /^(major|premajor|minor|preminor|patch|prepatch|prerelease|none)$/;
   if (!types.test(type)) {
@@ -40,7 +46,7 @@ const bump /*: Bump */ = async ({
   }
 
   const options = {cwd: root, env: process.env};
-  for (const dep of deps) {
+  for (const dep of downstreams) {
     const query = `${node} ${yarn} npm info ${dep.meta.name} --json`;
     const data = await exec(query, options).catch(() => null);
     const version = parseVersion(data);
