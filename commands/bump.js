@@ -18,7 +18,7 @@ const bump /*: Bump */ = async ({root, cwd, type}) => {
   await assertProjectDir({dir: cwd});
 
   const {projects} = await getManifest({root});
-  const upstreams = await getUpstreams({
+  const upstreams = await /*:: await */ getUpstreams({
     target: cwd,
     dirs: projects.map(dir => `${root}/${dir}`),
   });
