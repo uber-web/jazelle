@@ -1,0 +1,9 @@
+{
+  "name": "@uber/b",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "echo BulkTransferException && exit 1",
+    "dev": "node dist/index.js"
+  }
+}
