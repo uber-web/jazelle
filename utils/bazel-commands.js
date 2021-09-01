@@ -1,106 +1,9 @@
 // @flow
 const {relative, basename, dirname} = require('path');
 const {bazel, node} = require('./binary-paths.js');
-const proc = require('child_process');
 const {spawn} = require('./node-helpers.js');
-const {
-  chunksToLinesAsync,
-  streamWrite,
-} = require('../vendor/@rauschma/stringio');
 
 const startupFlags = ['--host_jvm_args=-Xmx15g'];
-
-const defaultRetryOptions = {
-  numRetries: 5,
-  backoff: 1000,
-};
-
-/*::
-type RetryOptions = {
-  numRetries: number,
-  backoff: number
-}
-*/
-
-const spawnBazelCommand = (
-  args,
-  {cwd, stdio},
-  retryOptions = defaultRetryOptions
-) => {
-  if (typeof process.env.NODE_OPTIONS !== 'string') {
-    process.env.NODE_OPTIONS = '--max_old_space_size=16384';
-  } else if (!process.env.NODE_OPTIONS.includes('--max_old_space_size')) {
-    // $FlowFixMe
-    process.env.NODE_OPTIONS += ' --max_old_space_size=16384';
-  }
-  const errorWithSyncStackTrace = new Error();
-  let shouldRetry = false;
-
-  const child = proc.spawn(bazel, [...startupFlags, ...args], {
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: process.env,
-    cwd,
-  });
-
-  async function handleOutput(readable, writable) {
-    for await (const line of chunksToLinesAsync(readable)) {
-      await streamWrite(writable, line);
-      if (line.includes('BulkTransferException')) {
-        shouldRetry = true;
-      }
-    }
-  }
-
-  let outStream = process.stdout;
-  let errStream = process.stderr;
-
-  if (Array.isArray(stdio)) {
-    if (typeof stdio[1] === 'object') {
-      outStream = stdio[1];
-    }
-    if (typeof stdio[2] === 'object') {
-      errStream = stdio[2];
-    }
-  }
-
-  handleOutput(child.stdout, outStream);
-  handleOutput(child.stderr, errStream);
-
-  return new Promise((resolve, reject) => {
-    child.on('error', e => {
-      reject(new Error(e));
-    });
-    child.on('close', code => {
-      if (code > 0) {
-        if (shouldRetry && retryOptions.numRetries > 0) {
-          streamWrite(
-            outStream,
-            `BulkTransferException detected - retrying command with backoff ${retryOptions.backoff}ms`
-          );
-          setTimeout(() => {
-            retryOptions.backoff = retryOptions.backoff * 2;
-            retryOptions.numRetries = retryOptions.numRetries - 1;
-            return spawnBazelCommand(args, {cwd, stdio}, retryOptions)
-              .then(resolve)
-              .catch(reject);
-          }, retryOptions.backoff);
-        } else {
-          const commandString = 'bazel ' + args.join(' ');
-          errorWithSyncStackTrace.message = `Process failed ${cwd}with exit code ${code}: ${commandString}`;
-          // $FlowFixMe - maybe create specific error class to contain exit code?
-          errorWithSyncStackTrace.status = code;
-          reject(errorWithSyncStackTrace);
-        }
-      } else {
-        resolve();
-      }
-    });
-    process.on('exit', () => {
-      // $FlowFixMe flow typedef is missing .exitCode
-      if (child.exitCode === null) child.kill();
-    });
-  });
-};
 
 /*::
 import type {Stdio} from './node-helpers.js';
@@ -110,26 +13,24 @@ export type BuildArgs = {
   cwd: string,
   name?: string,
   stdio?: Stdio,
-  retryOptions?: RetryOptions,
 };
 export type Build = (BuildArgs) => Promise<void>;
 */
-
 const build /*: Build */ = async ({
   root,
   cwd,
   name = basename(cwd),
   stdio = 'inherit',
-  retryOptions = defaultRetryOptions,
 }) => {
   cwd = relative(root, cwd);
-  await spawnBazelCommand(
-    ['build', `//${cwd}:${name}`, '--sandbox_debug'],
+  await spawn(
+    bazel,
+    [...startupFlags, 'build', `//${cwd}:${name}`, '--sandbox_debug'],
     {
-      cwd: root,
       stdio,
-    },
-    retryOptions
+      env: process.env,
+      cwd: root,
+    }
   );
 };
 
@@ -140,7 +41,6 @@ export type TestArgs = {
   args: Array<string>,
   name?: string,
   stdio?: Stdio,
-  retryOptions?: RetryOptions,
 };
 type Test = (TestArgs) => Promise<void>;
 */
@@ -150,14 +50,23 @@ const test /*: Test */ = async ({
   args,
   name = 'test',
   stdio = 'inherit',
-  retryOptions = defaultRetryOptions,
 }) => {
   cwd = relative(root, cwd);
   const testParams = args.map(arg => `--test_arg=${arg}`);
-  await spawnBazelCommand(
-    ['run', `//${cwd}:${name}`, '--sandbox_debug', ...testParams],
-    {cwd: root, stdio},
-    retryOptions
+  await spawn(
+    bazel,
+    [
+      ...startupFlags,
+      'run',
+      `//${cwd}:${name}`,
+      '--sandbox_debug',
+      ...testParams,
+    ],
+    {
+      stdio,
+      env: process.env,
+      cwd: root,
+    }
   );
 };
 
@@ -168,7 +77,6 @@ export type RunArgs = {
   args: Array<string>,
   name?: string,
   stdio?: Stdio,
-  retryOptions?: RetryOptions,
 };
 type Run = (RunArgs) => Promise<void>;
 */
@@ -178,14 +86,23 @@ const run /*: Run */ = async ({
   args,
   name = basename(cwd),
   stdio = 'inherit',
-  retryOptions = defaultRetryOptions,
 }) => {
   cwd = relative(root, cwd);
   const runParams = args.length > 0 ? ['--', ...args] : [];
-  await spawnBazelCommand(
-    ['run', `//${cwd}:${name}`, '--sandbox_debug', ...runParams],
-    {cwd: root, stdio},
-    retryOptions
+  await spawn(
+    bazel,
+    [
+      ...startupFlags,
+      'run',
+      `//${cwd}:${name}`,
+      '--sandbox_debug',
+      ...runParams,
+    ],
+    {
+      stdio,
+      env: process.env,
+      cwd: root,
+    }
   );
 };
 
@@ -195,18 +112,11 @@ export type DevArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
-  retryOptions?: RetryOptions,
 };
 type Dev = (DevArgs) => Promise<void>;
 */
-const dev /*: Dev */ = async ({
-  root,
-  cwd,
-  args,
-  stdio = 'inherit',
-  retryOptions = defaultRetryOptions,
-}) => {
-  await run({root, cwd, args, name: 'dev', stdio, retryOptions});
+const dev /*: Dev */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+  await run({root, cwd, args, name: 'dev', stdio});
 };
 
 /*::
@@ -215,18 +125,11 @@ export type LintArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
-  retryOptions?: RetryOptions,
 };
 type Lint = (LintArgs) => Promise<void>;
 */
-const lint /*: Lint */ = async ({
-  root,
-  cwd,
-  args,
-  stdio = 'inherit',
-  retryOptions = defaultRetryOptions,
-}) => {
-  await run({root, cwd, args, name: 'lint', stdio, retryOptions});
+const lint /*: Lint */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+  await run({root, cwd, args, name: 'lint', stdio});
 };
 
 /*::
@@ -235,18 +138,11 @@ export type FlowArgs = {
   cwd: string,
   args: Array<string>,
   stdio?: Stdio,
-  retryOptions?: RetryOptions,
 };
 type Flow = (FlowArgs) => Promise<void>;
 */
-const flow /*: Flow */ = async ({
-  root,
-  cwd,
-  args,
-  stdio = 'inherit',
-  retryOptions = defaultRetryOptions,
-}) => {
-  await run({root, cwd, args, name: 'flow', stdio, retryOptions});
+const flow /*: Flow */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+  await run({root, cwd, args, name: 'flow', stdio});
 };
 
 /*::
@@ -259,13 +155,7 @@ export type StartArgs = {
 type Start = (StartArgs) => Promise<void>;
 */
 const start /*: Start */ = async ({root, cwd, args, stdio = 'inherit'}) => {
-  await run({
-    root,
-    cwd,
-    args,
-    stdio,
-    retryOptions: {numRetries: 0, backoff: 0},
-  });
+  await run({root, cwd, args, stdio});
 };
 
 /*::
@@ -296,7 +186,6 @@ export type ScriptArgs = {
   command: string,
   args: Array<string>,
   stdio?: Stdio,
-  retryOptions?: RetryOptions
 };
 type Script = (ScriptArgs) => Promise<void>;
 */
@@ -306,16 +195,8 @@ const script /*: Script */ = async ({
   command,
   args,
   stdio = 'inherit',
-  retryOptions = defaultRetryOptions,
 }) => {
-  await run({
-    root,
-    cwd,
-    args: [command, ...args],
-    name: 'script',
-    stdio,
-    retryOptions,
-  });
+  await run({root, cwd, args: [command, ...args], name: 'script', stdio});
 };
 
 module.exports = {

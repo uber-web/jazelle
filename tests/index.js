@@ -60,11 +60,6 @@ const {shouldSync, getVersion} = require('../utils/version-onboarding.js');
 const yarnCmds = require('../utils/yarn-commands.js');
 const {sortPackageJson} = require('../utils/sort-package-json');
 
-const noRetryOptions = {
-  numRetries: 0,
-  backoff: 0,
-};
-
 process.on('unhandledRejection', e => {
   console.error(e.stack);
   process.exit(1);
@@ -131,8 +126,6 @@ async function runTests() {
     t(testCheck),
     t(testOutdated),
   ]);
-
-  await t(testBazelCommandRetries);
 
   // run separately to avoid CI error
   await t(testBazelDummy);
@@ -490,7 +483,6 @@ async function testBazelDummy() {
     root: `${tmp}/tmp/bazel`,
     cwd: `${tmp}/tmp/bazel`,
     name: 'target',
-    retryOptions: noRetryOptions,
   });
   const output = `${tmp}/tmp/bazel/bazel-bin/target.sh`;
   assert.equal(await read(output, 'utf8'), 'echo target');
@@ -503,7 +495,6 @@ async function testBazelDummy() {
     cwd: `${tmp}/tmp/bazel`,
     args: [],
     name: 'target',
-    retryOptions: noRetryOptions,
     stdio: ['ignore', testStream, 'ignore'],
   });
   const testMessage = 'Executing tests from //:target';
@@ -517,7 +508,6 @@ async function testBazelDummy() {
     cwd: `${tmp}/tmp/bazel`,
     args: [],
     name: 'target',
-    retryOptions: noRetryOptions,
     stdio: ['ignore', runStream, 'ignore'],
   });
   const runMessage = 'Executing tests from //:target';
@@ -546,7 +536,6 @@ async function testBazelBuild() {
     root: `${tmp}/tmp/bazel-rules`,
     cwd: `${tmp}/tmp/bazel-rules/projects/a`,
     name: 'a',
-    retryOptions: noRetryOptions,
   });
   const output = `${tmp}/tmp/bazel-rules/bazel-bin/projects/a/__jazelle__a.tgz`;
   assert(await exists(output));
@@ -562,7 +551,6 @@ async function testBazelBuild() {
       args: [],
       name: 'test',
       stdio: ['ignore', testStream, testStream],
-      retryOptions: noRetryOptions,
     });
   } catch (e) {
     console.log(await read(testStreamFile, 'utf8'));
@@ -583,7 +571,6 @@ async function testBazelBuild() {
     args: [],
     name: 'test',
     stdio: ['ignore', runStream, 'ignore'],
-    retryOptions: noRetryOptions,
   });
   const runData = await read(runStreamFile, 'utf8');
   assert(runData.includes('\nb\nv12.16.1'));
@@ -597,7 +584,6 @@ async function testBazelBuild() {
     cwd: `${tmp}/tmp/bazel-rules/projects/a`,
     args: [],
     stdio: ['ignore', lintStream, 'ignore'],
-    retryOptions: noRetryOptions,
   });
   const lintData = await read(lintStreamFile, 'utf8');
   assert(lintData.includes('\n111\n'));
@@ -611,7 +597,6 @@ async function testBazelBuild() {
     cwd: `${tmp}/tmp/bazel-rules/projects/a`,
     args: [],
     stdio: ['ignore', flowStream, flowStream],
-    retryOptions: noRetryOptions,
   });
   const flowData = await read(flowStreamFile, 'utf8');
   assert(flowData.includes('a:flow'));
@@ -628,116 +613,6 @@ async function testBazelBuild() {
   });
   const startData = await read(startStreamFile, 'utf8');
   assert(startData.includes('\n333\n'));
-}
-
-async function testBazelCommandRetries() {
-  const cmd = `cp -r ${__dirname}/fixtures/bazel-command-retries/ ${tmp}/tmp/bazel-command-retries`;
-  await exec(cmd);
-
-  const workspaceFile = `${tmp}/tmp/bazel-command-retries/WORKSPACE`;
-  const workspace = await read(workspaceFile, 'utf8');
-  const replaced = workspace.replace(
-    'path = "../../.."',
-    `path = "${__dirname}/.."`
-  );
-  await write(workspaceFile, replaced, 'utf8');
-
-  await install({
-    root: `${tmp}/tmp/bazel-command-retries`,
-    cwd: `${tmp}/tmp/bazel-command-retries/projects/a`,
-  });
-
-  // build
-  const buildStreamFile = `${tmp}/tmp/bazel-command-retries/build-stream.txt`;
-  const buildStream = createWriteStream(buildStreamFile);
-  await new Promise(resolve => buildStream.on('open', resolve));
-  await bazelCmds
-    .build({
-      root: `${tmp}/tmp/bazel-command-retries`,
-      cwd: `${tmp}/tmp/bazel-command-retries/projects/a`,
-      name: 'a',
-      retryOptions: {
-        numRetries: 2,
-        backoff: 3,
-      },
-      stdio: ['ignore', buildStream, buildStream],
-    })
-    .catch(e => {});
-
-  const buildStreamContents = await read(buildStreamFile, 'utf8');
-  assert(
-    buildStreamContents.includes(
-      'BulkTransferException detected - retrying command with backoff 3ms'
-    )
-  );
-
-  assert(
-    buildStreamContents.includes(
-      'BulkTransferException detected - retrying command with backoff 6ms'
-    )
-  );
-
-  // test
-  const testStreamFile = `${tmp}/tmp/bazel-command-retries/test-stream.txt`;
-  const testStream = createWriteStream(testStreamFile);
-  await new Promise(resolve => testStream.on('open', resolve));
-  await bazelCmds
-    .test({
-      args: [],
-      root: `${tmp}/tmp/bazel-command-retries`,
-      cwd: `${tmp}/tmp/bazel-command-retries/projects/a`,
-      name: 'test',
-      retryOptions: {
-        numRetries: 2,
-        backoff: 3,
-      },
-      stdio: ['ignore', testStream, testStream],
-    })
-    .catch(e => {});
-
-  const testStreamContents = await read(testStreamFile, 'utf8');
-  assert(
-    testStreamContents.includes(
-      'BulkTransferException detected - retrying command with backoff 3ms'
-    )
-  );
-
-  assert(
-    testStreamContents.includes(
-      'BulkTransferException detected - retrying command with backoff 6ms'
-    )
-  );
-
-  // lint
-  const lintStreamFile = `${tmp}/tmp/bazel-command-retries/lint-stream.txt`;
-  const lintStream = createWriteStream(lintStreamFile);
-  await new Promise(resolve => lintStream.on('open', resolve));
-  await bazelCmds
-    .lint({
-      args: [],
-      root: `${tmp}/tmp/bazel-command-retries`,
-      cwd: `${tmp}/tmp/bazel-command-retries/projects/a`,
-      name: 'lint',
-      retryOptions: {
-        numRetries: 2,
-        backoff: 3,
-      },
-      stdio: ['ignore', lintStream, lintStream],
-    })
-    .catch(e => {});
-
-  const lintStreamContents = await read(lintStreamFile, 'utf8');
-  assert(
-    lintStreamContents.includes(
-      'BulkTransferException detected - retrying command with backoff 3ms'
-    )
-  );
-
-  assert(
-    lintStreamContents.includes(
-      'BulkTransferException detected - retrying command with backoff 6ms'
-    )
-  );
 }
 
 async function testBinaryPaths() {
