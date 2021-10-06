@@ -39,9 +39,9 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
             throw new Error(error);
           }
 
+          // don't update peerDependencies, we don't want to inadvertedly cause downstreams to have multiple versions of things
           update(meta, 'dependencies', name, local.meta.version);
           update(meta, 'devDependencies', name, local.meta.version);
-          update(meta, 'peerDependencies', name, local.meta.version);
           update(meta, 'optionalDependencies', name, local.meta.version);
         }
         await write(
