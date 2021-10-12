@@ -68,7 +68,7 @@ const update = (meta, type, name, version, from) => {
   if (meta[type] && meta[type][name]) {
     const min = minVersion(meta[type][name]);
     const inRange = !from || satisfies(min, from);
-    if (inRange && meta[type][name] !== '*') meta[type][name] = version;
+    if (inRange && !meta[type][name].includes('*')) meta[type][name] = version;
   }
 };
 
