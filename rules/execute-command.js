@@ -78,19 +78,16 @@ function runCommands(command, args) {
 function runCommand(command, args = []) {
   const params = args.map(arg => `'${arg}'`).join(' ');
   const options = {cwd: main, env: process.env, stdio: 'inherit'};
-  if (command in scripts) {
+  const scriptFile = join(main, 'scripts', `${command}.js`);
+  let spawnCMD = '';
+  if (exists(scriptFile)) {
+    spawnCMD = `${node} -r ${realpath(join(rootDir, '.pnp.cjs'))} ${realpath(
+      scriptFile
+    )} ${params} src/`;
+    options.cwd = dirname(realpath(join(main, 'package.json')));
+  } else if (command in scripts) {
     // is it a real script in package.json
-    try {
-      // yarn run [command] incorrectly runs with the original cwd instead of sandbox
-      // yarn exec [scripts[command]] runs with sandbox cwd, as expected
-      exec(`${node} ${yarn} run ${command} ${params}`, options);
-    } catch (e) {
-      if (typeof e.status === 'number') {
-        process.exit(e.status);
-      } else {
-        process.exit(1);
-      }
-    }
+    spawnCMD = `${node} ${yarn} run ${command} ${params}`;
   } else {
     if (command.includes('${NODE}')) {
       command = command
@@ -100,9 +97,14 @@ function runCommand(command, args = []) {
     if (command.includes('${ROOT_DIR}')) {
       command = command.split('${ROOT_DIR}').join(rootDir);
     }
-    try {
-      exec(command, options);
-    } catch (e) {
+    spawnCMD = command;
+  }
+  try {
+    exec(spawnCMD, options);
+  } catch (e) {
+    if (typeof e.status === 'number') {
+      process.exit(e.status);
+    } else {
       process.exit(1);
     }
   }
