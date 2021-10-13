@@ -40,7 +40,7 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
       const [, name = '', version] = param.match(/(@?[^@]*)@?(.*)/) || [];
       const local = await findLocalDependency({root, name});
       if (local && (!version || local.meta.version === version)) {
-        additions.push({name, range: local.meta.version});
+        additions.push({name, range: 'workspace:*'});
       } else {
         additions.push({name, range: version});
       }
@@ -49,34 +49,6 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
 
   const {projects, dependencySyncRule} = /*:: await */ await getManifest({
     root,
-  });
-
-  // if dependency exists in web-code, take latest version
-  const allDeps = /*:: await */ await getAllDependencies({root, projects});
-  additions.forEach(item => {
-    if (!item.range) {
-      const existingRange = allDeps
-        .reduce((ranges, dep) => {
-          if (dep.meta.dependencies && dep.meta.dependencies[item.name]) {
-            console.log(dep.meta.name, dep.meta.dependencies[item.name]);
-            ranges.push(dep.meta.dependencies[item.name]);
-          } else if (
-            dep.meta.devDependencies &&
-            dep.meta.devDependencies[item.name]
-          ) {
-            console.log(dep.meta.name, dep.meta.devDependencies[item.name]);
-            ranges.push(dep.meta.devDependencies[item.name]);
-          }
-          return ranges;
-        }, [])
-        .sort((l, r) => {
-          return semver.compare(semver.coerce(l), semver.coerce(r));
-        })
-        .pop();
-      if (existingRange) {
-        item.range = existingRange;
-      }
-    }
   });
 
   const meta = JSON.parse(await read(`${cwd}/package.json`, 'utf8'));
@@ -94,6 +66,7 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
       options
     );
     // reload package.json affected by workspace add command
+    const allDeps = /*:: await */ await getAllDependencies({root, projects});
     allDeps.find(item => item.dir === cwd).meta = JSON.parse(
       await read(`${cwd}/package.json`)
     );
