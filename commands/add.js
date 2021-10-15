@@ -1,6 +1,5 @@
 // @flow
 const {resolve} = require('path');
-const semver = require('../utils/cached-semver');
 const {assertProjectDir} = require('../utils/assert-project-dir.js');
 const {getPassThroughArgs} = require('../utils/parse-argv.js');
 const {read, spawn} = require('../utils/node-helpers.js');
