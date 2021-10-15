@@ -1,6 +1,6 @@
 {
   "name": "jazelle",
-  "version": "0.0.0-standalone.54",
+  "version": "0.0.0-standalone.55",
   "main": "index.js",
   "bin": {
     "barn": "bin/bootstrap.sh",
