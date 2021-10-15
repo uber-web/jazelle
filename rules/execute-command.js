@@ -83,7 +83,7 @@ function runCommand(command, args = []) {
   if (exists(scriptFile)) {
     spawnCMD = `${node} -r ${realpath(join(rootDir, '.pnp.cjs'))} ${realpath(
       scriptFile
-    )} ${params} src/`;
+    )} ${params}`;
     options.cwd = dirname(realpath(join(main, 'package.json')));
   } else if (command in scripts) {
     // is it a real script in package.json
