@@ -54,7 +54,8 @@ function findDependencies(data, target, depth = 1, set = new Set()) {
       Object.keys(deps).forEach(dep => {
         const found = data.find(item => {
           return (
-            item.meta.name === dep && satisfies(item.meta.version, deps[dep])
+            item.meta.name === dep &&
+            (satisfies(item.meta.version, deps[dep]) || deps[dep].includes('*'))
           );
         });
         if (found && !set.has(found.dir)) {
