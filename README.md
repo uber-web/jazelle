@@ -19,7 +19,9 @@ Incremental, cacheable builds for large Javascript monorepos. Uses [Bazel](https
   - [Yarn equivalents](#yarn-equivalents)
   - [Bazel equivalents](#bazel-equivalents)
   - [Using a preinstalled version of Bazel](#using-a-preinstalled-version-of-bazel)
+  - [Custom scripts](#custom-scripts)
   - [Monorepo-wide static analysis](#monorepo-wide-static-analysis)
+  - [Lockfile delegation](#lockfile-delegation)
   - [Contributing](CONTRIBUTING.md)
 
 ---
@@ -1668,6 +1670,26 @@ If you want to use a Bazel binary that is not in your `PATH`, you can also speci
 BAZEL_PATH=/path/to/my/bazel jazelle ...
 ```
 
+---
+
+## Custom scripts
+
+In addition to package.json scripts, Jazelle supports the ability to execute node scripts.
+
+```
+web_binary(
+  build = "${NODE} ${ROOT_DIR}/foo.js"
+  # ...
+)
+```
+
+- `${NODE}` is a special variable that refers to the node binary, and automatically requires .pnp.cjs
+- `${ROOT_DIR}` refers to the root of the repo
+
+Note that these are not bash variables (i.e. `$ROOT_DIR` doesn't work)
+
+---
+
 ## Monorepo-wide static analysis
 
 If you are a monorepo maintainer and you need to implement static analysis logic that runs against files of every project in a monorepo, it's not feasible to depend on all projects at build time, since the build graph could conceivably require rebuilding every project in the monorepo. Instead, you can depend only on specific files.
@@ -1695,6 +1717,16 @@ js_binary(
 You can dynamically update the `deps` argument of the static analysis project BUILD.bazel file by writing a [`preinstall`](#installation-hooks) script that parses and edits the BUILD.bazel file. The list of monorepo projects is conveniently available in the root level `package.json` file.
 
 Note that updating `buildFileTemplate` does not change existing BUILD.bazel files (since they could contain custom rules and modifications). If you want the same changes in existing files, you will have to edit those files yourself.
+
+---
+
+## Lockfile delegation
+
+By default you must declare `//:yarn.lock` and `//:.pnp.cjs` as explicit `deps` in any target that needs to consume Javascript packages if you want fully hermetic lockfiles.
+
+However, Jazelle does work even if they are not specified. Jazelle supports the ability of inferring the location of yarn.lock (and .pnp.cjs) without those files being present in the Bazel graph. This allows a repo to implement a custom yarn plugin that outputs files describing the version locking requirements per project (as opposed to having all of that information tied to a single top-level file). See [yarn-plugin-workspace-deps](https://github.com/uber-workflow/yarn-plugin-workspace-deps/blob/main/workspace-deps/sources/index.ts) for an example.
+
+The benefit of inferred top-level lockfile is that in large enough repos, yarn.lock is changed frequently by multiple different teams, and it leads to poor cacheability of targets if any team's changes can blow away the cache of unrelated projects.
 
 ---
 

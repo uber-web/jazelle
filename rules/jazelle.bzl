@@ -5,8 +5,8 @@ def _jazelle_impl(ctx):
     export YARN=$(cd `dirname "{yarn}"` && pwd)/$(basename {yarn})
     NODE=$(cd `dirname "{node}"` && pwd)/$(basename {node})
     CLI=$(cd `dirname "{cli}"` && pwd)/$(basename {cli})
-    CWD=`$NODE -e "console.log(require('path').dirname(require('fs').realpathSync('{manifest}')))"`
-    ROOT=`$NODE -e "console.log(require('path').dirname(require('fs').realpathSync('{cli}')))"`
+    CWD=`$NODE -p "require('path').dirname(require('fs').realpathSync('{manifest}'))"`
+    ROOT=`$NODE -p "require('path').dirname(require('fs').realpathSync('{cli}'))"`
     if [ ! -d $ROOT/node_modules ]
     then
       $NODE $YARN --cwd $ROOT --ignore-engines --production=true

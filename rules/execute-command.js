@@ -5,6 +5,7 @@ const {
   readdirSync: readdir,
   realpathSync: realpath,
   statSync: stat,
+  symlinkSync: symlink,
 } = require('fs');
 const {execSync: exec} = require('child_process');
 const {dirname, join, relative} = require('path');
@@ -28,6 +29,8 @@ const {scripts = {}} = JSON.parse(read(`${main}/package.json`, 'utf8'));
 
 if (out) {
   runCommands(command, args);
+
+  // Bazel doesn't support `out` folders, so compress it into a tarball instead
   const dists = distPaths.split('|').reduce((acc, next) => {
     // This adds support for very simple folder globbing. For example: "src/**/__generated__".
     // We should revisit this with a better long term solution that potentially can handle both dist and gen_srcs attrs.
@@ -78,29 +81,48 @@ function runCommands(command, args) {
 function runCommand(command, args = []) {
   const params = args.map(arg => `'${arg}'`).join(' ');
   const options = {cwd: main, env: process.env, stdio: 'inherit'};
-  const scriptFile = join(main, 'scripts', `${command}.js`);
-  let spawnCMD = '';
-  if (exists(scriptFile)) {
-    spawnCMD = `${node} -r ${realpath(join(rootDir, '.pnp.cjs'))} ${realpath(
-      scriptFile
-    )} ${params}`;
-    options.cwd = dirname(realpath(join(main, 'package.json')));
-  } else if (command in scripts) {
-    // is it a real script in package.json
-    spawnCMD = `${node} ${yarn} run ${command} ${params}`;
+
+  smuggleLockfile(rootDir);
+
+  if (command in scripts) {
+    execOrExit(`${node} ${yarn} run ${command} ${params}`, options);
   } else {
-    if (command.includes('${NODE}')) {
-      command = command
-        .split('${NODE}')
-        .join(`${node} -r ${join(rootDir, '.pnp.cjs')}`);
-    }
-    if (command.includes('${ROOT_DIR}')) {
-      command = command.split('${ROOT_DIR}').join(rootDir);
-    }
-    spawnCMD = command;
+    // Support `build = "${NODE} ${ROOT_DIR}/foo.js"` as a web_binary build argument (instead of a package.json script name)
+    const cmd = command
+      .replace(/\$\{NODE\}/g, `${node} -r ${join(rootDir, '.pnp.cjs')}`)
+      .replace(/\$\{ROOT_DIR\}/g, rootDir);
+    execOrExit(cmd, options);
   }
+}
+
+function smuggleLockfile(rootDir) {
+  // Support non-hermetic yarn.lock/.pnp.cjs smuggling into sandbox
+  // This allows a repo to use yarn plugins to implement custom change detection
+  // to avoid invalidating top-level cache in cases where yarn.lock is touched but only affects certain projects
+  // See: Lockfile delegation section in README
+
   try {
-    exec(spawnCMD, options);
+    const realRoot = dirname(realpath(`${rootDir}/package.json`)); // FIXME: technically a target may not depend on this file, so it's not actually guaranteed to exist, even though it usually does
+
+    //only smuggle if needed
+    const yarnLock = `${rootDir}/yarn.lock`;
+    const realYarnLock = `${realRoot}/yarn.lock`;
+    if (!exists(yarnLock) && exists(realYarnLock)) {
+      symlink(realYarnLock, yarnLock, 'file');
+    }
+    const pnpCjs = `${rootDir}/.pnp.cjs`;
+    const realPnpCjs = `${realRoot}/.pnp.cjs`;
+    if (!exists(pnpCjs) && exists(realPnpCjs)) {
+      symlink(realPnpCjs, pnpCjs, 'file');
+    }
+  } catch (e) {
+    // smuggling failed, assume yarn.lock exists and keep going
+  }
+}
+
+function execOrExit(cmd, options) {
+  try {
+    exec(cmd, options);
   } catch (e) {
     if (typeof e.status === 'number') {
       process.exit(e.status);
