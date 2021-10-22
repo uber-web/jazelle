@@ -39,7 +39,7 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
       const [, name = '', version] = param.match(/(@?[^@]*)@?(.*)/) || [];
       const local = await findLocalDependency({root, name});
       if (local && (!version || local.meta.version === version)) {
-        additions.push({name, range: 'workspace:*'});
+        additions.push({name, range: '*'});
       } else {
         additions.push({name, range: version});
       }
