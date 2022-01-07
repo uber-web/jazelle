@@ -92,7 +92,10 @@ function runCommand(command, args = []) {
     if (process.env.NODE_SKIP_PNP === '1') {
       cmd = cmd.replace(/\$\{NODE\}/g, `${node}`);
     } else {
-      cmd = cmd.replace(/\$\{NODE\}/g, `${node} -r ${join(rootDir, '.pnp.cjs')}`);
+      cmd = cmd.replace(
+        /\$\{NODE\}/g,
+        `${node} -r ${join(rootDir, '.pnp.cjs')}`
+      );
     }
     cmd = cmd.replace(/\$\{ROOT_DIR\}/g, rootDir);
     execOrExit(cmd, options);
