@@ -79,6 +79,7 @@ def _web_binary_impl(ctx):
     export NODE=$(cd `dirname '{node}'` && pwd)/$(basename '{node}');
     export OUT=$(cd `dirname '{output}'` && pwd)/$(basename '{output}');
     export BAZEL_BIN_DIR=$(cd '{bindir}' && pwd);
+    export NODE_SKIP_PNP={skip_pnp};
     $NODE '{untar_script}';
     $NODE --max_old_space_size=65536 '{build}' "$PWD" "$CWD" "$BAZEL_BIN_DIR" '{command}' '{dist}' '' "$OUT" $@;
     """.format(
@@ -91,6 +92,7 @@ def _web_binary_impl(ctx):
       preserve_symlinks = ctx.attr.preserve_symlinks,
       untar_script = ctx.files._untar_script[0].path,
       build = ctx.files._script[0].path,
+      skip_pnp = 1 if ctx.attr.skip_pnp else 0,
     ),
     tools = ctx.files._node,
     inputs = build_deps,
@@ -138,6 +140,9 @@ web_binary = rule(
     "_script": attr.label(
       allow_files = True,
       default = Label("//:rules/execute-command.js"),
+    ),
+    "skip_pnp": attr.bool(
+      default = False,
     ),
   },
   executable = True,
