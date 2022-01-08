@@ -55,6 +55,20 @@ const install /*: Install */ = async ({
   if (!isRootInstall) {
     validateRegistration({root, cwd, projects});
   }
+
+  if (hooks.bool_shouldinstall) {
+    const hookResult = await executeHook(hooks.bool_shouldinstall, root, {
+      isBooleanHook: true,
+    });
+
+    if (hookResult === false) {
+      console.log(
+        '`bool_shouldinstall` hook returned `false`; skipping install'
+      );
+      return;
+    }
+  }
+
   const all = await getAllDependencies({root, projects});
 
   const deps = isRootInstall

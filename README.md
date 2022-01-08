@@ -1192,6 +1192,7 @@ Finds the absolute path of the monorepo root folder
 - [Workspace](#workspace)
 - [Scaffold hooks](#scaffold-hooks)
 - [Installation hooks](#installation-hooks)
+- [Boolean hooks](#boolean-hooks)
 - [Version policy](#version-policy)
 - [Build file template](#build-file-template)
 
@@ -1269,6 +1270,19 @@ Installation hooks run shell scripts before/after dependency installation.
     "preinstall": "echo before",
     "postinstall": "echo after",
     "postcommand": "echo after command",
+  }
+}
+```
+
+
+### Boolean hooks
+
+Boolean hooks are a special type of hook that can conditionally enable/disable jazelle behavior. They work by emitting `true` or `false` to stdout (must be the last thing emitted in the script)
+
+```json
+{
+  "hooks": {
+    "bool_shouldinstall": "echo false",
   }
 }
 ```
