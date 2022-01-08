@@ -88,9 +88,16 @@ function runCommand(command, args = []) {
     execOrExit(`${node} ${yarn} run ${command} ${params}`, options);
   } else {
     // Support `build = "${NODE} ${ROOT_DIR}/foo.js"` as a web_binary build argument (instead of a package.json script name)
-    const cmd = command
-      .replace(/\$\{NODE\}/g, `${node} -r ${join(rootDir, '.pnp.cjs')}`)
-      .replace(/\$\{ROOT_DIR\}/g, rootDir);
+    let cmd = command;
+    if (process.env.NODE_SKIP_PNP === '1') {
+      cmd = cmd.replace(/\$\{NODE\}/g, `${node}`);
+    } else {
+      cmd = cmd.replace(
+        /\$\{NODE\}/g,
+        `${node} -r ${join(rootDir, '.pnp.cjs')}`
+      );
+    }
+    cmd = cmd.replace(/\$\{ROOT_DIR\}/g, rootDir);
     execOrExit(cmd, options);
   }
 }

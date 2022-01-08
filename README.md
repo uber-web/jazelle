@@ -1586,6 +1586,7 @@ web_binary(
   deps = [string],
   dist = string,
   preserve_symlinks = string,
+  skip_pnp = boolean,
 )
 ```
 
@@ -1594,6 +1595,7 @@ web_binary(
 - `deps` - A list of target labels that are dependencies of this rule
 - `dist` - The name of the output folder where compiled assets are saved to
 - `preserve_symlinks` - Whether to use the Node PRESERVE_SYMLINKS flag. Set to `"1"` for true or `""` for false.
+- `skip_pnp` - Boolean flag to bypass the auto require of the Yarn 2 `.pnp.cjs` file when executing Node commands.
 
 This rule consumes transitive files from the `DefaultInfo(files)` provider of targets specified by `deps`. If the transitive files include `output.tgz` files, they are extracted into the root folder of their respective project (in the Bazel sandbox).
 
