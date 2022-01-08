@@ -1277,7 +1277,7 @@ Installation hooks run shell scripts before/after dependency installation.
 
 ### Boolean hooks
 
-Boolean hooks are a special type of hook that can conditionally enable/disable jazelle behavior. They work by emitting `true` or `false` to stdout (must be the last thing emitted in the script)
+Boolean hooks are a special type of hook that can conditionally enable/disable jazelle behavior. They work by emitting `true` or `false` to stdout (must be the last thing emitted in the script).
 
 ```json
 {
@@ -1285,6 +1285,20 @@ Boolean hooks are a special type of hook that can conditionally enable/disable j
     "bool_shouldinstall": "echo false",
   }
 }
+```
+
+Example `bool_shouldinstall` hook:
+
+```sh
+#!/usr/bin/env bash
+
+if ./pull_yarn_cache.sh; then
+  # dependency cache was successfully pulled; don't install
+  echo 'false'
+  exit 0
+fi
+
+echo 'true'
 ```
 
 ### Version policy
