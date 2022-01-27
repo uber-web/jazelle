@@ -754,14 +754,17 @@ async function testFindChangedTargets() {
       cwd: `${tmp}/tmp/find-changed-targets/bazel/c`,
     });
     const targets = await findChangedTargets({root, files, format: 'targets'});
-    assert.deepEqual(targets, [
-      '//b:test',
-      '//b:lint',
-      '//b:flow',
-      '//a:test',
-      '//a:lint',
-      '//a:flow',
-    ]);
+    assert.deepEqual(
+      targets.sort(),
+      [
+        '//b:test',
+        '//b:lint',
+        '//b:flow',
+        '//a:test',
+        '//a:lint',
+        '//a:flow',
+      ].sort()
+    );
   }
   {
     const root = `${__dirname}/fixtures/find-changed-targets/no-target`;
