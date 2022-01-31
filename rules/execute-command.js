@@ -26,6 +26,7 @@ const [
 ] = process.argv;
 
 const {scripts = {}} = JSON.parse(read(`${main}/package.json`, 'utf8'));
+const {scripts: rootScripts = {}} = JSON.parse(read(`${rootDir}/package.json`, 'utf8'));
 
 if (out) {
   runCommands(command, args);
@@ -86,19 +87,23 @@ function runCommand(command, args = []) {
 
   if (command in scripts) {
     execOrExit(`${node} ${yarn} run ${command} ${params}`, options);
-  } else {
+  } else if (command.includes('${NODE}')) {
     // Support `build = "${NODE} ${ROOT_DIR}/foo.js"` as a web_binary build argument (instead of a package.json script name)
-    let cmd = command;
-    if (process.env.NODE_SKIP_PNP === '1') {
-      cmd = cmd.replace(/\$\{NODE\}/g, `${node}`);
-    } else {
-      cmd = cmd.replace(
-        /\$\{NODE\}/g,
-        `${node} -r ${join(rootDir, '.pnp.cjs')}`
-      );
-    }
-    cmd = cmd.replace(/\$\{ROOT_DIR\}/g, rootDir);
+    const exe = process.env.NODE_SKIP_PNP === '1'
+      ? `${node}`
+      : `${node} -r ${join(rootDir, '.pnp.cjs')}`;
+    const cmd = command
+      .replace(/\$\{NODE\}/g, exe)
+      .replace(/\$\{ROOT_DIR\}/g, rootDir);
     execOrExit(cmd, options);
+  } else if (command in rootScripts) {
+    // if command exists at root level but not at project level, run the root level command instead of erroring
+    execOrExit(`${node} ${yarn} run ${command} ${params}`, {cwd: rootDir, env: process.env, stdio: 'inherit'});
+  } else {
+    // do not allow running arbitrary shell commands
+    // users should run such commands directly instead of running them through jazelle 
+    console.error('Invalid command: ' + command);
+    process.exitCode = 1;
   }
 }
 
