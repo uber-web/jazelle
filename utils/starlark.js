@@ -14,9 +14,20 @@ The functions below assume top-level function calls of the form:
     ],
   )
 
+The findCall function accounts for nested parentheses
 */
 
-const getCallMatcher = caller => new RegExp(`${caller}\\s*\\([^\\)]*\\)`, 'gi');
+const findCall = (code, caller) => {
+  const start = code.indexOf(caller + '(');
+  const afterStart = start + caller.length + 1;
+  let count = 1;
+  for (let i = afterStart; i < code.length; i++) {
+    if (code[i] === '(') count++;
+    else if (code[i] === ')') count--;
+    if (count === 0) return code.slice(afterStart, i);
+  }
+  return '';
+};
 const getArgsMatcher = argName =>
   new RegExp(`${argName}\\s*=\\s*\\[(?:[^\\]]*)]`, 'im');
 const getListMatcher = () => /\[([^\]]*)\]/;
@@ -26,12 +37,11 @@ export type GetCallArgItems = (string, string, string) => Array<string>;
 */
 const getCallArgItems /*: GetCallArgItems */ = (code, caller, argName) => {
   let items = [];
-  code.replace(getCallMatcher(caller), args => {
-    return args.replace(getArgsMatcher(argName), arg => {
-      return arg.replace(getListMatcher(), (_, list) => {
-        items = list.split(',').map(item => item.replace(/,\s*$/, '').trim());
-        return ''; // keep Flow happy
-      });
+  const args = findCall(code, caller);
+  args.replace(getArgsMatcher(argName), arg => {
+    return arg.replace(getListMatcher(), (_, list) => {
+      items = list.split(',').map(item => item.replace(/,\s*$/, '').trim());
+      return ''; // keep Flow happy
     });
   });
   return items.filter(Boolean);
@@ -41,7 +51,7 @@ const getCallArgItems /*: GetCallArgItems */ = (code, caller, argName) => {
 export type AddCallArgItem = (string, string, string, string) => string;
 */
 const addCallArgItem /*: AddCallArgItem */ = (code, caller, argName, value) => {
-  return code.replace(getCallMatcher(caller), args => {
+  return code.replace(findCall(code, caller), args => {
     return args.replace(getArgsMatcher(argName), arg => {
       return arg.replace(getListMatcher(), (_, list) => {
         list = list.replace(/#.*$/gm, '');
@@ -64,7 +74,7 @@ const removeCallArgItem /*: RemoveCallArgItem */ = (
   argName,
   value
 ) => {
-  return code.replace(getCallMatcher(caller), args => {
+  return code.replace(findCall(code, caller), args => {
     return args.replace(getArgsMatcher(argName), arg => {
       return arg.replace(getListMatcher(), (_, list) => {
         const dedent = list.match(/\s*$/) || ' ';
