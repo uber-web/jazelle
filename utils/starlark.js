@@ -27,7 +27,7 @@ const findCall = (code, caller) => {
     if (count === 0) return code.slice(afterStart, i);
   }
   return '';
-}
+};
 const getArgsMatcher = argName =>
   new RegExp(`${argName}\\s*=\\s*\\[(?:[^\\]]*)]`, 'im');
 const getListMatcher = () => /\[([^\]]*)\]/;
