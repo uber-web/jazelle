@@ -5,9 +5,9 @@ const {exec} = require('./node-helpers.js');
 
 function clearPrevLine() {
   // $FlowFixMe
-  process.stdout.moveCursor(0, -1);
+  if (process.stdout.moveCursor) process.stdout.moveCursor(0, -1);
   // $FlowFixMe
-  process.stdout.clearLine(1);
+  if (process.stdout.clearLine) process.stdout.clearLine(1);
 }
 
 /*::
