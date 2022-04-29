@@ -211,7 +211,7 @@ It's ok for users to have different versions of Jazelle installed. Jazelle runs 
 - Copy and paste your project into the monorepo, at a desired path.
 - Open the root `package.json` file and add the path to your project in `workspaces`.
 - Ensure your project's package.json has `scripts` fields called `build`, `test`, `lint` and `flow`.
-- Optionally, verify that your dependency versions match the dependency versions used by other projects in the monorepo. To verify, run `jazelle check`. To upgrade a dependency, run `jazelle upgrade [the-dependency] --version [desired-version]` from your project folder.
+- Optionally, verify that your dependency versions match the dependency versions used by other projects in the monorepo. To verify, run `jazelle check`. To upgrade a dependency, run `jazelle upgrade [the-dependency]` to get the latest or `jazelle upgrade [the-dependency]@[version]` from your project folder.
 - Run `jazelle install` from your project folder to generate Bazel BUILD files, and install dependencies. This may take a few minutes the first time around since Bazel needs to install itself and its dependencies. Subsequent calls to `jazelle install` will be faster.
 - Run `jazelle test` to verify that your project builds and tests pass. Optionally run `jazelle run lint` and `jazelle run flow`.
 

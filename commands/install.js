@@ -62,9 +62,6 @@ const install /*: Install */ = async ({
     });
 
     if (hookResult === false) {
-      console.log(
-        '`bool_shouldinstall` hook returned `false`; skipping install'
-      );
       return;
     }
   }
