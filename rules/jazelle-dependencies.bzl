@@ -17,21 +17,28 @@ ARCHITECTURES = {
   "linux": ("linux", "linux", "tar.xz", "bin/node", "bin/npm", "bin/npx"),
   "windows": ("windows", "win", "zip", "bin/node.exe", "bin/npm.cmd", "bin/npx.cmd"),
 }
+CPUS = {
+  "x86_64": "x64",
+  "arm": "arm64",
+}
 def _jazelle_dependencies_impl(ctx):
   os = ctx.os.name.lower()
   node_version = ctx.attr.node_version
   node_sha256 = ctx.attr.node_sha256
   label, arch, ext, node, npm, npx = ARCHITECTURES.get(os, "mac os x")
+  cpu = CPUS.get(ctx.os.arch, "x64")
 
   ctx.download_and_extract(
-    url = "https://nodejs.org/dist/v{version}/node-v{version}-{arch}-x64.{ext}".format(
+    url = "https://nodejs.org/dist/v{version}/node-v{version}-{arch}-${cpu}.{ext}".format(
       version = node_version,
       arch = arch,
+      cpu = cpu,
       ext = ext,
     ),
-    stripPrefix = "node-v{version}-{arch}-x64".format(
+    stripPrefix = "node-v{version}-{arch}-{cpu}".format(
       version = node_version,
       arch = arch,
+      cpu = cpu,
     ),
     sha256 = node_sha256[label],
   )
