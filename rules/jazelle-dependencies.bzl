@@ -25,7 +25,12 @@ def _jazelle_dependencies_impl(ctx):
   os = ctx.os.name.lower()
   node_version = ctx.attr.node_version
   arch, ext, node, npm, npx = ARCHITECTURES.get(os, "mac os x")
-  cpu = CPUS.get(ctx.os.environ["CPU"], "x64") # CPU env var comes from bin/bazelisk
+
+  major, dot, rest = node_version.partition(".")
+  if int(major) >= 16:
+    cpu = CPUS.get(ctx.os.environ["CPU"], "x64") # CPU env var comes from bin/bazelisk
+  else:
+    cpu = "x64" # only node 16 and above provide arm64 binaries
 
   node_sha256 = ctx.attr.node_sha256
   binary = "{arch}-{cpu}".format(arch = arch, cpu = cpu)
