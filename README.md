@@ -63,7 +63,7 @@ The `jazelle init` command generates Bazel `WORKSPACE`, `BUILD.bazel` and `.baze
 Check that the `.bazelversion` file at the root of your repo contains your desired Bazel version. For example:
 
 ```
-0.27.0
+5.1.0
 ```
 
 Check that the `WORKSPACE` file at the root of your repo is using the desired versions of Jazelle, Node and Yarn:
@@ -79,11 +79,13 @@ http_archive(
 
 load("@jazelle//:workspace-rules.bzl", "jazelle_dependencies")
 jazelle_dependencies(
-  node_version = "10.16.3",
+  node_version = "16.15.0",
   node_sha256 = {
-    "mac": "6febc571e1543c2845fa919c6d06b36a24e4e142c91aedbe28b6ff7d296119e4",
-    "linux": "d2271fd8cf997fa7447d638dfa92749ff18ca4b0d796bf89f2a82bf7800d5506",
-    "windows": "19aa47de7c5950d7bd71a1e878013b98d93871cc311d7185f5472e6d3f633146",
+    "darwin-x64": "a6bb12bbf979d32137598e49d56d61bcddf8a8596c3442b44a9b3ace58dd4de8",
+    "linux-x64": "ebdf4dc9d992d19631f0931cca2fc33c6d0d382543639bc6560d31d5060a8372",
+    "win-x64": "dbe04e92b264468f2e4911bc901ed5bfbec35e0b27b24f0d29eff4c25e428604",
+    "darwin-arm64": "ad8d8fc5330ef47788f509c2af398c8060bb59acbe914070d0df684cd2d8d39b",
+    "linux-arm64": "b4080b86562c5397f32da7a0723b95b1df523cab4c757688a184e3f733a7df56",
   },
   yarn_version = "1.19.1",
   yarn_sha256 = "fdbc534294caef9cc0d7384fb579ec758da7fc033392ce54e0e8268e4db24baf",
@@ -98,9 +100,11 @@ curl -fLs https://registry.yarnpkg.com/jazelle/-/jazelle-[version].tgz | openssl
 
 Node SHA256 checksums can be found at `https://nodejs.org/dist/v[version]/SHASUMS256.txt`. Use the checksums for these files:
 
-- `node-v[version]-darwin-x64.tar.gz`
-- `node-v[version]-linux-x64.tar.xz`
-- `node-v[version]-win-x64.zip`
+- darwin-x64: `node-v[version]-darwin-x64.tar.gz`
+- linux-x64: `node-v[version]-linux-x64.tar.xz`
+- win-x64: `node-v[version]-win-x64.zip`
+- darwin-arm64: `node-v[version]-darwin-arm64.tar.gz`
+- linux-arm64: `node-v[version]-linux-arm64.tar.xz`
 
 Yarn SHA256 checksum can be computed through the following command:
 
@@ -234,12 +238,6 @@ web_library(
     srcs = glob(["**/*"], exclude = ["dist/**"]),
 )
 ```
-
-##### Corrupted yarn.lock
-
-If you get an error about a corrupted `yarn.lock` file, delete the `yarn.lock` file from the offending project. Note that the error may refer to a local dependency of your project.
-
-Then, run `jazelle install` from your project folder.
 
 ##### Module not found
 

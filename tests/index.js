@@ -556,7 +556,7 @@ async function testBazelBuild() {
     console.log(await read(testStreamFile, 'utf8'));
     throw e;
   }
-  assert((await read(testStreamFile, 'utf8')).includes('\nb\nv12.16.1'));
+  assert((await read(testStreamFile, 'utf8')).includes('\nb\nv16.15.0'));
 
   const generated = `${tmp}/tmp/bazel-rules/projects/a/generated/foo.txt`;
   assert((await read(generated, 'utf8')).includes('hello'));
@@ -573,7 +573,7 @@ async function testBazelBuild() {
     stdio: ['ignore', runStream, 'ignore'],
   });
   const runData = await read(runStreamFile, 'utf8');
-  assert(runData.includes('\nb\nv12.16.1'));
+  assert(runData.includes('\nb\nv16.15.0'));
 
   // lint
   const lintStreamFile = `${tmp}/tmp/bazel-rules/lint-stream.txt`;
