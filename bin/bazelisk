@@ -1,6 +1,10 @@
 #!/bin/bash
 BIN=$(dirname "$0")
-case $(uname -m) in
+
+# export because we need this value in rules/jazelle-dependencies.bzl because ctx.os.arch yields incorrect value in arm64
+export CPU=$(uname -m)
+
+case $CPU in
   arm*)
     case $OSTYPE in
       darwin*) "$BIN/bazelisk-darwin-arm64" "$@" ;;
