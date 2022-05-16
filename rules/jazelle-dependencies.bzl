@@ -28,7 +28,7 @@ def _jazelle_dependencies_impl(ctx):
 
   major, dot, rest = node_version.partition(".")
   if int(major) >= 16:
-    cpu = CPUS.get(ctx.os.environ["CPU"], "x64") # CPU env var comes from bin/bazelisk
+    cpu = CPUS.get(ctx.os.environ.get("CPU", "x86_64"), "x64") # CPU env var comes from bin/bazelisk
   else:
     cpu = "x64" # only node 16 and above provide arm64 binaries
 
