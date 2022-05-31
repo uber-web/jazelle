@@ -108,6 +108,7 @@ async function runTests() {
     t(testGenerateBazelBuildRules),
     t(testGenerateBazelBuildRulesUpdate),
     t(testGetDownstreams),
+    t(testGetDownstreamsExclude),
     t(testGetManifest),
     t(testGetLocalDependencies),
     t(testGetRootDir),
@@ -916,8 +917,56 @@ async function testGetDownstreams() {
       depth: 1,
     },
   ];
-  const downstreams = getDownstreams(deps, deps[0]);
+  const downstreams = getDownstreams({deps, dep: deps[0]});
   assert.deepEqual(downstreams, deps.slice(1));
+}
+
+async function testGetDownstreamsExclude() {
+  const deps = [
+    {
+      dir: `${tmp}/tmp/get-downstreams/a`,
+      meta: {
+        name: 'a',
+        version: '0.0.0',
+      },
+      depth: 1,
+    },
+    {
+      dir: `${tmp}/tmp/get-downstreams/b`,
+      meta: {
+        name: 'b',
+        version: '0.0.0',
+        dependencies: {a: 'workspace:*'},
+      },
+      depth: 3,
+    },
+    {
+      dir: `${tmp}/tmp/get-downstreams/c`,
+      meta: {
+        name: 'c',
+        version: '0.0.0',
+        dependencies: {b: '0.0.0'},
+      },
+      depth: 2,
+    },
+    {
+      dir: `${tmp}/tmp/get-downstreams/d`,
+      meta: {
+        name: 'd',
+        version: '0.0.0',
+        dependencies: {a: '0.0.0'},
+      },
+      depth: 2,
+    },
+  ];
+  const downstreams = getDownstreams({
+    deps,
+    dep: deps[0],
+    excludeWorkspaceDeps: true,
+  });
+  // `d` should be the only downstream returned, since b and c are
+  // downstream as a result of `workspace:*` and should be excluded
+  assert.deepEqual(downstreams, [deps[3]]);
 }
 
 async function testGetLocalDependencies() {

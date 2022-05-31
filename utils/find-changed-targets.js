@@ -161,7 +161,7 @@ const findChangedBazelTargets = async ({root, files}) => {
       for (const target of set) {
         const dep = allProjects.find(project => project.dir === target);
         if (dep) {
-          const downstreamDeps = getDownstreams(allProjects, dep);
+          const downstreamDeps = getDownstreams({deps: allProjects, dep});
           for (const downstreamDep of downstreamDeps) {
             changeSet.add(downstreamDep.dir);
           }

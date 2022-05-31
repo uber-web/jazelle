@@ -37,7 +37,7 @@ const buildCacheable = async ({root, dep, deps, stdio}) => {
       await spawn(node, [yarn, 'build'], {stdio, env: process.env, cwd: dir});
     }
 
-    getDownstreams(deps, dep).forEach(d => {
+    getDownstreams({deps, dep}).forEach(d => {
       // check depth to ensure we only invalidate downstreams, not cyclical deps
       if (dep.depth < d.depth) cache.invalidate(d.dir);
     });
