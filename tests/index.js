@@ -917,7 +917,7 @@ async function testGetDownstreams() {
       depth: 1,
     },
   ];
-  const downstreams = getDownstreams(deps, deps[0]);
+  const downstreams = getDownstreams({deps, dep: deps[0]});
   assert.deepEqual(downstreams, deps.slice(1));
 }
 
@@ -959,7 +959,11 @@ async function testGetDownstreamsExclude() {
       depth: 2,
     },
   ];
-  const downstreams = getDownstreams(deps, deps[0], true);
+  const downstreams = getDownstreams({
+    deps,
+    dep: deps[0],
+    excludeWorkspaceDeps: true,
+  });
   // `d` should be the only downstream returned, since b and c are
   // downstream as a result of `workspace:*` and should be excluded
   assert.deepEqual(downstreams, [deps[3]]);

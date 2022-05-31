@@ -35,7 +35,11 @@ const bump /*: Bump */ = async ({
     }),
   ]);
   const dep = deps.find(({dir}) => dir === cwd);
-  const downstreams = await getDownstreams(deps, dep, true);
+  const downstreams = await getDownstreams({
+    deps,
+    dep,
+    excludeWorkspaceDeps: true,
+  });
   downstreams.push(dep);
 
   const types = /^(major|premajor|minor|preminor|patch|prepatch|prerelease|none)$/;

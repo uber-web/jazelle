@@ -2,13 +2,17 @@
 /*::
 import type {Metadata} from './get-local-dependencies.js';
 
-export type GetDownstreams = (Array<Metadata>, Metadata, ?boolean) => Array<Metadata>
+export type GetDownstreams = ({
+  deps: Array<Metadata>,
+  dep: Metadata,
+  excludeWorkspaceDeps?: boolean
+}) => Array<Metadata>
 */
-const getDownstreams /*: GetDownstreams */ = (
+const getDownstreams /*: GetDownstreams */ = ({
   deps,
   dep,
-  excludeWorkspaceDeps = false
-) => {
+  excludeWorkspaceDeps = false,
+}) => {
   return getDedupedDownstreams(deps, dep, excludeWorkspaceDeps).slice(1);
 };
 const getDedupedDownstreams = (
