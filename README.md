@@ -695,7 +695,7 @@ Runs a bash script in all projects, parallelizing across CPUs
 
 ### `jazelle bump`
 
-Bumps a package and its dependencies to the next version. It also updates all matching local packages to match
+Bumps a package and its dependencies to the next version. It also updates all matching local packages to match. Note that if a local package depends on the bumped package via `workspace:*`, it won't be touched.
 
 `jazelle bump [type] [--frozePackageJson] --cwd [cwd]`
 
