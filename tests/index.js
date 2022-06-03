@@ -760,11 +760,13 @@ async function testFindChangedTargets() {
       [
         '//a:a',
         '//a:dev',
+        '//a:flow',
         '//a:library',
         '//a:lint',
         '//a:test',
         '//b:b',
         '//b:dev',
+        '//b:flow',
         '//b:library',
         '//b:lint',
         '//b:test',
