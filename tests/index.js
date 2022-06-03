@@ -758,12 +758,16 @@ async function testFindChangedTargets() {
     assert.deepEqual(
       targets.sort(),
       [
-        '//b:test',
-        '//b:lint',
-        '//b:flow',
-        '//a:test',
+        '//a:a',
+        '//a:dev',
+        '//a:library',
         '//a:lint',
-        '//a:flow',
+        '//a:test',
+        '//b:b',
+        '//b:dev',
+        '//b:library',
+        '//b:lint',
+        '//b:test',
       ].sort()
     );
   }
