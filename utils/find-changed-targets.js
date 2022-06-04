@@ -78,7 +78,7 @@ const findChangedBazelTargets = async ({root, files}) => {
   const opts = {cwd: root, maxBuffer: 1e9};
   if (workspace === 'sandbox') {
     if (lines.includes('WORKSPACE') || lines.includes('.bazelversion')) {
-      const cmd = `${bazel} query 'kind(".*_test rule", "...")'`;
+      const cmd = `${bazel} query 'kind("(web_.*|.*_test) rule", "...")'`;
       const result = await exec(cmd, opts);
       const unfiltered = result.split('\n').filter(Boolean);
       const targets = unfiltered.filter(target => {
@@ -115,7 +115,7 @@ const findChangedBazelTargets = async ({root, files}) => {
         batches(queryables, 1000), // batching required, else E2BIG errors
         async q => {
           const innerQuery = q.join(' union ');
-          const cmd = `${bazel} query 'let graph = kind(".*_test rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label`;
+          const cmd = `${bazel} query 'let graph = kind("(web_.*|.*_test) rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label`;
           return exec(cmd, opts);
         }
       );
