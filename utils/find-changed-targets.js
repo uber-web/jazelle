@@ -203,9 +203,14 @@ const getTargetRepresentatives = files => {
   for (const file of files) {
     const dir = dirname(file);
     const list = map.get(dir) || map.set(dir, []).get(dir);
-    if (file.match(/(.jsx?|.tsx?)$/)) map.set(dir, [file]);
-    else list.push(file);
+    if (file.match(/(.jsx?|.tsx?)$/)) {
+      map.set(dir, [file]);
+    } else {
+      // $FlowFixMe
+      list.push(file);
+    }
   }
+  // $FlowFixMe
   return [...map.values()].flat();
 };
 
