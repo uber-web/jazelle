@@ -1,0 +1,9 @@
+filegroup(
+  name = "x",
+  srcs = ["x.txt"],
+)
+
+filegroup(
+  name = "y",
+  srcs = ["y.txt"],
+)

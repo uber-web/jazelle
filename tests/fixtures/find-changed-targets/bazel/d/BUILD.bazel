@@ -1,0 +1,11 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@jazelle//:build-rules.bzl", "web_library")
+
+web_library(
+    name = "library",
+    deps = [
+        "//non-js:x"
+    ],
+    srcs = [],
+)

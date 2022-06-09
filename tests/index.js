@@ -744,15 +744,7 @@ async function testFindChangedTargets() {
     const files = `${tmp}/tmp/find-changed-targets/bazel/changes.txt`;
     await install({
       root: `${tmp}/tmp/find-changed-targets/bazel`,
-      cwd: `${tmp}/tmp/find-changed-targets/bazel/a`,
-    });
-    await install({
-      root: `${tmp}/tmp/find-changed-targets/bazel`,
-      cwd: `${tmp}/tmp/find-changed-targets/bazel/b`,
-    });
-    await install({
-      root: `${tmp}/tmp/find-changed-targets/bazel`,
-      cwd: `${tmp}/tmp/find-changed-targets/bazel/c`,
+      cwd: `${tmp}/tmp/find-changed-targets/bazel`,
     });
     const targets = await findChangedTargets({root, files, format: 'targets'});
     assert.deepEqual(
@@ -770,6 +762,7 @@ async function testFindChangedTargets() {
         '//b:library',
         '//b:lint',
         '//b:test',
+        '//d:library', // this should appear here because it depends on non-js/x.txt
       ].sort()
     );
   }
