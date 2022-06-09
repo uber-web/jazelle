@@ -204,7 +204,7 @@ const getTargetRepresentatives = files => {
     const dir = dirname(file);
     const list = map.get(dir) || map.set(dir, []).get(dir);
     if (file.match(/(.jsx?|.tsx?)$/)) map.set(dir, [file]);
-    else list.push(file)
+    else list.push(file);
   }
   return [...map.values()].flat();
 };
