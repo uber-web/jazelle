@@ -115,7 +115,7 @@ const findChangedBazelTargets = async ({root, files}) => {
         batches(queryables, 1000), // batching required, else E2BIG errors
         async q => {
           const innerQuery = q.join(' union ');
-          const cmd = `${bazel} query 'let graph = kind("(web_.*|.*_test) rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label`;
+          const cmd = `${bazel} query 'let graph = kind("(web_.*|.*_test|filegroup) rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label`;
           return exec(cmd, opts);
         }
       );
@@ -193,15 +193,20 @@ async function batch(root, items, fn) {
   ].filter(Boolean);
 }
 
-// for each folder, we typically only need to check one file,
+// Optimization: For each folder, we typically only need to check one file,
 // since all files will generally map to the same target
 // given how jazelle generates BUILD.bazel files
+// However, this is only true of js files
+// For other types of targets, we need to be conservative and keep the entire list of files
 const getTargetRepresentatives = files => {
   const map = new Map();
   for (const file of files) {
-    map.set(dirname(file), file);
+    const dir = dirname(file);
+    const list = map.get(dir) || map.set(dir, []).get(dir);
+    if (file.match(/(.jsx?|.tsx?)$/)) map.set(dir, [file]);
+    else list.push(file)
   }
-  return [...map.values()];
+  return [...map.values()].flat();
 };
 
 module.exports = {findChangedTargets};
