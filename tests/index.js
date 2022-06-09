@@ -762,7 +762,7 @@ async function testFindChangedTargets() {
         '//b:library',
         '//b:lint',
         '//b:test',
-        '//d:library',
+        '//d:library', // this should appear here because it depends on non-js/x.txt
       ].sort()
     );
   }
