@@ -21,7 +21,7 @@ const runNode /*: Node */ = async ({
   stdio = 'inherit',
 }) => {
   const params = ['-r', `${root}/.pnp.cjs`, ...getPassThroughArgs(args)];
-  await spawn(node, params, {env: process.env, cwd, stdio});
+  await spawn(node, params, {env: {...process.env}, cwd, stdio});
 };
 
 module.exports = {node: runNode};

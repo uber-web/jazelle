@@ -49,7 +49,7 @@ const bump /*: Bump */ = async ({
     );
   }
 
-  const options = {cwd: root, env: process.env};
+  const options = {cwd: root, env: {...process.env}};
   for (const dep of downstreams) {
     const query = `${node} ${yarn} npm info ${dep.meta.name} --json`;
     const data = await exec(query, options).catch(() => null);

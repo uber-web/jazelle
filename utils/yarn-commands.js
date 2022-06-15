@@ -34,7 +34,11 @@ const buildCacheable = async ({root, dep, deps, stdio}) => {
   if (!(await cache.isCached(dir))) {
     console.log(`Building ${meta.name}`);
     if (meta.scripts && meta.scripts.build) {
-      await spawn(node, [yarn, 'build'], {stdio, env: process.env, cwd: dir});
+      await spawn(node, [yarn, 'build'], {
+        stdio,
+        env: {...process.env},
+        cwd: dir,
+      });
     }
 
     getDownstreams({deps, dep}).forEach(d => {
@@ -74,7 +78,7 @@ const dev /*: Dev */ = async ({root, deps, args, stdio = 'inherit'}) => {
   await batchBuild({root, deps, self: false, stdio: errorsOnly});
   await spawn(node, [yarn, 'dev', ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };
@@ -93,7 +97,7 @@ const test /*: Test */ = async ({root, deps, args, stdio = 'inherit'}) => {
   await batchBuild({root, deps, self: false, stdio: errorsOnly});
   await spawn(node, [yarn, 'test', ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };
@@ -112,7 +116,7 @@ const lint /*: Lint */ = async ({root, deps, args, stdio = 'inherit'}) => {
   await batchBuild({root, deps, self: false, stdio: errorsOnly});
   await spawn(node, [yarn, 'lint', ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };
@@ -131,7 +135,7 @@ const flow /*: Flow */ = async ({root, deps, args, stdio = 'inherit'}) => {
   await batchBuild({root, deps, self: false, stdio: errorsOnly});
   await spawn(node, [yarn, 'flow', ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };
@@ -150,7 +154,7 @@ const start /*: Start */ = async ({root, deps, args, stdio = 'inherit'}) => {
   await batchBuild({root, deps, self: true, stdio: errorsOnly});
   await spawn(node, [yarn, 'start', ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };
@@ -196,7 +200,7 @@ const script /*: Script */ = async ({
   await batchBuild({root, deps, self: false, stdio: errorsOnly});
   await spawn(node, [yarn, command, ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };

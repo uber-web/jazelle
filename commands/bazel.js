@@ -18,7 +18,7 @@ const runBazel /*: Bazel */ = async ({root, args, stdio = 'inherit'}) => {
   const params = getPassThroughArgs(args);
   await spawn(bazel, [...startupFlags, ...params], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: root,
   });
 };

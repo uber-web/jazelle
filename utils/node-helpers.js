@@ -107,7 +107,7 @@ const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
     }
 
     if (opts.env == null) {
-      opts.env = process.env;
+      opts.env = {...process.env};
     } else {
       opts.env.NODE_OPTIONS = process.env.NODE_OPTIONS;
     }
