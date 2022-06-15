@@ -6,7 +6,7 @@
     "c": "workspace:*"
   },
   "scripts": {
-    "build": "mkdir -p $CWD/foo && echo 'console.log(require(\"b\") + require(\"c\"))' > $CWD/foo/foo.js && ${NODE} $CWD/foo/foo.js",
+    "build": "mkdir -p $CWD/foo && echo 'console.log(require(\"b\") + require(\"c\"))' > $CWD/foo/foo.js",
     "start": "node foo/foo.js"
   }
 }
