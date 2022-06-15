@@ -99,25 +99,25 @@ const install /*: Install */ = async ({
     spawnArgs.push('--immutable');
   }
 
-  if (verbose) {
+  if (!verbose) {
     await spawn(node, spawnArgs, {
       env: {...env, PATH: path},
       cwd: root,
       stdio: 'inherit',
     });
   } else {
-    await spawn(node, spawnArgs, {
-      // FORCE_COLOR is for the chalk package used by yarn
-      env: {...env, PATH: path, FORCE_COLOR: '1'},
-      cwd: root,
-      filterOutput(line, type) {
-        return (
-          !/doesn't provide .+ requested by /.test(line) &&
-          !/provides .+ requested by /.test(line) &&
-          !/can't be found in the cache and will be fetched/.test(line)
-        );
-      },
-    });
+    // await spawn(node, spawnArgs, {
+    //   // FORCE_COLOR is for the chalk package used by yarn
+    //   env: {...env, PATH: path, FORCE_COLOR: '1'},
+    //   cwd: root,
+    //   filterOutput(line, type) {
+    //     return (
+    //       !/doesn't provide .+ requested by /.test(line) &&
+    //       !/provides .+ requested by /.test(line) &&
+    //       !/can't be found in the cache and will be fetched/.test(line)
+    //     );
+    //   },
+    // });
   }
 
   if (skipPostinstall === false) {
