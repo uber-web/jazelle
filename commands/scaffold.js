@@ -57,7 +57,7 @@ const scaffold /*: Scaffold */ = async ({
   }
 
   const workspaces = [
-    ...new Set([...pkg.workspaces, relativeTo]),
+    ...new Set([...pkg.workspaces || [], relativeTo]),
   ].sort((l, r) => l.localeCompare(r));
   pkg.workspaces = workspaces;
   await write(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
