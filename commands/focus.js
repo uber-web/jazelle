@@ -45,7 +45,8 @@ const focus /*: Focus */ = async ({
   } = /*:: await */ await getManifest({root});
 
   const all = /*:: await */ await getAllDependencies({root, projects});
-  const singleDep = args.length === 1 ? all.find(({meta}) => meta.name === args[0]) : null;
+  const singleDep =
+    args.length === 1 ? all.find(({meta}) => meta.name === args[0]) : null;
   if (singleDep != null) cwd = singleDep.dir;
 
   const isRootInstall = root === cwd;
@@ -104,7 +105,7 @@ const focus /*: Focus */ = async ({
       stdio: 'inherit',
       filterOutput(line) {
         return validateYarnWorkspaceToolsInstallation(line);
-      }
+      },
     });
   } else {
     await spawn(node, spawnArgs, {
@@ -112,7 +113,8 @@ const focus /*: Focus */ = async ({
       env: {...env, PATH: path, FORCE_COLOR: '1'},
       cwd: root,
       filterOutput(line, type) {
-        return validateYarnWorkspaceToolsInstallation(line) && (
+        return (
+          validateYarnWorkspaceToolsInstallation(line) &&
           !/doesn't provide .+ requested by /.test(line) &&
           !/provides .+ requested by /.test(line) &&
           !/can't be found in the cache and will be fetched/.test(line)
@@ -178,9 +180,11 @@ const validateVersionPolicy = async ({dirs, versionPolicy}) => {
 
 const validateYarnWorkspaceToolsInstallation = line => {
   if (/Command not found/.test(line)) {
-    throw new Error('Focus command isn\'t setup. Use Yarn v2+ and run `yarn plugin import workspace-tools`');
+    throw new Error(
+      "Focus command isn't setup. Use Yarn v2+ and run `yarn plugin import workspace-tools`"
+    );
   }
   return true;
-}
+};
 
 module.exports = {focus};
