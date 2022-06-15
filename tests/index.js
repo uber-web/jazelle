@@ -10,6 +10,7 @@ const {add} = require('../commands/add.js');
 const {upgrade} = require('../commands/upgrade.js');
 const {remove} = require('../commands/remove.js');
 const {ci} = require('../commands/ci.js');
+const {focus} = require('../commands/focus.js');
 const {purge} = require('../commands/purge.js');
 const {yarn: yarnCmd} = require('../commands/yarn.js');
 const {bump} = require('../commands/bump.js');
@@ -93,6 +94,7 @@ async function runTests() {
     t(testInit),
     t(testScaffold),
     t(testCi),
+    t(testFocus),
     t(testUpgrade),
     t(testPurge),
     t(testYarn),
@@ -281,6 +283,31 @@ async function testCi() {
     cwd: `${tmp}/tmp/ci/b`,
   });
   assert(true); // did not throw
+}
+
+async function testFocus() {
+  const cmd = `cp -r ${__dirname}/fixtures/focus/. ${tmp}/tmp/focus`;
+  await exec(cmd);
+
+  {
+    await focus({
+      root: `${tmp}/tmp/focus`,
+      cwd: `${tmp}/tmp/focus/b`,
+      args: [],
+      verbose: true,
+    });
+    assert(true); // did not throw
+  }
+
+  {
+    await focus({
+      root: `${tmp}/tmp/focus`,
+      cwd: `${tmp}/tmp/focus`,
+      args: ['b'],
+      verbose: false,
+    });
+    assert(true); // did not throw
+  }
 }
 
 async function testUpgrade() {
@@ -1309,9 +1336,10 @@ async function testReportMismatchedTopLevelDeps() {
   const cmd = `cp -r ${__dirname}/fixtures/report-mismatched-top-level-deps/ ${tmp}/tmp/report-mismatched-top-level-deps`;
   await exec(cmd);
 
+  const root = `${tmp}/tmp/report-mismatched-top-level-deps`;
   const withoutLockstep = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: false,
       exceptions: ['no-bugs', '@uber/mismatched'],
@@ -1330,8 +1358,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withoutPartialLockstep = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: false,
       exceptions: ['@uber/mismatched'],
@@ -1346,8 +1374,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withLockstep = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: true,
       exceptions: ['no-bugs'],
@@ -1362,8 +1390,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withAllExceptions = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: true,
       exceptions: ['no-bugs', '@uber/mismatched'],
@@ -1376,8 +1404,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withVersionedExceptions = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: false,
       exceptions: [{name: '@uber/mismatched', versions: ['^1.0.0']}],
@@ -1393,8 +1421,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withAllVersionedExceptions = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: false,
       exceptions: [{name: '@uber/mismatched', versions: ['^1.0.0', '^2.0.0']}],
@@ -1410,8 +1438,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withLockstepVersionedExceptions = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: true,
       exceptions: ['no-bugs', {name: '@uber/mismatched', versions: ['^1.0.0']}],
@@ -1428,8 +1456,8 @@ async function testReportMismatchedTopLevelDeps() {
 
   const withLockstepAllVersionedExceptions = await reportMismatchedTopLevelDeps(
     {
-      root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-      projects: ['packages/a', 'packages/b', 'packages/c'],
+      root,
+      dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
       versionPolicy: {
         lockstep: true,
         exceptions: [

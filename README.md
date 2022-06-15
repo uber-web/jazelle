@@ -332,11 +332,10 @@ If you get into a bad state, here are some things you can try:
 - [`jazelle scaffold`](#jazelle-scaffold)
 - [`jazelle install`](#jazelle-install)
 - [`jazelle ci`](#jazelle-ci)
+- [`jazelle focus`](#jazelle-focus)
 - [`jazelle add`](#jazelle-add)
 - [`jazelle remove`](#jazelle-remove)
 - [`jazelle upgrade`](#jazelle-upgrade)
-- [`jazelle dedupe`](#jazelle-dedupe)
-- [`jazelle prune`](#jazelle-prune)
 - [`jazelle purge`](#jazelle-purge)
 - [`jazelle check`](#jazelle-check)
 - [`jazelle outdated`](#jazelle-outdated)
@@ -397,21 +396,40 @@ Scaffolds required workspace files
 
 ### `jazelle install`
 
-- Downloads external dependencies and links local dependencies.
+- Downloads external dependencies and links local dependencies for all monorepo projects.
 - Generates [Bazel](https://bazel.build/) BUILD files if they don't already exist for the relevant projects.
 - Updates yarn.lock files if needed.
 
 `jazelle install --cwd [cwd]`
 
 - `--cwd` - Project folder (absolute or relative to shell `cwd`). Defaults to `process.cwd()`
+- `--skipPreinstall` - Skip the preinstall hook
+- `--skipPostinstall` - Skip the postinstall hook
+- `verbose` - Prints more Yarn warnings
 
 ### `jazelle ci`
 
-Downloads external dependencies and links local dependencies. Does not create or modify source files. Useful for CI checks.
+Downloads external dependencies and links local dependencies for all monorepo projects. Does not create or modify source files. Useful for CI checks.
 
 `jazelle ci --cwd [cwd]`
 
 - `--cwd` - Project folder (absolute or relative to shell `cwd`). Defaults to `process.cwd()`
+
+### `jazelle focus`
+
+- Downloads external dependencies and links local dependencies for individual projects.
+- Generates [Bazel](https://bazel.build/) BUILD files if they don't already exist for the relevant projects.
+- Updates yarn.lock files if needed.
+
+It's typically faster to run `jazelle focus` than to run `jazelle install`, because `focus` does not install packages that are not part of the build graph for the specified package(s). Runs `yarn workspaces focus` under the hood.
+
+`jazelle focus [packages...] --cwd [cwd]`
+
+- `[packages...]` - A list of packages to install
+- `--cwd` - Project folder (absolute or relative to shell `cwd`). Defaults to `process.cwd()`
+- `--skipPreinstall` - Skip the preinstall hook
+- `--skipPostinstall` - Skip the postinstall hook
+- `verbose` - Prints more Yarn warnings
 
 ### `jazelle add`
 
@@ -439,18 +457,6 @@ Upgrades a dependency across all local projects that use it
 `jazelle upgrade [args...]`
 
 - `args` - Space-separated list of dependency names and optionally their desired version ranges. e.g., `foo@^1.2.3`. If version is not specified, defaults to `npm info [name] version` for 3rd party packages, or the local version for local packages. Note that local packages must be pinned to an exact version.
-
-### `jazelle dedupe`
-
-Dedupe transitive dependencies in projects' yarn.lock files
-
-`jazelle dedupe`
-
-### `jazelle prune`
-
-Deletes unused transitive dependencies in projects' yarn.lock files
-
-`jazelle prune`
 
 ### `jazelle purge`
 

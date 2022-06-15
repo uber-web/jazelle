@@ -18,32 +18,24 @@ const {executeHook} = require('../utils/execute-hook.js');
 const {node, yarn} = require('../utils/binary-paths.js');
 
 /*::
-export type InstallArgs = {
+export type FocusArgs = {
   root: string,
   cwd: string,
-  frozenLockfile?: boolean,
-  conservative?: boolean,
+  args: Array<string>,
   skipPreinstall?: boolean,
   skipPostinstall?: boolean,
   verbose?: boolean,
 }
-export type Install = (InstallArgs) => Promise<void>
+export type Focus = (FocusArgs) => Promise<void>
 */
-const install /*: Install */ = async ({
+const focus /*: Focus */ = async ({
   root,
   cwd,
-  frozenLockfile = false,
-  conservative = true,
-  skipPreinstall = false,
-  skipPostinstall = false,
-  verbose = false,
+  args,
+  skipPreinstall,
+  skipPostinstall,
+  verbose,
 }) => {
-  const isRootInstall = root === cwd;
-
-  if (!isRootInstall) {
-    await assertProjectDir({dir: cwd});
-  }
-
   const {
     projects,
     versionPolicy,
@@ -51,6 +43,16 @@ const install /*: Install */ = async ({
     workspace,
     dependencySyncRule,
   } = /*:: await */ await getManifest({root});
+
+  const all = /*:: await */ await getAllDependencies({root, projects});
+  const singleDep = args.length === 1 ? all.find(({meta}) => meta.name === args[0]) : null;
+  if (singleDep != null) cwd = singleDep.dir;
+
+  const isRootInstall = root === cwd;
+
+  if (!isRootInstall) {
+    await assertProjectDir({dir: cwd});
+  }
 
   if (!isRootInstall) {
     validateRegistration({root, cwd, projects});
@@ -66,8 +68,6 @@ const install /*: Install */ = async ({
     }
   }
 
-  const all = await getAllDependencies({root, projects});
-
   const deps = isRootInstall
     ? all
     : /*:: await */ await getLocalDependencies({
@@ -79,11 +79,11 @@ const install /*: Install */ = async ({
   validateDeps({deps});
   await validateVersionPolicy({dirs: deps.map(dep => dep.dir), versionPolicy});
 
-  if (workspace === 'sandbox' && frozenLockfile === false) {
+  if (workspace === 'sandbox') {
     await generateBazelignore({root});
     await generateBazelBuildRules({
       root,
-      deps: all,
+      deps,
       projects,
       dependencySyncRule,
     });
@@ -92,18 +92,19 @@ const install /*: Install */ = async ({
   if (skipPreinstall === false) {
     await executeHook(hooks.preinstall, root);
   }
+
   const env = process.env;
   const path = dirname(node) + ':' + String(process.env.PATH);
-  const spawnArgs = [yarn, 'install'];
-  if (frozenLockfile) {
-    spawnArgs.push('--immutable');
-  }
+  const spawnArgs = [yarn, 'workspaces', 'focus', ...args];
 
   if (verbose) {
     await spawn(node, spawnArgs, {
       env: {...env, PATH: path},
       cwd: root,
       stdio: 'inherit',
+      filterOutput(line) {
+        return validateYarnWorkspaceToolsInstallation(line);
+      }
     });
   } else {
     await spawn(node, spawnArgs, {
@@ -111,7 +112,7 @@ const install /*: Install */ = async ({
       env: {...env, PATH: path, FORCE_COLOR: '1'},
       cwd: root,
       filterOutput(line, type) {
-        return (
+        return validateYarnWorkspaceToolsInstallation(line) && (
           !/doesn't provide .+ requested by /.test(line) &&
           !/provides .+ requested by /.test(line) &&
           !/can't be found in the cache and will be fetched/.test(line)
@@ -123,6 +124,14 @@ const install /*: Install */ = async ({
   if (skipPostinstall === false) {
     await executeHook(hooks.postinstall, root);
   }
+
+  // ensure lockfile is updated for all projects
+  await spawn(node, [yarn, 'install', '--mode', 'update-lockfile'], {
+    env: {...env, PATH: path},
+    cwd: root,
+    stdio: 'ignore',
+    detached: true,
+  });
 };
 
 const validateRegistration = ({root, cwd, projects}) => {
@@ -167,4 +176,11 @@ const validateVersionPolicy = async ({dirs, versionPolicy}) => {
   if (!result.valid) throw new Error(getErrorMessage(result, false));
 };
 
-module.exports = {install};
+const validateYarnWorkspaceToolsInstallation = line => {
+  if (/Command not found/.test(line)) {
+    throw new Error('Focus command isn\'t setup. Use Yarn v2+ and run `yarn plugin import workspace-tools`');
+  }
+  return true;
+}
+
+module.exports = {focus};

@@ -136,6 +136,8 @@ const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
       // $FlowFixMe flow typedef is missing .exitCode
       if (child.exitCode === null) child.kill();
     });
+
+    if (opts.detached) child.unref();
   });
 };
 
