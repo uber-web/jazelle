@@ -7,7 +7,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: uber/web-base-image:16.15.0
+    container: uber/web-base-image:16.15.0-buster
     steps:
       - uses: actions/checkout@v2
       - run: yarn install --frozen-lockfile
