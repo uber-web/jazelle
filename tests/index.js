@@ -467,15 +467,7 @@ async function testBatchTestGroup() {
   await new Promise(resolve => stream.on('open', resolve));
   await install({
     root: `${tmp}/tmp/batch-test-group`,
-    cwd: `${tmp}/tmp/batch-test-group/a`,
-  });
-  await install({
-    root: `${tmp}/tmp/batch-test-group`,
-    cwd: `${tmp}/tmp/batch-test-group/b`,
-  });
-  await install({
-    root: `${tmp}/tmp/batch-test-group`,
-    cwd: `${tmp}/tmp/batch-test-group/b`,
+    cwd: `${tmp}/tmp/batch-test-group`,
   });
   await batchTestGroup({
     root: `${tmp}/tmp/batch-test-group`,
