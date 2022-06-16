@@ -1,4 +1,4 @@
 {
   "private": true,
-  "workspaces": ["a", "b"]
+  "workspaces": ["a", "b", "c"]
 }
