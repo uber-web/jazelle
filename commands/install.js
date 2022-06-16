@@ -38,7 +38,7 @@ const install /*: Install */ = async ({
   skipPostinstall = false,
   verbose = false,
 }) => {
-  let isRootInstall = root === cwd;
+  const isRootInstall = root === cwd;
 
   if (!isRootInstall) {
     await assertProjectDir({dir: cwd});
@@ -77,7 +77,7 @@ const install /*: Install */ = async ({
       });
 
   validateDeps({deps});
-  await validateVersionPolicy({root, projects, versionPolicy});
+  await validateVersionPolicy({dirs: deps.map(dep => dep.dir), versionPolicy});
 
   if (workspace === 'sandbox' && frozenLockfile === false) {
     await generateBazelignore({root});
@@ -159,10 +159,9 @@ const validateDeps = ({deps}) => {
   }
 };
 
-const validateVersionPolicy = async ({root, projects, versionPolicy}) => {
+const validateVersionPolicy = async ({dirs, versionPolicy}) => {
   const result = await reportMismatchedTopLevelDeps({
-    root,
-    projects,
+    dirs,
     versionPolicy,
   });
   if (!result.valid) throw new Error(getErrorMessage(result, false));

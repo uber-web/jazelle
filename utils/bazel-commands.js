@@ -28,7 +28,7 @@ const build /*: Build */ = async ({
     [...startupFlags, 'build', `//${cwd}:${name}`, '--sandbox_debug'],
     {
       stdio,
-      env: process.env,
+      env: {...process.env},
       cwd: root,
     }
   );
@@ -64,7 +64,7 @@ const test /*: Test */ = async ({
     ],
     {
       stdio,
-      env: process.env,
+      env: {...process.env},
       cwd: root,
     }
   );
@@ -100,7 +100,7 @@ const run /*: Run */ = async ({
     ],
     {
       stdio,
-      env: process.env,
+      env: {...process.env},
       cwd: root,
     }
   );
