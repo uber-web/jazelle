@@ -12,6 +12,7 @@ export type Manifest = {
   versionPolicy?: VersionPolicy,
   hooks?: Hooks,
   workspace: "host" | "sandbox",
+  focusRequirements?: Array<string>, // list of project names that always gets appended to focus command
   hasSandboxIO?: boolean,
 }
 export type ExceptionMetadata = {
@@ -26,6 +27,7 @@ export type Hooks = {
   preinstall?: string,
   postinstall?: string,
   postcommand?: string,
+  bool_shouldinstall?: string,
 }
 */
 const getManifest /*: GetManifest */ = async ({root}) => {

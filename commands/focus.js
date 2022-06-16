@@ -21,7 +21,7 @@ const {node, yarn} = require('../utils/binary-paths.js');
 export type FocusArgs = {
   root: string,
   cwd: string,
-  args: Array<string>,
+  packages: Array<string>,
   skipPreinstall?: boolean,
   skipPostinstall?: boolean,
   verbose?: boolean,
@@ -31,7 +31,7 @@ export type Focus = (FocusArgs) => Promise<void>
 const focus /*: Focus */ = async ({
   root,
   cwd,
-  args,
+  packages,
   skipPreinstall,
   skipPostinstall,
   verbose,
@@ -42,11 +42,14 @@ const focus /*: Focus */ = async ({
     hooks = {},
     workspace,
     dependencySyncRule,
+    focusRequirements = [],
   } = /*:: await */ await getManifest({root});
 
   const all = /*:: await */ await getAllDependencies({root, projects});
   const singleDep =
-    args.length === 1 ? all.find(({meta}) => meta.name === args[0]) : null;
+    packages.length === 1
+      ? all.find(({meta}) => meta.name === packages[0])
+      : null;
   if (singleDep != null) cwd = singleDep.dir;
 
   const isRootInstall = root === cwd;
@@ -96,7 +99,8 @@ const focus /*: Focus */ = async ({
 
   const env = process.env;
   const path = dirname(node) + ':' + String(process.env.PATH);
-  const spawnArgs = [yarn, 'workspaces', 'focus', ...args];
+  const focusable = [...new Set([...packages, ...focusRequirements])];
+  const spawnArgs = [yarn, 'workspaces', 'focus', ...focusable];
 
   if (verbose) {
     await spawn(node, spawnArgs, {

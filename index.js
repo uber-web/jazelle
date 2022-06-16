@@ -111,7 +111,7 @@ const runCLI /*: RunCLI */ = async argv => {
           focus({
             root: await rootOf(args),
             cwd,
-            args: rest,
+            packages: rest,
             skipPreinstall: Boolean(skipPreinstall),
             skipPostinstall: Boolean(skipPostinstall),
             verbose: Boolean(verbose),
@@ -357,6 +357,7 @@ module.exports = {
   scaffold,
   install,
   ci,
+  focus,
   add,
   remove,
   upgrade,
