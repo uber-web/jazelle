@@ -22,6 +22,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"c@0.0.0, c@workspace:c":
+  version: 0.0.0-use.local
+  resolution: "a@workspace:a"
+  languageName: unknown
+  linkType: soft
+
 "function-bind@npm:^1.1.1":
   version: 1.1.1
   resolution: "function-bind@npm:1.1.1"

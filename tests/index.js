@@ -293,7 +293,7 @@ async function testFocus() {
     await focus({
       root: `${tmp}/tmp/focus`,
       cwd: `${tmp}/tmp/focus/b`,
-      args: [],
+      packages: [],
       verbose: true,
     });
     assert(true); // did not throw
@@ -303,7 +303,7 @@ async function testFocus() {
     await focus({
       root: `${tmp}/tmp/focus`,
       cwd: `${tmp}/tmp/focus`,
-      args: ['b'],
+      packages: ['b'],
       verbose: false,
     });
     assert(true); // did not throw

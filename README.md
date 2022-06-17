@@ -423,6 +423,8 @@ Downloads external dependencies and links local dependencies for all monorepo pr
 
 It's typically faster to run `jazelle focus` than to run `jazelle install`, because `focus` does not install packages that are not part of the build graph for the specified package(s). Runs `yarn workspaces focus` under the hood.
 
+You can specify packages that always get installed even when using the `jazelle focus` command by specifying a `focusRequirements` field in `manifest.json`, containing an array of package names. This is useful if you have utility tools that normally run outside of the scope of a focused project. See [focus requirements](#focus-requirements) for more information.
+
 `jazelle focus [packages...] --cwd [cwd]`
 
 - `[packages...]` - A list of packages to install
@@ -744,11 +746,11 @@ If you want commands to display colorized output, run their respective NPM scrip
 - [init](#init)
 - [scaffold](#scaffold)
 - [install](#install)
+- [ci](#ci)
+- [focus](#focus)
 - [add](#add)
 - [remove](#remove)
 - [upgrade](#upgrade)
-- [dedupe](#dedupe)
-- [prune](#prune)
 - [purge](#purge)
 - [check](#check)
 - [align](#align)
@@ -813,7 +815,7 @@ Generates Bazel files required to make Jazelle run in a workspace
 
 ### `install`
 
-- Downloads external dependencies and links local dependencies.
+- Downloads external dependencies and links local dependencies for all projects.
 - Generates [Bazel](https://bazel.build/) BUILD files if they don't exist for the relevant projects.
 - Updates yarn.lock files if needed.
 
@@ -824,10 +826,20 @@ Generates Bazel files required to make Jazelle run in a workspace
 
 ### `ci`
 
-Downloads external dependencies and links local dependencies. Does not create or modify source files. Useful for CI checks.
+Downloads external dependencies and links local dependencies for all projects. Does not create or modify source files. Useful for CI checks.
 
 `let ci: ({root: string, cwd: string}) => Promise<void>`
 
+- `root` - Monorepo root folder (absolute path)
+- `cwd` - Project folder (absolute path)
+
+### `focus`
+
+Downloads external dependencies and links local dependencies for individual projects. Does not create or modify source files. Typically faster than `install`, but does not install packages that are not part of the requested build graph.
+
+`let focus: ({packages: Array<string>, root: string, cwd: string}) => Promise<void>`
+
+- `packages` - List of package names to focus. Note that these should not be project paths.
 - `root` - Monorepo root folder (absolute path)
 - `cwd` - Project folder (absolute path)
 
@@ -859,22 +871,6 @@ Upgrades a dependency across all local projects that use it
 `let upgrade: ({root: string, args: Array<string>}) => Promise<void>`
 
 - `args` - Space-separated list of dependency names and optionally their desired version ranges. e.g., `foo@^1.2.3`. If version is not specified, defaults to `npm info [name] version` for 3rd party packages, or the local version for local packages. Note that local packages must be pinned to an exact version.
-
-### `dedupe`
-
-Dedupe transitive dependencies in projects' yarn.lock files
-
-`let dedupe: ({root: string}) => Promise<void>`
-
-- `root` - Monorepo root folder (absolute path)
-
-### `prune`
-
-Removes unused transitive dependencies in projects' yarn.lock files
-
-`let prune: ({root: string}) => Promise<void>`
-
-- `root` - Monorepo root folder (absolute path)
 
 ### `purge`
 
@@ -1198,6 +1194,8 @@ Finds the absolute path of the monorepo root folder
 - [Installation hooks](#installation-hooks)
 - [Boolean hooks](#boolean-hooks)
 - [Version policy](#version-policy)
+- [Focus requirements](#focus-requirements)
+- [Dependency Sync Rule](#dependency-sync-rule)
 - [Build file template](#build-file-template)
 
 Note: The `manifest.json` file does **not** allow comments; they are present here for informational purposes only.
@@ -1213,6 +1211,7 @@ Note: The `manifest.json` file does **not** allow comments; they are present her
     "preinstall": "echo before",
     "postinstall": "echo after",
     "postcommand": "echo after command",
+    "bool_shouldinstall": "echo true",
   },
   // Optional version policy
   "versionPolicy": {
@@ -1222,6 +1221,8 @@ Note: The `manifest.json` file does **not** allow comments; they are present her
       { "name": "bar", "versions": ["1.0.0", "2.3.7"] },
     ]
   },
+  // Optional focus requirements
+  "focusRequirements": ["my-project-a", "my-project-b"],
   // Optional rule name to use when auto-updating target `deps` in BUILD.bazel
   "dependencySyncRule": "my_repo_target",
 }
@@ -1278,10 +1279,11 @@ Installation hooks run shell scripts before/after dependency installation.
 }
 ```
 
-
 ### Boolean hooks
 
 Boolean hooks are a special type of hook that can conditionally enable/disable jazelle behavior. They work by emitting `true` or `false` to stdout (must be the last thing emitted in the script).
+
+The `bool_shouldinstall` hook should echo either `true` or `false`. If false, calling `jazelle install` will bypass `yarn install`. This is useful if you have custom logic that caches installations or if you are using zero-installs.
 
 ```json
 {
@@ -1366,6 +1368,55 @@ The `exceptions` field may also identify specific versions for dependencies.  Th
     ]
   }
 }
+```
+
+### Focus Requirements
+
+Jazelle supports partial installation via `jazelle focus`. It may be desirable to always forcefully install a set of packages if they are frequently used tools that cannot be invoked from individual projects (for example, codemodding tools)
+
+In the example below, it becomes possible to run commands from the `my-tool` package, even if the user only runs `jz focus my-package-a` (i.e. they didn't explicitly ask to focus `my-tool`)
+
+```json
+// manifest.json
+{
+  "focusRequirements": ["my-tool"]
+}
+```
+
+### Dependency Sync Rules
+
+The `dependencySyncRule` field takes a string containing the name of a bazel rule. By default this is `web_library`. This is configurable for cases where the web_library rule is generated via a Bazel macro, so that Jazelle is still able to codemod `deps` fields in `BUILD.bazel` files that consume these macros instead of consuming `web_library` directly.
+
+```python
+# rules/my-macro.bzl
+load(
+  "@jazelle//:build-rules.bzl",
+  # underscore prefix to prevent re-exporting
+  _web_library = "web_library",
+  _web_binary = "web_binary",
+  _web_executable = "web_executable",
+  _web_test = "web_test",
+)
+
+def my_macro(srcs = [], deps = []):
+  _web_library(
+    name = "library",
+    deps = deps + ["//:some-centrally-managed-target"],
+    srcs = srcs,
+  )
+
+  #...
+
+# my-project/BUILD.bazel
+load("//rules:my_macro.bzl", "my_macro")
+package(default_visibility = ["//visibility:public"])
+
+my_macro(
+  srcs = glob(["**"]),
+  deps = [
+    # jazelle can codemod this field on add/remove commands if `dependencySyncRule` is set to `my_macro`
+  ]
+)
 ```
 
 ### Build file template
