@@ -100,7 +100,7 @@ const focus /*: Focus */ = async ({
   const env = process.env;
   const path = dirname(node) + ':' + String(process.env.PATH);
   const focusable = [...new Set([...packages, ...focusRequirements])];
-  const spawnArgs = [yarn, 'workspaces', 'focus', '-A', ...focusable];
+  const spawnArgs = [yarn, 'workspaces', 'focus', ...focusable];
 
   if (verbose) {
     await spawn(node, spawnArgs, {
