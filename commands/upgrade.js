@@ -1,5 +1,5 @@
 // @flow
-const {minVersion, satisfies} = require('../utils/cached-semver');
+const {minVersion, satisfies, valid} = require('../utils/cached-semver');
 const {getManifest} = require('../utils/get-manifest.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
 const {read, write} = require('../utils/node-helpers.js');
@@ -66,8 +66,8 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
 
 const update = (meta, type, name, version, from) => {
   if (meta[type] && meta[type][name]) {
-    const min = minVersion(meta[type][name]);
-    const inRange = !from || satisfies(min, from);
+    const curr = meta[type][name];
+    const inRange = !valid(curr) || !from || satisfies(minVersion(curr), from);
     if (inRange && !meta[type][name].includes('*')) meta[type][name] = version;
   }
 };

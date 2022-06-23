@@ -99,7 +99,25 @@ const focus /*: Focus */ = async ({
 
   const env = process.env;
   const path = dirname(node) + ':' + String(process.env.PATH);
-  const focusable = [...new Set([...packages, ...focusRequirements])];
+
+  // if using cwd, resolve to package name instead, because yarn doesn't focus correctly otherwise
+  const findCwdProjectName = dir => {
+    const found = all.find(d => d.dir === dir);
+    if (found) return found.meta.name;
+    return null;
+  };
+  const cwdArgIndex = packages.indexOf('--cwd');
+  const cwdArgValue = cwdArgIndex > -1 ? packages[cwdArgIndex + 1] : null;
+  const name = cwdArgValue
+    ? findCwdProjectName(`${root}/${cwdArgValue}`)
+    : !isRootInstall
+    ? findCwdProjectName(cwd)
+    : null;
+  if (name) packages.splice(cwdArgIndex, 2);
+
+  const focusable = [
+    ...new Set([name, ...packages, ...focusRequirements].filter(Boolean)),
+  ];
   const spawnArgs = [yarn, 'workspaces', 'focus', ...focusable];
 
   if (verbose) {

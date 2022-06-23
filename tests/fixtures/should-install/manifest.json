@@ -1,0 +1,5 @@
+{
+  "hooks": {
+    "bool_shouldinstall": "echo false"
+  }
+}

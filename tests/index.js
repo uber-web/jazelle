@@ -133,7 +133,7 @@ async function runTests() {
   // run separately to avoid CI error
   await t(testBazelDummy);
   await t(testBazelBuild);
-  // await t(testInstallAddUpgradeRemove);
+  await t(testInstallAddUpgradeRemove);
   await t(testBatchTestGroup);
   await t(testCommand);
   await t(testYarnCommand);
@@ -142,6 +142,7 @@ async function runTests() {
   await t(testScriptCommand);
   await t(testBazelDependentBuilds);
   await t(testBazelDependentFailure);
+  await t(testShouldInstall);
 
   await exec(`rm -rf ${tmp}/tmp`);
   console.log('All tests pass');
@@ -231,8 +232,8 @@ async function testInstallAddUpgradeRemove() {
     cwd: `${tmp}/tmp/commands/a`,
     args: ['b', 'c'],
   });
-  assert((await read(buildFile, 'utf8')).includes('//b:b'));
-  assert((await read(buildFile, 'utf8')).includes('//c:c'));
+  assert((await read(buildFile, 'utf8')).includes('//b:library'));
+  assert((await read(buildFile, 'utf8')).includes('//c:library'));
 
   // add external package
   await add({
@@ -247,7 +248,7 @@ async function testInstallAddUpgradeRemove() {
     root: `${tmp}/tmp/commands`,
     args: ['c@0.0.0'],
   });
-  assert((await read(buildFile, 'utf8')).includes('//c:c'));
+  assert((await read(buildFile, 'utf8')).includes('//c:library'));
 
   // upgrade external package
   await upgrade({
@@ -2146,4 +2147,18 @@ async function testOutdated() {
       latest: '1.0.0',
     },
   ]);
+}
+
+async function testShouldInstall() {
+  const cmd = `cp -r ${__dirname}/fixtures/should-install ${tmp}/tmp/should-install`;
+  await exec(cmd);
+
+  const root = `${tmp}/tmp/should-install`;
+
+  // should bypass yarn install due to bool_shouldinstall
+  await install({root, cwd: root});
+  assert.equal(await read(`${root}/yarn.lock`), '');
+
+  await focus({root, cwd: root, packages: ['a']});
+  assert.equal(await read(`${root}/yarn.lock`), '');
 }
