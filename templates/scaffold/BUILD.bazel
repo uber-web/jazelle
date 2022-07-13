@@ -7,10 +7,9 @@ jazelle(name = "jazelle", manifest = "manifest.json")
 filegroup(
     name = "yarn",
     srcs = [
-        ".pnp.loader.mjs",
         ".pnp.cjs",
         ".yarn",
         "package.json",
         "yarn.lock",
-    ]
+    ] + glob([".pnp.loader.mjs"])
 )
