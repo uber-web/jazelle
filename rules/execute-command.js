@@ -91,10 +91,13 @@ function runCommand(command, args = []) {
     execOrExit(`${node} ${yarn} run ${command} ${params}`, options);
   } else if (command.includes('${NODE}')) {
     // Support `build = "${NODE} ${ROOT_DIR}/foo.js"` as a web_binary build argument (instead of a package.json script name)
+    const loaderPath = join(rootDir, '.pnp.loader.mjs');
+    const loaderArgs = exists(loaderPath) ? `` : `--loader '${loaderPath}'`;
+
     const exe =
       process.env.NODE_SKIP_PNP === '1'
-        ? `${node}`
-        : `${node} -r ${join(rootDir, '.pnp.cjs')}`;
+        ? `${node} ${loaderArgs}`
+        : `${node} -r ${join(rootDir, '.pnp.cjs')} ${loaderArgs}`;
     const cmd = command
       .replace(/\$\{NODE\}/g, exe)
       .replace(/\$\{ROOT_DIR\}/g, rootDir);
