@@ -118,7 +118,7 @@ function runCommand(command, args = []) {
 }
 
 function smuggleLockfile(rootDir) {
-  // Support non-hermetic yarn.lock/.pnp.cjs smuggling into sandbox
+  // Support non-hermetic yarn.lock/.pnp.cjs/.pnp.loader.mjs smuggling into sandbox
   // This allows a repo to use yarn plugins to implement custom change detection
   // to avoid invalidating top-level cache in cases where yarn.lock is touched but only affects certain projects
   // See: Lockfile delegation section in README
@@ -136,6 +136,11 @@ function smuggleLockfile(rootDir) {
     const realPnpCjs = `${realRoot}/.pnp.cjs`;
     if (!exists(pnpCjs) && exists(realPnpCjs)) {
       symlink(realPnpCjs, pnpCjs, 'file');
+    }
+    const pnpLoader = `${rootDir}/.pnp.loader.mjs`;
+    const realPnpLoader = `${realRoot}/.pnp.loader.mjs`;
+    if (!exists(pnpLoader) && exists(realPnpLoader)) {
+      symlink(realPnpLoader, pnpLoader, 'file');
     }
   } catch (e) {
     // smuggling failed, assume yarn.lock exists and keep going
