@@ -11,5 +11,5 @@ filegroup(
         ".yarn",
         "package.json",
         "yarn.lock",
-    ]
+    ] + glob([".pnp.loader.mjs"])
 )
