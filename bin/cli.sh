@@ -71,7 +71,8 @@ else
 
   # payload
   export NODE_NO_WARNINGS=1 # hide [MODULE_NOT_FOUND] errors
-  "$NODE" --max_old_space_size=65536 "$JAZELLE" "$@"
+  CMD_PREFIX=$(eval "$("$NODE" -p "require('$ROOT/manifest.json').hooks.cmd_prefix || ''" 2>/dev/null || true)")
+  $CMD_PREFIX "$NODE" --max_old_space_size=65536 "$JAZELLE" "$@"
   EXIT_CODE=$?
 
   # postcommand hook
