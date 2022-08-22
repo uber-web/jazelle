@@ -93,9 +93,8 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
     );
     // reload package.json affected by workspace add command
     const allDeps = /*:: await */ await getAllDependencies({root, projects});
-    allDeps.find(item => item.dir === cwd).meta = JSON.parse(
-      await read(`${cwd}/package.json`)
-    );
+    const dep = allDeps.find(item => item.dir === cwd);
+    if (dep) dep.meta = JSON.parse(await read(`${cwd}/package.json`));
     await spawn(node, [yarn, 'install'], options);
 
     const deps = /*:: await */ await getLocalDependencies({
