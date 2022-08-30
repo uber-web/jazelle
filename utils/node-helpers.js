@@ -18,12 +18,13 @@ const {
 
 /*::
 import {Writable, Readable, Duplex} from 'stream';
+import type {ChildProcess} from 'child_process';
 
 export type Exec = (string, ExecOptions, ?StdioOptions) => Promise<string>;
 export type ExecOptions = void | {
   // https://nodejs.org/api/child_process.html#child_process_child_process_exec_command_options_callback
   cwd?: string,
-  env?: {[string]: ?string},
+  env?: typeof process.env,
   encoding?: string,
   shell?: string,
   timeout?: number,
@@ -35,33 +36,76 @@ export type ExecOptions = void | {
 };
 export type StdioOptions = Array<Writable>;
 */
+
+const activeChildren /*: Set<ChildProcess> */ = new Set();
+
+function sigintHandler() {
+  // Ctrl+C normally sends signal to the whole process group,
+  // so we just need to wait for the child processes to exit.
+}
+
+function sigtermHandler() {
+  // SIGTERM is usually sent to a parent process, so it's the
+  // parent process responsibility to propagate the signal to
+  // the spawned child process.
+  for (const child of activeChildren) {
+    child.kill('SIGTERM');
+  }
+}
+
+function exitHandler() {
+  for (const child of activeChildren) {
+    // $FlowFixMe flow typedef is missing .exitCode
+    if (child.exitCode === null) {
+      child.kill();
+    }
+  }
+}
+
+function addActiveChild(child) {
+  activeChildren.add(child);
+
+  if (activeChildren.size === 1) {
+    process.on('SIGINT', sigintHandler);
+    process.on('SIGTERM', sigtermHandler);
+    process.on('exit', exitHandler);
+  }
+}
+
+function removeActiveChild(child) {
+  activeChildren.delete(child);
+
+  if (activeChildren.size === 0) {
+    process.off('SIGINT', sigintHandler);
+    process.off('SIGTERM', sigtermHandler);
+    process.off('exit', exitHandler);
+  }
+}
+
 // use exec if you need stdout as a string, or if you need to explicitly setup shell in some way (e.g. export an env var)
 const exec /*: Exec */ = (cmd, opts = {}, stdio = []) => {
   const errorWithSyncStackTrace = new Error(); // grab stack trace outside of promise so errors are easier to narrow down
   return new Promise((resolve, reject) => {
     const child = proc.exec(cmd, opts, (err, stdout, stderr) => {
+      removeActiveChild(child);
+
       if (err) {
+        // $FlowFixMe
+        errorWithSyncStackTrace.status = err.code;
         errorWithSyncStackTrace.message = err.message;
         reject(errorWithSyncStackTrace);
       } else {
         resolve(String(stdout));
       }
-      process.off('exit', onExit);
     });
+    addActiveChild(child);
+
     if (stdio) {
       if (stdio[0]) child.stdout.pipe(stdio[0]);
       if (stdio[1]) child.stderr.pipe(stdio[1]);
     }
-
-    function onExit() {
-      // $FlowFixMe flow typedef is missing .exitCode
-      if (child.exitCode === null) child.kill();
-    }
-
-    process.on('exit', onExit);
   });
 };
-
 /*::
 export type Spawn = (string, Array<string>, SpawnOptions) => Promise<void>;
 export type SpawnOptions = void | {
@@ -113,15 +157,21 @@ const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
     }
 
     const child = proc.spawn(cmd, argv, opts);
+    addActiveChild(child);
+
     if (opts && typeof opts.filterOutput === 'function') {
       filter(child.stdout, process.stdout, 'stdout');
       filter(child.stderr, process.stderr, 'stderr');
     }
 
     child.on('error', e => {
+      removeActiveChild(child);
+
       reject(new Error(e));
     });
     child.on('close', code => {
+      removeActiveChild(child);
+
       if (code > 0) {
         const args = argv.join(' ');
         const cwd = opts && opts.cwd ? `at ${opts.cwd} ` : '';
@@ -129,16 +179,20 @@ const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
         // $FlowFixMe - maybe create specific error class to contain exit code?
         errorWithSyncStackTrace.status = code;
         reject(errorWithSyncStackTrace);
+      } else {
+        resolve();
       }
-      resolve();
-    });
-    process.on('exit', () => {
-      // $FlowFixMe flow typedef is missing .exitCode
-      if (child.exitCode === null) child.kill();
     });
 
     if (opts.detached) child.unref();
   });
+};
+const spawnOrExit /*: Spawn */ = async (...args) => {
+  try {
+    return await spawn(...args);
+  } catch (e) {
+    process.exit(e.status || 1);
+  }
 };
 
 const accessFile = promisify(access);
@@ -187,6 +241,7 @@ remove.fork = true;
 module.exports = {
   exec,
   spawn,
+  spawnOrExit,
   exists,
   read,
   write,
