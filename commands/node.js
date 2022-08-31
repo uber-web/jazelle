@@ -23,7 +23,7 @@ const runNode /*: Node */ = async ({
 }) => {
   const pnpESMLoaderPath = `${root}/.pnp.loader.mjs`;
   const loaderArgs = existsSync(pnpESMLoaderPath)
-    ? ['--loader', `'${pnpESMLoaderPath}'`]
+    ? ['--loader', `${pnpESMLoaderPath}`]
     : [];
   const params = [
     '-r',
