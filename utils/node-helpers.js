@@ -111,7 +111,7 @@ export type Spawn = (string, Array<string>, SpawnOptions) => Promise<void>;
 export type SpawnOptions = void | {
   // https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options
   cwd?: string,
-  env?: {[string]: ?string},
+  env?: typeof process.env,
   argv0?: string,
   stdio?: Stdio,
   detached?: boolean,
@@ -184,7 +184,9 @@ const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
       }
     });
 
-    if (opts.detached) child.unref();
+    if (opts.detached && (!opts.stdio || opts.stdio === 'ignore')) {
+      child.unref();
+    }
   });
 };
 const spawnOrExit /*: Spawn */ = async (...args) => {

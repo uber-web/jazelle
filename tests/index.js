@@ -1,17 +1,20 @@
 // @flow
 const assert = require('assert');
 const {tmpdir} = require('os');
+const path = require('path');
 const {readFileSync, createWriteStream} = require('fs');
 const {runCLI} = require('../index');
 const {init} = require('../commands/init.js');
 const {scaffold} = require('../commands/scaffold.js');
 const {install} = require('../commands/install.js');
 const {add} = require('../commands/add.js');
+const {bazel: bazelCmd} = require('../commands/bazel.js');
 const {upgrade} = require('../commands/upgrade.js');
 const {remove} = require('../commands/remove.js');
 const {ci} = require('../commands/ci.js');
 const {focus} = require('../commands/focus.js');
 const {purge} = require('../commands/purge.js');
+const {node: nodeCmd} = require('../commands/node.js');
 const {yarn: yarnCmd} = require('../commands/yarn.js');
 const {bump} = require('../commands/bump.js');
 const {script} = require('../commands/script.js');
@@ -33,6 +36,7 @@ const {
   ls,
   lstat,
   remove: rm,
+  spawn,
 } = require('../utils/node-helpers.js');
 const {findChangedTargets} = require('../utils/find-changed-targets.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
@@ -86,6 +90,29 @@ async function t(test) {
   }
 }
 
+async function expectProcessExit(expectedExitCode, run) {
+  let exitCode = 0;
+  // $FlowFixMe
+  const originalExit = process.exit;
+  // $FlowFixMe
+  process.exit = (code = 0) => {
+    exitCode = code;
+  };
+
+  try {
+    await run();
+  } finally {
+    // $FlowFixMe
+    process.exit = originalExit;
+
+    assert.strictEqual(
+      exitCode,
+      expectedExitCode,
+      `Process did not exit, or exit code did not match (expected: ${expectedExitCode}, actual: ${exitCode})`
+    );
+  }
+}
+
 async function runTests() {
   await exec(`rm -rf ${tmp}/tmp`);
   await exec(`mkdir -p ${tmp}/tmp`);
@@ -97,7 +124,6 @@ async function runTests() {
     t(testFocus),
     t(testUpgrade),
     t(testPurge),
-    t(testYarn),
     t(testBump),
     // t(testEach),
     t(testAssertProjectDir),
@@ -131,6 +157,9 @@ async function runTests() {
   ]);
 
   // run separately to avoid CI error
+  await t(testBazel);
+  await t(testNode);
+  await t(testYarn);
   await t(testBazelDummy);
   await t(testBazelBuild);
   await t(testInstallAddUpgradeRemove);
@@ -138,6 +167,7 @@ async function runTests() {
   await t(testCommand);
   await t(testYarnCommand);
   await t(testBazelCommand);
+  await t(testDevCommand);
   await t(testStartCommand);
   await t(testScriptCommand);
   await t(testBazelDependentBuilds);
@@ -159,6 +189,33 @@ async function testRunCLI() {
 }
 
 // commands
+async function testBazel() {
+  const tmpRoot = path.join(tmp, 'tmp', 'bazel');
+
+  await exec(`cp -r ${path.join(__dirname, 'fixtures', 'bazel')} ${tmpRoot}`);
+
+  const root = tmpRoot;
+
+  const streamFile = path.join(tmpRoot, 'build-stream.txt');
+  const stream = createWriteStream(streamFile);
+  await new Promise(resolve => stream.on('open', resolve));
+
+  await bazelCmd({
+    root,
+    args: ['help', 'run'],
+    stdio: ['ignore', stream, stream],
+  });
+
+  // @see: https://bazel.build/run/scripts#exit-codes
+  await expectProcessExit(2, () =>
+    bazelCmd({root, args: ['run'], stdio: ['ignore', stream, stream]})
+  );
+
+  const output = await read(streamFile, 'utf8');
+  assert(output.includes('Usage: bazel run'));
+  assert(output.includes('ERROR: Must specify a target to run'));
+}
+
 async function testInit() {
   await exec(`mkdir ${tmp}/tmp/init`);
   await init({cwd: `${tmp}/tmp/init`});
@@ -339,18 +396,90 @@ async function testPurge() {
   assert(!(await exists(temp)));
 }
 
-async function testYarn() {
-  await exec(`cp -r ${__dirname}/fixtures/yarn/ ${tmp}/tmp/yarn`);
+async function testNode() {
+  const tmpRoot = path.join(tmp, 'tmp', 'yarn-pnp');
+  const testScriptFilePath = path.join(tmpRoot, '_test-script.js');
 
-  const streamFile = `${tmp}/tmp/yarn/stream.txt`;
+  await exec(
+    `cp -r ${path.join(__dirname, 'fixtures', 'yarn-pnp')} ${tmpRoot}`
+  );
+  await write(
+    testScriptFilePath,
+    "console.log('Hello from node script'); process.exit(11);",
+    'utf8'
+  );
+
+  const workspaceFile = path.join(tmpRoot, 'WORKSPACE');
+  const workspace = await read(workspaceFile, 'utf8');
+  const replaced = workspace.replace(
+    'path = "../../.."',
+    `path = "${__dirname}/.."`
+  );
+  await write(workspaceFile, replaced, 'utf8');
+
+  const root = tmpRoot;
+  const cwd = tmpRoot;
+
+  const streamFile = path.join(tmpRoot, 'build-stream.txt');
   const stream = createWriteStream(streamFile);
   await new Promise(resolve => stream.on('open', resolve));
+
+  await install({root, cwd});
+
+  await nodeCmd({
+    root,
+    cwd,
+    args: ['-e', "console.log('Hello from eval script');"],
+    stdio: ['ignore', stream, stream],
+  });
+
+  await expectProcessExit(11, () =>
+    nodeCmd({
+      root,
+      cwd,
+      args: [testScriptFilePath],
+      stdio: ['ignore', stream, stream],
+    })
+  );
+
+  const lines = (await read(streamFile, 'utf8')).split('\n');
+  assert(lines.includes('Hello from eval script'));
+  assert(lines.includes('Hello from node script'));
+}
+
+async function testYarn() {
+  const tmpRoot = path.join(tmp, 'tmp', 'yarn');
+
+  await exec(`cp -r ${path.join(__dirname, 'fixtures', 'yarn')} ${tmpRoot}`);
+
+  const root = tmpRoot;
+  const cwd = tmpRoot;
+
+  const streamFile = path.join(tmpRoot, 'stream.txt');
+  const stream = createWriteStream(streamFile);
+  await new Promise(resolve => stream.on('open', resolve));
+
+  await install({root, cwd});
+
   await yarnCmd({
-    cwd: `${tmp}/tmp/yarn`,
+    cwd,
     args: ['--help'],
     stdio: ['ignore', stream, stream],
-  }).catch(() => {});
-  assert((await read(streamFile, 'utf8')).includes('Yarn Package Manager'));
+  });
+
+  await expectProcessExit(11, () =>
+    yarnCmd({
+      cwd,
+      args: ['run', 'foo-exit'],
+      stdio: ['ignore', stream, stream],
+    })
+  );
+
+  const output = await read(streamFile, 'utf8');
+  assert(output.includes('Yarn Package Manager'));
+
+  const lines = output.split('\n');
+  assert(lines.includes('foo exit'));
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -433,9 +562,19 @@ async function testScriptCommand() {
     stdio: ['ignore', stream, stream],
   });
 
+  await expectProcessExit(11, () =>
+    script({
+      root,
+      cwd,
+      args: ['--cwd', '.', 'foo-exit'],
+      stdio: ['ignore', stream, stream],
+    })
+  );
+
   const lines = (await read(streamFile, 'utf8')).split('\n');
   assert(lines.includes('hello world'));
   assert(lines.includes('hello world foo'));
+  assert(lines.includes('foo exit'));
 }
 
 // utils
@@ -593,8 +732,18 @@ async function testBazelBuild() {
     name: 'test',
     stdio: ['ignore', runStream, 'ignore'],
   });
+  await expectProcessExit(11, () =>
+    bazelCmds.run({
+      root: `${tmp}/tmp/bazel-rules`,
+      cwd: `${tmp}/tmp/bazel-rules/projects/a`,
+      args: ['foo-exit'],
+      name: 'script',
+      stdio: ['ignore', runStream, 'ignore'],
+    })
+  );
   const runData = await read(runStreamFile, 'utf8');
   assert(runData.includes('\nb\nv16.15.0'));
+  assert(runData.includes('\nfoo exit'));
 
   // lint
   const lintStreamFile = `${tmp}/tmp/bazel-rules/lint-stream.txt`;
@@ -1904,6 +2053,49 @@ async function testBazelCommand() {
   await new Promise(resolve => bazelStream.on('open', resolve));
   await exec(`${jazelle} bazel version`, {cwd}, [bazelStream]);
   assert((await read(bazelStreamFile, 'utf8')).includes('Build label:'));
+}
+
+async function testDevCommand() {
+  const tmpRoot = path.join(tmp, 'tmp', 'bin');
+
+  const cmd = `cp -r ${path.join(__dirname, 'fixtures', 'bin')} ${tmpRoot}`;
+  await exec(cmd);
+
+  const workspaceFile = path.join(tmpRoot, 'WORKSPACE');
+  const workspace = await read(workspaceFile, 'utf8');
+  const replaced = workspace.replace(
+    'path = "../../.."',
+    `path = "${__dirname}/.."`
+  );
+  await write(workspaceFile, replaced, 'utf8');
+
+  const cwd = tmpRoot;
+  const jazelle = `${__dirname}/../bin/bootstrap.sh`;
+
+  const devStreamFile = path.join(tmpRoot, 'dev-stream.txt');
+  const devStream = createWriteStream(devStreamFile);
+  await new Promise(resolve => devStream.on('open', resolve));
+
+  await install({root: cwd, cwd: `${cwd}/a`});
+
+  await spawn('./test-sigint.sh', [], {
+    env: {
+      ...process.env,
+      JAZELLE: jazelle,
+    },
+    cwd: `${cwd}/a`,
+    // Test script expects the process to run in its own process group
+    detached: true,
+    shell: true,
+    stdio: ['ignore', devStream, devStream],
+  });
+
+  const lines = (await read(devStreamFile, 'utf8')).split('\n');
+  assert(lines.includes('Dev: started'));
+  assert(lines.includes('Dev: running'));
+  assert(lines.includes('Dev: received SIGINT; gracefully terminating'));
+  assert(lines.includes('Dev: exiting'));
+  assert(lines.includes('Dev process exited'));
 }
 
 async function testStartCommand() {

@@ -113,14 +113,10 @@ async function runCommand(command, args = []) {
     });
   } else if (command in rootScripts) {
     // if command exists at root level but not at project level, run the root level command instead of erroring
-    await spawnOrExit(
-      `${node}`,
-      [`${yarn}`, 'run', `${command}`, ...args],
-      {
-        ...options,
-        cwd: rootDir,
-      }
-    );
+    await spawnOrExit(`${node}`, [`${yarn}`, 'run', `${command}`, ...args], {
+      ...options,
+      cwd: rootDir,
+    });
   } else {
     // do not allow running arbitrary shell commands
     // users should run such commands directly instead of running them through jazelle
