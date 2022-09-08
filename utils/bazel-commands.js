@@ -1,7 +1,7 @@
 // @flow
 const {relative, basename, dirname} = require('path');
 const {bazel, node} = require('./binary-paths.js');
-const {spawn} = require('./node-helpers.js');
+const {spawnOrExit} = require('./node-helpers.js');
 
 const startupFlags = ['--host_jvm_args=-Xmx15g'];
 
@@ -23,7 +23,7 @@ const build /*: Build */ = async ({
   stdio = 'inherit',
 }) => {
   cwd = relative(root, cwd);
-  await spawn(
+  await spawnOrExit(
     bazel,
     [...startupFlags, 'build', `//${cwd}:${name}`, '--sandbox_debug'],
     {
@@ -53,7 +53,7 @@ const test /*: Test */ = async ({
 }) => {
   cwd = relative(root, cwd);
   const testParams = args.map(arg => `--test_arg=${arg}`);
-  await spawn(
+  await spawnOrExit(
     bazel,
     [
       ...startupFlags,
@@ -89,7 +89,7 @@ const run /*: Run */ = async ({
 }) => {
   cwd = relative(root, cwd);
   const runParams = args.length > 0 ? ['--', ...args] : [];
-  await spawn(
+  await spawnOrExit(
     bazel,
     [
       ...startupFlags,
@@ -176,7 +176,7 @@ const exec /*: Exec */ = async ({root, cwd, args, stdio = 'inherit'}) => {
     ...process.env,
     PATH: `${bazelDir}:${nodeDir}:${path}`,
   };
-  await spawn(command, params, {cwd, env, stdio});
+  await spawnOrExit(command, params, {cwd, env, stdio});
 };
 
 /*::

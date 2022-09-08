@@ -2,6 +2,7 @@
   "name": "a",
   "version": "0.0.0",
   "scripts": {
-    "foo": "./echo.sh"
+    "foo": "./echo.sh",
+    "foo-exit": "echo foo exit && exit 11"
   }
 }

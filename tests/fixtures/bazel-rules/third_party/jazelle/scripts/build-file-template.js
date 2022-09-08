@@ -40,6 +40,14 @@ web_executable(
     ],
 )
 
+web_executable(
+    name = "script",
+    command = "run",
+    deps = [
+        "//${path}:library",
+    ],
+)
+
 web_test(
     name = "test",
     command = "test",
