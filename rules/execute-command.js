@@ -89,13 +89,7 @@ async function runCommand(command, args = []) {
   const options = {cwd: main, env: process.env, stdio: 'inherit'};
 
   smuggleLockfile(rootDir);
-  if (command in scripts) {
-    await spawnOrExit(
-      `${node}`,
-      [`${yarn}`, 'run', `${command}`, ...args],
-      options
-    );
-  } else if (command.includes('${NODE}')) {
+  if (command.includes('${NODE}')) {
     // Support `build = "${NODE} ${ROOT_DIR}/foo.js"` as a web_binary build argument (instead of a package.json script name)
     const loaderPath = join(rootDir, '.pnp.loader.mjs');
     const loaderArgs = exists(loaderPath) ? `--loader '${loaderPath}'` : '';
@@ -111,6 +105,19 @@ async function runCommand(command, args = []) {
       ...options,
       shell: true,
     });
+  } else if (
+    command in scripts ||
+    // Special case of Yarn v2 global scripts:
+    //  > Scripts containing `:` (the colon character) are globals to your
+    //  > project and can be called regardless of your current workspace.
+    // https://yarnpkg.com/getting-started/qa#how-to-share-scripts-between-workspaces
+    command.includes(':')
+  ) {
+    await spawnOrExit(
+      `${node}`,
+      [`${yarn}`, 'run', `${command}`, ...args],
+      options
+    );
   } else if (command in rootScripts) {
     // if command exists at root level but not at project level, run the root level command instead of erroring
     await spawnOrExit(`${node}`, [`${yarn}`, 'run', `${command}`, ...args], {

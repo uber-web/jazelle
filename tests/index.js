@@ -732,6 +732,13 @@ async function testBazelBuild() {
     name: 'test',
     stdio: ['ignore', runStream, 'ignore'],
   });
+  await bazelCmds.run({
+    root: `${tmp}/tmp/bazel-rules`,
+    cwd: `${tmp}/tmp/bazel-rules/projects/a`,
+    args: ['uber-b:global-script'],
+    name: 'script',
+    stdio: ['ignore', runStream, 'ignore'],
+  });
   await expectProcessExit(11, () =>
     bazelCmds.run({
       root: `${tmp}/tmp/bazel-rules`,
@@ -744,6 +751,7 @@ async function testBazelBuild() {
   const runData = await read(runStreamFile, 'utf8');
   assert(runData.includes('\nb\nv16.15.0'));
   assert(runData.includes('\nfoo exit'));
+  assert(runData.includes('\nhello from @uber/b'));
 
   // lint
   const lintStreamFile = `${tmp}/tmp/bazel-rules/lint-stream.txt`;
