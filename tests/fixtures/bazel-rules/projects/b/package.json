@@ -4,6 +4,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "/bin/mkdir -p dist && cp index.js dist/index.js",
-    "dev": "node dist/index.js"
+    "dev": "node dist/index.js",
+    "uber-b:global-script": "echo hello from @uber/b"
   }
 }
