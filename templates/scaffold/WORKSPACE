@@ -9,6 +9,7 @@ load("@jazelle//:workspace-rules.bzl", "jazelle_dependencies")
 jazelle_dependencies(
   node_version = "NODE_VERSION",
   node_sha256 = {
+    "darwin-arm64": "",
     "darwin-x64": "",
     "linux-x64": "",
     "win-x64": "",
