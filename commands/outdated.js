@@ -157,7 +157,9 @@ const outdated /*: Outdated */ = async ({
   }
 
   // report discrepancies
-  for (const result of results) {
+  if (json) logger('[');
+
+  results.forEach((result, resultIndex) => {
     const formatted = [];
     if (dedup) {
       formatted.push(result);
@@ -178,8 +180,12 @@ const outdated /*: Outdated */ = async ({
           )
         : logger(entry.packageName, entry.installed.join(' '), entry.latest)
     );
-    if (json) logger(']');
-  }
+    if (json) {
+      const closingBrace = ']' + (resultIndex < results.length - 1 ? ',': '');
+      logger(closingBrace);
+    }
+  });
+  if (json) logger(']');
 };
 
 module.exports = {outdated};
