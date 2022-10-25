@@ -181,7 +181,7 @@ const outdated /*: Outdated */ = async ({
         : logger(entry.packageName, entry.installed.join(' '), entry.latest)
     );
     if (json) {
-      const closingBrace = ']' + (resultIndex < results.length - 1 ? ',': '');
+      const closingBrace = ']' + (resultIndex < results.length - 1 ? ',' : '');
       logger(closingBrace);
     }
   });
