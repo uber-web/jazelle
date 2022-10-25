@@ -110,28 +110,6 @@ const sortCallArgItems /*: SortCallArgItems */ = (code, caller, argName) => {
   });
 };
 
-sortCallArgItems(
-  `
-web_code_service(
-  package = "//tools/ci",
-  deps = [
-    "//:.yarn",
-    "//ci:ci",
-    "//src/common/@uber/aws:library",
-    "//src/common/@uber/eslint-config:library",
-    "//src/common/@uber/eslint-plugin:library",
-    "//src/common/@uber/jest-config:library",
-    "//src/infra/devplatform/web-ops/type-check:library",
-    "//tools/hooks/jazelle:jazelle",
-    "//idl/code.uber.internal/dev-platform/cicd/submitqueue:targetanalyzer.thrift@idl",
-  ],
-  srcs = glob(["**"], exclude = ["dist/**", ".flowconfig"]),
-  usesFlow = True,
-)`,
-  'web_code_service',
-  'deps'
-);
-
 module.exports = {
   addCallArgItem,
   removeCallArgItem,
