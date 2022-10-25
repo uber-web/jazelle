@@ -90,4 +90,37 @@ const removeCallArgItem /*: RemoveCallArgItem */ = (
   });
 };
 
-module.exports = {addCallArgItem, removeCallArgItem, getCallArgItems};
+/*::
+export type SortCallArgItems = (string, string, string) => string;
+*/
+const sortCallArgItems /*: SortCallArgItems */ = (code, caller, argName) => {
+  return code.replace(findCall(code, caller), args => {
+    return args.replace(getArgsMatcher(argName), arg => {
+      return arg.replace(getListMatcher(), (_, list) => {
+        const dedent = list.match(/\s*$/) || ' ';
+        const sorted = list.trimRight().split(',').filter(Boolean).sort().join(',');
+        return `[${sorted},${dedent}]`.replace(/,]/, ']');
+      });
+    });
+  });
+};
+
+sortCallArgItems(`
+web_code_service(
+  package = "//tools/ci",
+  deps = [
+    "//:.yarn",
+    "//ci:ci",
+    "//src/common/@uber/aws:library",
+    "//src/common/@uber/eslint-config:library",
+    "//src/common/@uber/eslint-plugin:library",
+    "//src/common/@uber/jest-config:library",
+    "//src/infra/devplatform/web-ops/type-check:library",
+    "//tools/hooks/jazelle:jazelle",
+    "//idl/code.uber.internal/dev-platform/cicd/submitqueue:targetanalyzer.thrift@idl",
+  ],
+  srcs = glob(["**"], exclude = ["dist/**", ".flowconfig"]),
+  usesFlow = True,
+)`, 'web_code_service', 'deps');
+
+module.exports = {addCallArgItem, removeCallArgItem, getCallArgItems, sortCallArgItems};

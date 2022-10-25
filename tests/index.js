@@ -60,6 +60,7 @@ const {
   getCallArgItems,
   addCallArgItem,
   removeCallArgItem,
+  sortCallArgItems,
 } = require('../utils/starlark.js');
 const {shouldSync, getVersion} = require('../utils/version-onboarding.js');
 const yarnCmds = require('../utils/yarn-commands.js');
@@ -1708,6 +1709,21 @@ web_library(    # comment
   ]             # comment
 )               # comment`;
     assert.equal(clean.trim(), reset.trim());
+  }
+  {
+    const buildFile = `${tmp}/tmp/starlark/unsorted/BUILD.bazel`;
+    const unsorted = await read(buildFile, 'utf8');
+    const sorted = sortCallArgItems(unsorted, 'web_library', 'deps');
+
+    const expected = `
+web_library(
+  name = "foo",
+  deps = [
+    "//a:a",
+    "//b:b",
+  ]
+)`;
+    assert.equal(sorted.trim(), expected.trim());
   }
 }
 

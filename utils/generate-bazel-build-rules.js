@@ -5,6 +5,7 @@ const {
   getCallArgItems,
   addCallArgItem,
   removeCallArgItem,
+  sortCallArgItems,
 } = require('./starlark.js');
 
 /*::
@@ -44,7 +45,7 @@ const generateBazelBuildRules /*: GenerateBazelBuildRules */ = async ({
           ...getDepLabels(root, depMap, dep.meta.dependencies),
           ...getDepLabels(root, depMap, dep.meta.devDependencies),
         ]),
-      ];
+      ].sort();
       if (!(await exists(build))) {
         // generate BUILD.bazel file
         const path = relative(root, dep.dir);
@@ -88,7 +89,8 @@ const generateBazelBuildRules /*: GenerateBazelBuildRules */ = async ({
             }
           }
         });
-        if (src.trim() !== code.trim()) await write(build, code, 'utf8');
+        const sorted = sortCallArgItems(code, dependencySyncRule, 'deps');
+        if (src.trim() !== sorted.trim()) await write(build, sorted, 'utf8');
       }
     })
   );
