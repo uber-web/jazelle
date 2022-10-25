@@ -2374,7 +2374,7 @@ async function testOutdated() {
   // Test --json option w/out --dedup
   {
     await outdated({root, logger, json: true, dedup: false});
-    let parsed = []; /*: ?{[Object]: string} */
+    let parsed = [];
     try {
       parsed = JSON.parse(data.join(''));
     } catch (e) {
@@ -2420,7 +2420,7 @@ async function testOutdated() {
   {
     await outdated({root, logger, json: true, dedup: true});
 
-    let parsed = []; /*: ?{[Object]: string} */
+    let parsed = [];
     try {
       parsed = JSON.parse(data.join(''));
     } catch (e) {
