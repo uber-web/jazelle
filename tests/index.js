@@ -2338,31 +2338,124 @@ async function testOutdated() {
 
   // Sanity check
   await outdated({root, logger});
+
+  // helper function to sort an array of objects by their
+  // 'packageName' property.
+  function packageNameCmpFunc(a, b) {
+    if (a.packageName < b.packageName) {
+      return -1;
+    } else if (a.packageName > b.packageName) {
+      return 1;
+    }
+    return 0;
+  }
+
+  data.sort();
   assert.equal(data[0], 'only-version-one-zero-zero 0.1.0 1.0.0');
   assert.equal(data[1], 'only-version-one-zero-zero 0.2.0 1.0.0');
+  assert.equal(data[2].substring(0, 'semver ^6.2.0 '.length), 'semver ^6.2.0 ');
+  assert.equal(
+    data[3].substring(0, 'serialize-javascript ^4.0.0 '.length),
+    'serialize-javascript ^4.0.0 '
+  );
   flush();
 
   // Test --dedup option
   await outdated({root, logger, dedup: true});
-  assert.equal(data.join(), 'only-version-one-zero-zero 0.1.0 0.2.0 1.0.0');
+  data.sort();
+  assert.equal(data[0], 'only-version-one-zero-zero 0.1.0 0.2.0 1.0.0');
+  assert.equal(data[1].substring(0, 'semver ^6.2.0 '.length), 'semver ^6.2.0 ');
+  assert.equal(
+    data[2].substring(0, 'serialize-javascript ^4.0.0 '.length),
+    'serialize-javascript ^4.0.0 '
+  );
   flush();
 
-  // Test --json option w/ --dedup
-  await outdated({root, logger, json: true, dedup: true});
-  let parsed /*: ?{[string]: string} */;
-  try {
-    parsed = JSON.parse(data.join(''));
-  } catch (e) {
-    // $FlowFixMe
-    assert.fail(`Unable to call JSON.parse on data: ${data.join('')}`);
+  // Test --json option w/out --dedup
+  {
+    await outdated({root, logger, json: true, dedup: false});
+    let parsed /*: Array<{[string]: string}> */ = [];
+    try {
+      parsed = JSON.parse(data.join(''));
+    } catch (e) {
+      // $FlowFixMe
+      assert.fail(`Unable to call JSON.parse on data: ${data.join('')}`);
+    }
+    assert.equal(parsed.length, 4);
+
+    // sort objects by package name, and over-write latest version of
+    // semver and serialize-javascript
+    parsed.sort(packageNameCmpFunc);
+    assert.equal(parsed[2].packageName, 'semver');
+    parsed[2]['latest'] = 'semver-latest';
+    assert.equal(parsed[3].packageName, 'serialize-javascript');
+    parsed[3]['latest'] = 'serialize-javascript-latest';
+
+    assert.deepEqual(parsed, [
+      {
+        packageName: 'only-version-one-zero-zero',
+        installed: ['0.1.0'],
+        latest: '1.0.0',
+      },
+      {
+        packageName: 'only-version-one-zero-zero',
+        installed: ['0.2.0'],
+        latest: '1.0.0',
+      },
+      {
+        packageName: 'semver',
+        installed: ['^6.2.0'],
+        latest: 'semver-latest',
+      },
+      {
+        packageName: 'serialize-javascript',
+        installed: ['^4.0.0'],
+        latest: 'serialize-javascript-latest',
+      },
+    ]);
+    flush();
   }
-  assert.deepEqual(parsed, [
-    {
-      packageName: 'only-version-one-zero-zero',
-      installed: ['0.1.0', '0.2.0'],
-      latest: '1.0.0',
-    },
-  ]);
+
+  // Test --json option w/ --dedup
+  {
+    await outdated({root, logger, json: true, dedup: true});
+
+    let parsed /*: Array<{[string]: string}> */ = [];
+    try {
+      parsed = JSON.parse(data.join(''));
+    } catch (e) {
+      // $FlowFixMe
+      assert.fail(`Unable to call JSON.parse on data: ${data.join('')}`);
+    }
+    assert.equal(parsed.length, 3);
+
+    // sort objects by package name, and over-write latest version of
+    // semver and serialize-javascript
+    parsed.sort(packageNameCmpFunc);
+    assert.equal(parsed[1].packageName, 'semver');
+    parsed[1]['latest'] = 'semver-latest';
+    assert.equal(parsed[2].packageName, 'serialize-javascript');
+    parsed[2]['latest'] = 'serialize-javascript-latest';
+
+    assert.deepEqual(parsed, [
+      {
+        packageName: 'only-version-one-zero-zero',
+        installed: ['0.1.0', '0.2.0'],
+        latest: '1.0.0',
+      },
+      {
+        packageName: 'semver',
+        installed: ['^6.2.0'],
+        latest: 'semver-latest',
+      },
+      {
+        packageName: 'serialize-javascript',
+        installed: ['^4.0.0'],
+        latest: 'serialize-javascript-latest',
+      },
+    ]);
+    flush();
+  }
 }
 
 async function testShouldInstall() {
