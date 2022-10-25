@@ -98,14 +98,20 @@ const sortCallArgItems /*: SortCallArgItems */ = (code, caller, argName) => {
     return args.replace(getArgsMatcher(argName), arg => {
       return arg.replace(getListMatcher(), (_, list) => {
         const dedent = list.match(/\s*$/) || ' ';
-        const sorted = list.trimRight().split(',').filter(Boolean).sort().join(',');
+        const sorted = list
+          .trimRight()
+          .split(',')
+          .filter(Boolean)
+          .sort()
+          .join(',');
         return `[${sorted},${dedent}]`.replace(/,]/, ']');
       });
     });
   });
 };
 
-sortCallArgItems(`
+sortCallArgItems(
+  `
 web_code_service(
   package = "//tools/ci",
   deps = [
@@ -121,6 +127,14 @@ web_code_service(
   ],
   srcs = glob(["**"], exclude = ["dist/**", ".flowconfig"]),
   usesFlow = True,
-)`, 'web_code_service', 'deps');
+)`,
+  'web_code_service',
+  'deps'
+);
 
-module.exports = {addCallArgItem, removeCallArgItem, getCallArgItems, sortCallArgItems};
+module.exports = {
+  addCallArgItem,
+  removeCallArgItem,
+  getCallArgItems,
+  sortCallArgItems,
+};
