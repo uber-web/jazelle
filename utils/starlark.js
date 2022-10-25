@@ -90,4 +90,29 @@ const removeCallArgItem /*: RemoveCallArgItem */ = (
   });
 };
 
-module.exports = {addCallArgItem, removeCallArgItem, getCallArgItems};
+/*::
+export type SortCallArgItems = (string, string, string) => string;
+*/
+const sortCallArgItems /*: SortCallArgItems */ = (code, caller, argName) => {
+  return code.replace(findCall(code, caller), args => {
+    return args.replace(getArgsMatcher(argName), arg => {
+      return arg.replace(getListMatcher(), (_, list) => {
+        const dedent = list.match(/\s*$/) || ' ';
+        const sorted = list
+          .trimRight()
+          .split(',')
+          .filter(Boolean)
+          .sort()
+          .join(',');
+        return `[${sorted},${dedent}]`.replace(/,]/, ']');
+      });
+    });
+  });
+};
+
+module.exports = {
+  addCallArgItem,
+  removeCallArgItem,
+  getCallArgItems,
+  sortCallArgItems,
+};
