@@ -1,6 +1,7 @@
 {
   "name": "a",
   "dependencies": {
-    "only-version-one-zero-zero": "0.2.0"
+    "only-version-one-zero-zero": "0.2.0",
+    "serialize-javascript": "^4.0.0"
   }
 }

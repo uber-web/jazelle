@@ -137,7 +137,8 @@ const outdated /*: Outdated */ = async ({
     (pckg /*: string */) => !getLocal(pckg)
   );
   let info /*: { [string]: { [string]: mixed } } */ = {};
-  for (const part of partition(externalPackages, limit)) {
+  const partitions = partition(externalPackages, limit);
+  for (const part of partitions) {
     Object.assign(info, await fetchInfo(part));
   }
 
@@ -172,18 +173,15 @@ const outdated /*: Outdated */ = async ({
       );
     }
 
-    if (json) logger('[');
-    formatted.forEach((entry, i) =>
-      json
-        ? logger(
-            JSON.stringify(entry) + (i !== formatted.length - 1 ? ',' : '')
-          )
-        : logger(entry.packageName, entry.installed.join(' '), entry.latest)
-    );
-    if (json) {
-      const closingBrace = ']' + (resultIndex < results.length - 1 ? ',' : '');
-      logger(closingBrace);
-    }
+    formatted.forEach((entry, i) => {
+      if (json) {
+        const needsComma =
+          i < formatted.length - 1 || resultIndex < results.length - 1;
+        logger(JSON.stringify(entry) + (needsComma ? ',' : ''));
+      } else {
+        logger(entry.packageName, entry.installed.join(' '), entry.latest);
+      }
+    });
   });
   if (json) logger(']');
 };
