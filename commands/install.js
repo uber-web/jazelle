@@ -56,16 +56,6 @@ const install /*: Install */ = async ({
     validateRegistration({root, cwd, projects});
   }
 
-  if (hooks.bool_shouldinstall) {
-    const hookResult = await executeHook(hooks.bool_shouldinstall, root, {
-      isBooleanHook: true,
-    });
-
-    if (hookResult === false) {
-      return;
-    }
-  }
-
   const all = await getAllDependencies({root, projects});
 
   const deps = isRootInstall
@@ -87,6 +77,16 @@ const install /*: Install */ = async ({
       projects,
       dependencySyncRule,
     });
+  }
+
+  if (hooks.bool_shouldinstall) {
+    const hookResult = await executeHook(hooks.bool_shouldinstall, root, {
+      isBooleanHook: true,
+    });
+
+    if (hookResult === false) {
+      return;
+    }
   }
 
   if (skipPreinstall === false) {
