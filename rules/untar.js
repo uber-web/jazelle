@@ -46,7 +46,7 @@ function untarIntoSandbox(file) {
 function copyToSourceFolder(file) {
   const target = resolve(root, dirname(file));
   const real = dirname(realpath(`${target}/package.json`));
-  const files = exec(`tar ztf ${file}`, {encoding: 'utf8'})
+  const files = exec(`tar ztf ${file} | sort`, {encoding: 'utf8'})
     .trim()
     .split('\n')
     .map(line => line.replace(/\/$/, ''));
