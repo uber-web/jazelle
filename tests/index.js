@@ -28,6 +28,7 @@ const bazelCmds = require('../utils/bazel-commands.js');
 const {bazel, node, yarn} = require('../utils/binary-paths.js');
 const {cli} = require('../utils/cli.js');
 const {detectCyclicDeps} = require('../utils/detect-cyclic-deps.js');
+const {copy} = require('../rules/untar');
 const {
   exec,
   exists,
@@ -155,6 +156,7 @@ async function runTests() {
     t(testLocalize),
     t(testCheck),
     t(testOutdated),
+    t(testUntarCopy),
   ]);
 
   // run separately to avoid CI error
@@ -1467,6 +1469,21 @@ async function testNodeHelpers() {
   await exec(`mkdir -p ${tmp}/tmp/node-helpers-remove/a/b`);
   await rm(`${tmp}/tmp/node-helpers-remove`);
   assert(!(await exists(`${tmp}/tmp/node-helpers-remove`)));
+}
+
+async function testUntarCopy() {
+  const cwd = `${tmp}/tmp/test-untar`;
+  await exec(`mkdir -p ${cwd}/very/long/path/`);
+  await exec(`mkdir -p ${cwd}/bar/dir/`);
+  await exec(`mkdir -p ${cwd}/bar2/`);
+  await exec(`touch ${cwd}/very/long/path/original-file.txt`);
+  assert.doesNotThrow(() => {
+    copy(`${cwd}`, `${cwd}/foo`, 'very/long/path');
+  }, 'Should not error making a very long path');
+
+  assert.doesNotThrow(() => {
+    copy(`${cwd}/bar`, `${cwd}/bar2`, 'dir');
+  }, 'Should not error making a short path');
 }
 
 async function testParse() {

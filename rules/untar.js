@@ -55,12 +55,14 @@ function copyToSourceFolder(file) {
   }
 }
 
-function copy(target, real, file) {
+function copy(target /*: string */, real /*: string */, file /*: string */) {
   const targetPath = `${target}/${file}`;
   if (!exists(targetPath)) return;
   if (stat(targetPath).isDirectory()) {
     const srcPath = `${real}/${file}`;
-    if (!exists(srcPath)) mkdir(srcPath);
+    if (!exists(srcPath)) {
+      mkdir(srcPath, {recursive: true});
+    }
     for (const child of ls(srcPath)) {
       copy(target, real, `${file}/${child}`);
     }
@@ -70,7 +72,7 @@ function copy(target, real, file) {
       const srcPath = `${real}/${file}`;
       const srcDir = dirname(srcPath);
       if (!exists(srcDir)) {
-        mkdir(srcDir);
+        mkdir(srcDir, {recursive: true});
       }
       cp(`${target}/${file}`, `${real}/${file}`);
     }
@@ -84,3 +86,5 @@ function read(file) {
     return Symbol('not found'); // must return something that does not equal itself
   }
 }
+
+module.exports = {copy};
