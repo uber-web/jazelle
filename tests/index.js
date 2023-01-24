@@ -358,7 +358,7 @@ async function testFocus() {
       packages: [],
       verbose: true,
     });
-    const data = read(`${tmp}/tmp/focus/a/BUILD.bazel`, 'utf8')
+    const data = read(`${tmp}/tmp/focus/a/BUILD.bazel`, 'utf8');
     assert(!data.includes('has'));
   }
 

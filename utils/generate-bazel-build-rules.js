@@ -102,10 +102,14 @@ const getDepLabels = (root, depMap, dependencies = {}) => {
     .map(name => {
       const {dir, meta} = depMap[name] || {};
       const version = dependencies[name];
-      if (dir != null && (version.includes('*') || semver.satisfies(meta.version, version))) {
+      if (
+        dir != null &&
+        (version.includes('*') || semver.satisfies(meta.version, version))
+      ) {
         // use :library target unless a build script is specified
         const path = relative(root, dir);
-        const target = meta.scripts && meta.scripts.build ? basename(path) : 'library';
+        const target =
+          meta.scripts && meta.scripts.build ? basename(path) : 'library';
         return `//${path}:${target}`;
       } else {
         return null;
