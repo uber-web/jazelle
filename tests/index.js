@@ -294,6 +294,7 @@ async function testInstallAddUpgradeRemove() {
   });
   assert((await read(buildFile, 'utf8')).includes('//b:library'));
   assert((await read(buildFile, 'utf8')).includes('//c:library'));
+  assert(!(await read(buildFile, 'utf8')).includes('function-bind'));
 
   // add external package
   await add({
