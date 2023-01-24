@@ -294,6 +294,7 @@ async function testInstallAddUpgradeRemove() {
   });
   assert((await read(buildFile, 'utf8')).includes('//b:library'));
   assert((await read(buildFile, 'utf8')).includes('//c:library'));
+  assert(!(await read(buildFile, 'utf8')).includes('function-bind'));
 
   // add external package
   await add({
@@ -357,7 +358,8 @@ async function testFocus() {
       packages: [],
       verbose: true,
     });
-    assert(true); // did not throw
+    const data = read(`${tmp}/tmp/focus/a/BUILD.bazel`, 'utf8')
+    assert(!data.includes('has'));
   }
 
   {

@@ -7,6 +7,7 @@ const {
   removeCallArgItem,
   sortCallArgItems,
 } = require('./starlark.js');
+const semver = require('../utils/cached-semver');
 
 /*::
 import type {Metadata} from './get-local-dependencies.js';
@@ -100,15 +101,12 @@ const getDepLabels = (root, depMap, dependencies = {}) => {
   return Object.keys(dependencies)
     .map(name => {
       const {dir, meta} = depMap[name] || {};
-      if (dir) {
+      const version = dependencies[name];
+      if (dir != null && (version.includes('*') || semver.satisfies(meta.version, version))) {
+        // use :library target unless a build script is specified
         const path = relative(root, dir);
-        // use library target unless a build script is specified
-        // const name = meta.scripts && meta.scripts.build ? basename(path) : 'library';
-        let name = 'library';
-        if (meta.scripts && meta.scripts.build) {
-          name = basename(path);
-        }
-        return `//${path}:${name}`;
+        const target = meta.scripts && meta.scripts.build ? basename(path) : 'library';
+        return `//${path}:${target}`;
       } else {
         return null;
       }
