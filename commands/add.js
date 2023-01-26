@@ -95,7 +95,11 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
     const allDeps = /*:: await */ await getAllDependencies({root, projects});
     const dep = allDeps.find(item => item.dir === cwd);
     if (dep) dep.meta = JSON.parse(await read(`${cwd}/package.json`));
-    await spawn(node, [yarn, 'install'], options);
+    await spawn(node, [yarn, 'install', '--mode', 'update-lockfile'], {
+      cwd: root,
+      stdio: 'ignore',
+      detached: true,
+    });
 
     const deps = /*:: await */ await getLocalDependencies({
       data: allDeps,

@@ -14,6 +14,7 @@ export type Manifest = {
   workspace: "host" | "sandbox",
   focusRequirements?: Array<string>, // list of project names that always gets appended to focus command
   hasSandboxIO?: boolean,
+  dependencySyncRule: string,
 }
 export type ExceptionMetadata = {
   name: string,

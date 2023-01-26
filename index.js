@@ -84,13 +84,15 @@ const runCLI /*: RunCLI */ = async argv => {
         --cwd [cwd]                Project directory to use
         --skipPreinstall           Skip the preinstall hook
         --skipPostinstall          Skip the postinstall hook
+        --mode                     If set to skip-build, skips build scripts. If set to update-lockfile, skips link step
         --verbose`,
-        async ({cwd, skipPreinstall, skipPostinstall, verbose}) =>
+        async ({cwd, skipPreinstall, skipPostinstall, mode, verbose}) =>
           install({
             root: await rootOf(args),
             cwd,
             skipPreinstall: Boolean(skipPreinstall),
             skipPostinstall: Boolean(skipPostinstall),
+            mode,
             verbose: Boolean(verbose),
           }),
       ],
