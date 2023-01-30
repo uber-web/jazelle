@@ -14,6 +14,8 @@ const purge /*: Purge */ = async ({root}) => {
   await Promise.all([
     ...projects.map(project => remove(`${root}/${project}/node_modules`)),
     remove(`${root}/third_party/jazelle/temp`),
+    remove(`${root}/.pnp.cjs`),
+    remove(`${root}/.pnp.loader.mjs`),
     remove(`${root}/.yarn/cache`),
     remove(`${root}/.yarn/unplugged`),
     remove(`${root}/.yarn/build-state.yml`),

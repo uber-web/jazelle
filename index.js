@@ -106,14 +106,18 @@ const runCLI /*: RunCLI */ = async argv => {
         `Install all dependencies for one or more projects without installing the rest
         
         --cwd [cwd]                Project directory to use
+        --all                      Install all dependencies, like regular yarn install
+        --production               Install only production dependencies, not devDependencies
         --skipPreinstall           Skip the preinstall hook
         --skipPostinstall          Skip the postinstall hook
         --verbose`,
-        async ({cwd, skipPreinstall, skipPostinstall, verbose}) =>
+        async ({cwd, all, production, skipPreinstall, skipPostinstall, verbose}) =>
           focus({
             root: await rootOf(args),
             cwd,
-            packages: rest,
+            all: Boolean(all),
+            production: Boolean(production),
+            packages: rest.filter(v => !v.startsWith('-')),
             skipPreinstall: Boolean(skipPreinstall),
             skipPostinstall: Boolean(skipPostinstall),
             verbose: Boolean(verbose),

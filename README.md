@@ -429,6 +429,8 @@ You can specify packages that always get installed even when using the `jazelle 
 
 - `[packages...]` - A list of packages to install
 - `--cwd` - Project folder (absolute or relative to shell `cwd`). Defaults to `process.cwd()`
+- `--all` - Install all dependencies, like regular yarn install
+- `--production` - Install only production dependencies, not devDependencies
 - `--skipPreinstall` - Skip the preinstall hook
 - `--skipPostinstall` - Skip the postinstall hook
 - `verbose` - Prints more Yarn warnings
