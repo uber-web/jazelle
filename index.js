@@ -111,7 +111,14 @@ const runCLI /*: RunCLI */ = async argv => {
         --skipPreinstall           Skip the preinstall hook
         --skipPostinstall          Skip the postinstall hook
         --verbose`,
-        async ({cwd, all, production, skipPreinstall, skipPostinstall, verbose}) =>
+        async ({
+          cwd,
+          all,
+          production,
+          skipPreinstall,
+          skipPostinstall,
+          verbose,
+        }) =>
           focus({
             root: await rootOf(args),
             cwd,

@@ -126,8 +126,8 @@ const focus /*: Focus */ = async ({
     'workspaces',
     'focus',
     shouldInstallAll ? '--all' : null,
-    production ? '--production': null,
-    ...focusable
+    production ? '--production' : null,
+    ...focusable,
   ].filter(Boolean);
 
   if (verbose) {
@@ -161,7 +161,6 @@ const focus /*: Focus */ = async ({
     await spawn(node, [yarn, 'install', '--mode', 'update-lockfile'], {
       env: {...env, PATH: path},
       cwd: root,
-      stdio: 'inherit',
       stdio: 'ignore',
       detached: true,
     });
