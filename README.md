@@ -403,6 +403,7 @@ Scaffolds required workspace files
 `jazelle install --cwd [cwd]`
 
 - `--cwd` - Project folder (absolute or relative to shell `cwd`). Defaults to `process.cwd()`
+- `--mode` - If set to skip-build, skips build scripts. If set to update-lockfile, skips link step
 - `--skipPreinstall` - Skip the preinstall hook
 - `--skipPostinstall` - Skip the postinstall hook
 - `verbose` - Prints more Yarn warnings
