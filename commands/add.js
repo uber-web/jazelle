@@ -88,7 +88,16 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
     const options = {cwd: root, stdio: 'inherit'};
     await spawn(
       node,
-      [yarn, 'workspace', meta.name, 'add', '--mode', 'skip-build', ...keys, ...flags],
+      [
+        yarn,
+        'workspace',
+        meta.name,
+        'add',
+        '--mode',
+        'skip-build',
+        ...keys,
+        ...flags,
+      ],
       options
     );
     // reload package.json affected by workspace add command
