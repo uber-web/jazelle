@@ -25,6 +25,7 @@ export type InstallArgs = {
   conservative?: boolean,
   skipPreinstall?: boolean,
   skipPostinstall?: boolean,
+  mode?: string,
   verbose?: boolean,
 }
 export type Install = (InstallArgs) => Promise<void>
@@ -36,6 +37,7 @@ const install /*: Install */ = async ({
   conservative = true,
   skipPreinstall = false,
   skipPostinstall = false,
+  mode,
   verbose = false,
 }) => {
   const isRootInstall = root === cwd;
@@ -97,6 +99,10 @@ const install /*: Install */ = async ({
   const spawnArgs = [yarn, 'install'];
   if (frozenLockfile) {
     spawnArgs.push('--immutable');
+  }
+
+  if (mode) {
+    spawnArgs.push('--mode', mode);
   }
 
   if (verbose) {

@@ -22,6 +22,8 @@ export type FocusArgs = {
   root: string,
   cwd: string,
   packages: Array<string>,
+  all?: boolean,
+  production?: boolean,
   skipPreinstall?: boolean,
   skipPostinstall?: boolean,
   verbose?: boolean,
@@ -32,6 +34,8 @@ const focus /*: Focus */ = async ({
   root,
   cwd,
   packages,
+  all: shouldInstallAll = false,
+  production = false,
   skipPreinstall,
   skipPostinstall,
   verbose,
@@ -118,16 +122,20 @@ const focus /*: Focus */ = async ({
   const focusable = [
     ...new Set([name, ...packages, ...focusRequirements].filter(Boolean)),
   ];
-  const spawnArgs = [yarn, 'workspaces', 'focus', ...focusable];
+  const spawnArgs = [
+    yarn,
+    'workspaces',
+    'focus',
+    shouldInstallAll ? '--all' : null,
+    production ? '--production' : null,
+    ...focusable,
+  ].filter(Boolean);
 
   if (verbose) {
     await spawn(node, spawnArgs, {
       env: {...env, PATH: path},
       cwd: root,
       stdio: 'inherit',
-      filterOutput(line) {
-        return validateYarnWorkspaceToolsInstallation(line);
-      },
     });
   } else {
     await spawn(node, spawnArgs, {
@@ -150,12 +158,14 @@ const focus /*: Focus */ = async ({
   }
 
   // ensure lockfile is updated for all projects
-  await spawn(node, [yarn, 'install', '--mode', 'update-lockfile'], {
-    env: {...env, PATH: path},
-    cwd: root,
-    stdio: 'ignore',
-    detached: true,
-  });
+  if (!shouldInstallAll) {
+    await spawn(node, [yarn, 'install', '--mode', 'update-lockfile'], {
+      env: {...env, PATH: path},
+      cwd: root,
+      stdio: 'ignore',
+      detached: true,
+    });
+  }
 };
 
 const validateRegistration = ({root, cwd, projects}) => {
