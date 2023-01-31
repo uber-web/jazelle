@@ -55,7 +55,7 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
     const deps = externals.map(({name, range}) => {
       return name + (range ? `@${range}` : '');
     });
-    await spawn(node, [yarn, 'up', '-C', ...deps], {
+    await spawn(node, [yarn, 'up', '-C', ...deps, '--mode', 'skip-build'], {
       cwd: root,
       stdio: 'inherit',
     });

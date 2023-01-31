@@ -88,18 +88,22 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
     const options = {cwd: root, stdio: 'inherit'};
     await spawn(
       node,
-      [yarn, 'workspace', meta.name, 'add', ...keys, ...flags],
+      [
+        yarn,
+        'workspace',
+        meta.name,
+        'add',
+        '--mode',
+        'skip-build',
+        ...keys,
+        ...flags,
+      ],
       options
     );
     // reload package.json affected by workspace add command
     const allDeps = /*:: await */ await getAllDependencies({root, projects});
     const dep = allDeps.find(item => item.dir === cwd);
     if (dep) dep.meta = JSON.parse(await read(`${cwd}/package.json`));
-    await spawn(node, [yarn, 'install', '--mode', 'update-lockfile'], {
-      cwd: root,
-      stdio: 'ignore',
-      detached: true,
-    });
 
     const deps = /*:: await */ await getLocalDependencies({
       data: allDeps,
