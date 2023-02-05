@@ -14,7 +14,12 @@ export type TypecheckArgs = {
 }
 export type Typecheck = (TypecheckArgs) => Promise<void>
 */
-const typecheck /*: Typecheck */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+const typecheck /*: Typecheck */ = async ({
+  root,
+  cwd,
+  args,
+  stdio = 'inherit',
+}) => {
   await assertProjectDir({dir: cwd});
 
   const params = getPassThroughArgs(args);

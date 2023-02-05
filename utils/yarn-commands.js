@@ -149,7 +149,12 @@ export type TypecheckArgs = {
 };
 export type Typecheck = (TypecheckArgs) => Promise<void>;
 */
-const typecheck /*: Typecheck */ = async ({root, deps, args, stdio = 'inherit'}) => {
+const typecheck /*: Typecheck */ = async ({
+  root,
+  deps,
+  args,
+  stdio = 'inherit',
+}) => {
   const main = deps.slice(-1).pop();
   await batchBuild({root, deps, self: false, stdio: errorsOnly});
   await spawnOrExit(node, [yarn, 'typecheck', ...args], {

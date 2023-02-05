@@ -154,7 +154,12 @@ export type TypecheckArgs = {
 };
 type Typecheck = (TypecheckArgs) => Promise<void>;
 */
-const typecheck /*: Typecheck */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+const typecheck /*: Typecheck */ = async ({
+  root,
+  cwd,
+  args,
+  stdio = 'inherit',
+}) => {
   await run({root, cwd, args, name: 'typecheck', stdio});
 };
 
