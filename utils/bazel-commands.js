@@ -146,6 +146,19 @@ const flow /*: Flow */ = async ({root, cwd, args, stdio = 'inherit'}) => {
 };
 
 /*::
+export type TypecheckArgs = {
+  root: string,
+  cwd: string,
+  args: Array<string>,
+  stdio?: Stdio,
+};
+type Typecheck = (TypecheckArgs) => Promise<void>;
+*/
+const typecheck /*: Typecheck */ = async ({root, cwd, args, stdio = 'inherit'}) => {
+  await run({root, cwd, args, name: 'typecheck', stdio});
+};
+
+/*::
 export type StartArgs = {
   root: string,
   cwd: string,
@@ -205,6 +218,7 @@ module.exports = {
   test,
   lint,
   flow,
+  typecheck,
   dev,
   start,
   run,

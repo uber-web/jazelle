@@ -141,6 +141,25 @@ const flow /*: Flow */ = async ({root, deps, args, stdio = 'inherit'}) => {
 };
 
 /*::
+export type TypecheckArgs = {
+  root: string,
+  deps: Array<Metadata>,
+  args: Array<string>,
+  stdio?: Stdio,
+};
+export type Typecheck = (TypecheckArgs) => Promise<void>;
+*/
+const typecheck /*: Typecheck */ = async ({root, deps, args, stdio = 'inherit'}) => {
+  const main = deps.slice(-1).pop();
+  await batchBuild({root, deps, self: false, stdio: errorsOnly});
+  await spawnOrExit(node, [yarn, 'typecheck', ...args], {
+    stdio,
+    env: {...process.env},
+    cwd: main.dir,
+  });
+};
+
+/*::
 export type StartArgs = {
   root: string,
   deps: Array<Metadata>,
@@ -205,4 +224,4 @@ const script /*: Script */ = async ({
   });
 };
 
-module.exports = {build, test, lint, flow, dev, start, exec, script};
+module.exports = {build, test, lint, flow, typecheck, dev, start, exec, script};
