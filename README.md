@@ -351,6 +351,7 @@ If you get into a bad state, here are some things you can try:
 - [`jazelle test`](#jazelle-test)
 - [`jazelle lint`](#jazelle-lint)
 - [`jazelle flow`](#jazelle-flow)
+- [`jazelle typecheck`](#jazelle-typecheck)
 - [`jazelle start`](#jazelle-start)
 - [`jazelle script`](#jazelle-script)
 - [`jazelle bazel`](#jazelle-bazel)
@@ -623,12 +624,21 @@ Lints a project. Calls `scripts.lint` in package.json
 
 ### `jazelle flow`
 
-Type-checks a project. Calls `scripts.flow` in package.json
+Type-checks a project using FlowType. Calls `scripts.flow` in package.json
 
 `jazelle flow --cwd [cwd] [args...]`
 
 - `--cwd` - Project folder (absolute or relative to shell `cwd`). Defaults to `process.cwd()`
 - `args` - A space separated list of arguments to pass to the flow script
+
+### `jazelle typecheck`
+
+Type-checks a project. Calls `scripts.typecheck` in package.json
+
+`jazelle typecheck --cwd [cwd] [args...]`
+
+- `--cwd` - Project folder (absolute or relative to shell `cwd`). Defaults to `process.cwd()`
+- `args` - A space separated list of arguments to pass to the typecheck script (e.g. `tsc`)
 
 ### `jazelle start`
 

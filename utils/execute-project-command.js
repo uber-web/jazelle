@@ -33,6 +33,8 @@ const executeProjectCommand /*: ExecuteProjectCommand */ = async ({
         return bazel.lint({root, cwd, args, stdio});
       case 'flow':
         return bazel.flow({root, cwd, args, stdio});
+      case 'typecheck':
+        return bazel.typecheck({root, cwd, args, stdio});
       case 'build':
         return bazel.build({root, cwd});
       case 'start':
@@ -58,6 +60,8 @@ const executeProjectCommand /*: ExecuteProjectCommand */ = async ({
         return yarn.lint({root, deps, args, stdio});
       case 'flow':
         return yarn.flow({root, deps, args, stdio});
+      case 'typecheck':
+        return yarn.typecheck({root, deps, args, stdio});
       case 'build':
         return yarn.build({root, deps});
       case 'start':
