@@ -26,6 +26,7 @@ const {dev} = require('./commands/dev.js');
 const {test} = require('./commands/test.js');
 const {lint} = require('./commands/lint.js');
 const {flow} = require('./commands/flow.js');
+const {typecheck} = require('./commands/typecheck.js');
 const {start} = require('./commands/start.js');
 const {node} = require('./commands/node.js');
 const {yarn} = require('./commands/yarn.js');
@@ -265,10 +266,16 @@ const runCLI /*: RunCLI */ = async argv => {
         async ({cwd}) => lint({root: await rootOf(args), cwd, args: rest}),
       ],
       flow: [
-        `Typecheck a project
+        `Typecheck a project using FlowType
 
         --cwd [cwd]                Project directory to use`,
         async ({cwd}) => flow({root: await rootOf(args), cwd, args: rest}),
+      ],
+      typecheck: [
+        `Typecheck a project
+
+        --cwd [cwd]                Project directory to use`,
+        async ({cwd}) => typecheck({root: await rootOf(args), cwd, args: rest}),
       ],
       start: [
         `Run a project
