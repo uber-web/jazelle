@@ -1,5 +1,6 @@
 // @flow
-const {spawn} = require('../utils/node-helpers.js');
+const {existsSync} = require('fs');
+const {spawnOrExit} = require('../utils/node-helpers.js');
 const {node} = require('../utils/binary-paths.js');
 const {getPassThroughArgs} = require('../utils/parse-argv.js');
 
@@ -20,8 +21,17 @@ const runNode /*: Node */ = async ({
   args = [],
   stdio = 'inherit',
 }) => {
-  const params = ['-r', `${root}/.pnp.cjs`, ...getPassThroughArgs(args)];
-  await spawn(node, params, {env: process.env, cwd, stdio});
+  const pnpESMLoaderPath = `${root}/.pnp.loader.mjs`;
+  const loaderArgs = existsSync(pnpESMLoaderPath)
+    ? ['--loader', `${pnpESMLoaderPath}`]
+    : [];
+  const params = [
+    '-r',
+    `${root}/.pnp.cjs`,
+    ...loaderArgs,
+    ...getPassThroughArgs(args),
+  ];
+  await spawnOrExit(node, params, {env: {...process.env}, cwd, stdio});
 };
 
 module.exports = {node: runNode};

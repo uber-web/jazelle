@@ -6,8 +6,7 @@ const {red} = require('./red');
 import type {VersionPolicy, ExceptionMetadata} from './get-manifest.js';
 
 export type ReportMismatchedTopLevelDepsArgs = {
-  root: string,
-  projects: Array<string>,
+  dirs: Array<string>,
   versionPolicy: VersionPolicy | void,
 }
 export type ReportMismatchedTopLevelDeps = (ReportMismatchedTopLevelDepsArgs) => Promise<Report>;
@@ -23,11 +22,10 @@ export type DependencyReport = {
 };
 */
 const reportMismatchedTopLevelDeps /*: ReportMismatchedTopLevelDeps */ = async ({
-  root,
-  projects,
+  dirs,
   versionPolicy,
 }) => {
-  const reported = await checkDeps({roots: projects.map(p => `${root}/${p}`)});
+  const reported = await checkDeps({roots: dirs});
   if (!versionPolicy) {
     return {
       valid: true,

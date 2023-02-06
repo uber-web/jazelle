@@ -3,8 +3,8 @@
 # init command should bootstrap with bash only
 # it should not rely on bazel or node since we only want to install them based on the versions listed in scaffold
 
-DEFAULT_BAZEL_VERSION=3.4.1
-DEFAULT_NODE_VERSION=12.16.1
+DEFAULT_BAZEL_VERSION=5.2.0
+DEFAULT_NODE_VERSION=16.15.0
 DEFAULT_YARN_VERSION=1.22.0
 
 if [ "$2" = "--help" ]

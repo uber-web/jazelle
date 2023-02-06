@@ -3,7 +3,6 @@ const {resolve, relative, basename, join} = require('path');
 const {getManifest} = require('../utils/get-manifest.js');
 const {spawn, exists, read, write} = require('../utils/node-helpers.js');
 const {executeHook} = require('../utils/execute-hook.js');
-const {align} = require('./align.js');
 const {sortPackageJson} = require('../utils/sort-package-json');
 
 /*::
@@ -27,6 +26,9 @@ const scaffold /*: Scaffold */ = async ({
   skipPreinstall = false,
   skipPostinstall = false,
 }) => {
+  if (!from) throw new Error('--from argument is required');
+  if (!to) throw new Error('--to argument is required');
+
   const manifest = /*:: await */ await getManifest({root});
   const pkgPath = join(root, 'package.json');
   const pkg = JSON.parse(await read(pkgPath));
@@ -57,11 +59,10 @@ const scaffold /*: Scaffold */ = async ({
   }
 
   const workspaces = [
-    ...new Set([...pkg.workspaces, relativeTo]),
+    ...new Set([...(pkg.workspaces || []), relativeTo]),
   ].sort((l, r) => l.localeCompare(r));
   pkg.workspaces = workspaces;
   await write(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
-  await align({root, cwd: absoluteTo, skipPreinstall, skipPostinstall});
 
   if (hooks && skipPostinstall === false)
     await executeHook(hooks.postscaffold, absoluteTo);

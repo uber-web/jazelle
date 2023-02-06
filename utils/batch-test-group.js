@@ -40,7 +40,7 @@ const batchTestGroup /*: BatchTestGroup */ = async ({
       '--log',
       log,
     ],
-    {stdio, cwd: root, env: process.env}
+    {stdio, cwd: root, env: {...process.env}}
   );
   if (await exists(log)) {
     const failed = JSON.parse(await read(log, 'utf8'));

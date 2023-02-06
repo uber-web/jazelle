@@ -1,6 +1,6 @@
 {
   "name": "jazelle",
-  "version": "0.0.0-standalone.64",
+  "version": "0.0.0-standalone.85",
   "main": "index.js",
   "bin": {
     "barn": "bin/bootstrap.sh",
@@ -20,7 +20,7 @@
     "flow-bin": "0.109.0",
     "prettier": "^2.1.2"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "build": "echo ok",
     "lint": "eslint .",

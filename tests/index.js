@@ -1,16 +1,20 @@
 // @flow
 const assert = require('assert');
 const {tmpdir} = require('os');
+const path = require('path');
 const {readFileSync, createWriteStream} = require('fs');
 const {runCLI} = require('../index');
 const {init} = require('../commands/init.js');
 const {scaffold} = require('../commands/scaffold.js');
 const {install} = require('../commands/install.js');
 const {add} = require('../commands/add.js');
+const {bazel: bazelCmd} = require('../commands/bazel.js');
 const {upgrade} = require('../commands/upgrade.js');
 const {remove} = require('../commands/remove.js');
 const {ci} = require('../commands/ci.js');
+const {focus} = require('../commands/focus.js');
 const {purge} = require('../commands/purge.js');
+const {node: nodeCmd} = require('../commands/node.js');
 const {yarn: yarnCmd} = require('../commands/yarn.js');
 const {bump} = require('../commands/bump.js');
 const {script} = require('../commands/script.js');
@@ -24,6 +28,7 @@ const bazelCmds = require('../utils/bazel-commands.js');
 const {bazel, node, yarn} = require('../utils/binary-paths.js');
 const {cli} = require('../utils/cli.js');
 const {detectCyclicDeps} = require('../utils/detect-cyclic-deps.js');
+const {copy} = require('../rules/untar');
 const {
   exec,
   exists,
@@ -32,6 +37,7 @@ const {
   ls,
   lstat,
   remove: rm,
+  spawn,
 } = require('../utils/node-helpers.js');
 const {findChangedTargets} = require('../utils/find-changed-targets.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
@@ -55,6 +61,7 @@ const {
   getCallArgItems,
   addCallArgItem,
   removeCallArgItem,
+  sortCallArgItems,
 } = require('../utils/starlark.js');
 const {shouldSync, getVersion} = require('../utils/version-onboarding.js');
 const yarnCmds = require('../utils/yarn-commands.js');
@@ -85,6 +92,29 @@ async function t(test) {
   }
 }
 
+async function expectProcessExit(expectedExitCode, run) {
+  let exitCode = 0;
+  // $FlowFixMe
+  const originalExit = process.exit;
+  // $FlowFixMe
+  process.exit = (code = 0) => {
+    exitCode = code;
+  };
+
+  try {
+    await run();
+  } finally {
+    // $FlowFixMe
+    process.exit = originalExit;
+
+    assert.strictEqual(
+      exitCode,
+      expectedExitCode,
+      `Process did not exit, or exit code did not match (expected: ${expectedExitCode}, actual: ${exitCode})`
+    );
+  }
+}
+
 async function runTests() {
   await exec(`rm -rf ${tmp}/tmp`);
   await exec(`mkdir -p ${tmp}/tmp`);
@@ -93,9 +123,9 @@ async function runTests() {
     t(testInit),
     t(testScaffold),
     t(testCi),
+    t(testFocus),
     t(testUpgrade),
     t(testPurge),
-    t(testYarn),
     t(testBump),
     // t(testEach),
     t(testAssertProjectDir),
@@ -108,6 +138,7 @@ async function runTests() {
     t(testGenerateBazelBuildRules),
     t(testGenerateBazelBuildRulesUpdate),
     t(testGetDownstreams),
+    t(testGetDownstreamsExclude),
     t(testGetManifest),
     t(testGetLocalDependencies),
     t(testGetRootDir),
@@ -125,20 +156,26 @@ async function runTests() {
     t(testLocalize),
     t(testCheck),
     t(testOutdated),
+    t(testUntarCopy),
   ]);
 
   // run separately to avoid CI error
+  await t(testBazel);
+  await t(testNode);
+  await t(testYarn);
   await t(testBazelDummy);
   await t(testBazelBuild);
-  // await t(testInstallAddUpgradeRemove);
+  await t(testInstallAddUpgradeRemove);
   await t(testBatchTestGroup);
   await t(testCommand);
   await t(testYarnCommand);
   await t(testBazelCommand);
+  await t(testDevCommand);
   await t(testStartCommand);
   await t(testScriptCommand);
   await t(testBazelDependentBuilds);
   await t(testBazelDependentFailure);
+  await t(testShouldInstall);
 
   await exec(`rm -rf ${tmp}/tmp`);
   console.log('All tests pass');
@@ -155,6 +192,33 @@ async function testRunCLI() {
 }
 
 // commands
+async function testBazel() {
+  const tmpRoot = path.join(tmp, 'tmp', 'bazel');
+
+  await exec(`cp -r ${path.join(__dirname, 'fixtures', 'bazel')} ${tmpRoot}`);
+
+  const root = tmpRoot;
+
+  const streamFile = path.join(tmpRoot, 'build-stream.txt');
+  const stream = createWriteStream(streamFile);
+  await new Promise(resolve => stream.on('open', resolve));
+
+  await bazelCmd({
+    root,
+    args: ['help', 'run'],
+    stdio: ['ignore', stream, stream],
+  });
+
+  // @see: https://bazel.build/run/scripts#exit-codes
+  await expectProcessExit(2, () =>
+    bazelCmd({root, args: ['run'], stdio: ['ignore', stream, stream]})
+  );
+
+  const output = await read(streamFile, 'utf8');
+  assert(output.includes('Usage: bazel run'));
+  assert(output.includes('ERROR: Must specify a target to run'));
+}
+
 async function testInit() {
   await exec(`mkdir ${tmp}/tmp/init`);
   await init({cwd: `${tmp}/tmp/init`});
@@ -228,8 +292,9 @@ async function testInstallAddUpgradeRemove() {
     cwd: `${tmp}/tmp/commands/a`,
     args: ['b', 'c'],
   });
-  assert((await read(buildFile, 'utf8')).includes('//b:b'));
-  assert((await read(buildFile, 'utf8')).includes('//c:c'));
+  assert((await read(buildFile, 'utf8')).includes('//b:library'));
+  assert((await read(buildFile, 'utf8')).includes('//c:library'));
+  assert(!(await read(buildFile, 'utf8')).includes('function-bind'));
 
   // add external package
   await add({
@@ -244,7 +309,7 @@ async function testInstallAddUpgradeRemove() {
     root: `${tmp}/tmp/commands`,
     args: ['c@0.0.0'],
   });
-  assert((await read(buildFile, 'utf8')).includes('//c:c'));
+  assert((await read(buildFile, 'utf8')).includes('//c:library'));
 
   // upgrade external package
   await upgrade({
@@ -282,6 +347,31 @@ async function testCi() {
   assert(true); // did not throw
 }
 
+async function testFocus() {
+  const cmd = `cp -r ${__dirname}/fixtures/focus/. ${tmp}/tmp/focus`;
+  await exec(cmd);
+
+  {
+    await focus({
+      root: `${tmp}/tmp/focus`,
+      cwd: `${tmp}/tmp/focus/b`,
+      packages: [],
+      verbose: true,
+    });
+    assert(true); // did not throw
+  }
+
+  {
+    await focus({
+      root: `${tmp}/tmp/focus`,
+      cwd: `${tmp}/tmp/focus`,
+      packages: ['b'],
+      verbose: false,
+    });
+    assert(true); // did not throw
+  }
+}
+
 async function testUpgrade() {
   const meta = `${tmp}/tmp/upgrade/a/package.json`;
   const lockfile = `${tmp}/tmp/upgrade/yarn.lock`;
@@ -310,18 +400,90 @@ async function testPurge() {
   assert(!(await exists(temp)));
 }
 
-async function testYarn() {
-  await exec(`cp -r ${__dirname}/fixtures/yarn/ ${tmp}/tmp/yarn`);
+async function testNode() {
+  const tmpRoot = path.join(tmp, 'tmp', 'yarn-pnp');
+  const testScriptFilePath = path.join(tmpRoot, '_test-script.js');
 
-  const streamFile = `${tmp}/tmp/yarn/stream.txt`;
+  await exec(
+    `cp -r ${path.join(__dirname, 'fixtures', 'yarn-pnp')} ${tmpRoot}`
+  );
+  await write(
+    testScriptFilePath,
+    "console.log('Hello from node script'); process.exit(11);",
+    'utf8'
+  );
+
+  const workspaceFile = path.join(tmpRoot, 'WORKSPACE');
+  const workspace = await read(workspaceFile, 'utf8');
+  const replaced = workspace.replace(
+    'path = "../../.."',
+    `path = "${__dirname}/.."`
+  );
+  await write(workspaceFile, replaced, 'utf8');
+
+  const root = tmpRoot;
+  const cwd = tmpRoot;
+
+  const streamFile = path.join(tmpRoot, 'build-stream.txt');
   const stream = createWriteStream(streamFile);
   await new Promise(resolve => stream.on('open', resolve));
+
+  await install({root, cwd});
+
+  await nodeCmd({
+    root,
+    cwd,
+    args: ['-e', "console.log('Hello from eval script');"],
+    stdio: ['ignore', stream, stream],
+  });
+
+  await expectProcessExit(11, () =>
+    nodeCmd({
+      root,
+      cwd,
+      args: [testScriptFilePath],
+      stdio: ['ignore', stream, stream],
+    })
+  );
+
+  const lines = (await read(streamFile, 'utf8')).split('\n');
+  assert(lines.includes('Hello from eval script'));
+  assert(lines.includes('Hello from node script'));
+}
+
+async function testYarn() {
+  const tmpRoot = path.join(tmp, 'tmp', 'yarn');
+
+  await exec(`cp -r ${path.join(__dirname, 'fixtures', 'yarn')} ${tmpRoot}`);
+
+  const root = tmpRoot;
+  const cwd = tmpRoot;
+
+  const streamFile = path.join(tmpRoot, 'stream.txt');
+  const stream = createWriteStream(streamFile);
+  await new Promise(resolve => stream.on('open', resolve));
+
+  await install({root, cwd});
+
   await yarnCmd({
-    cwd: `${tmp}/tmp/yarn`,
+    cwd,
     args: ['--help'],
     stdio: ['ignore', stream, stream],
-  }).catch(() => {});
-  assert((await read(streamFile, 'utf8')).includes('Yarn Package Manager'));
+  });
+
+  await expectProcessExit(11, () =>
+    yarnCmd({
+      cwd,
+      args: ['run', 'foo-exit'],
+      stdio: ['ignore', stream, stream],
+    })
+  );
+
+  const output = await read(streamFile, 'utf8');
+  assert(output.includes('Yarn Package Manager'));
+
+  const lines = output.split('\n');
+  assert(lines.includes('foo exit'));
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -404,9 +566,19 @@ async function testScriptCommand() {
     stdio: ['ignore', stream, stream],
   });
 
+  await expectProcessExit(11, () =>
+    script({
+      root,
+      cwd,
+      args: ['--cwd', '.', 'foo-exit'],
+      stdio: ['ignore', stream, stream],
+    })
+  );
+
   const lines = (await read(streamFile, 'utf8')).split('\n');
   assert(lines.includes('hello world'));
   assert(lines.includes('hello world foo'));
+  assert(lines.includes('foo exit'));
 }
 
 // utils
@@ -439,15 +611,7 @@ async function testBatchTestGroup() {
   await new Promise(resolve => stream.on('open', resolve));
   await install({
     root: `${tmp}/tmp/batch-test-group`,
-    cwd: `${tmp}/tmp/batch-test-group/a`,
-  });
-  await install({
-    root: `${tmp}/tmp/batch-test-group`,
-    cwd: `${tmp}/tmp/batch-test-group/b`,
-  });
-  await install({
-    root: `${tmp}/tmp/batch-test-group`,
-    cwd: `${tmp}/tmp/batch-test-group/b`,
+    cwd: `${tmp}/tmp/batch-test-group`,
   });
   await batchTestGroup({
     root: `${tmp}/tmp/batch-test-group`,
@@ -556,7 +720,7 @@ async function testBazelBuild() {
     console.log(await read(testStreamFile, 'utf8'));
     throw e;
   }
-  assert((await read(testStreamFile, 'utf8')).includes('\nb\nv12.16.1'));
+  assert((await read(testStreamFile, 'utf8')).includes('\nb\nv16.15.0'));
 
   const generated = `${tmp}/tmp/bazel-rules/projects/a/generated/foo.txt`;
   assert((await read(generated, 'utf8')).includes('hello'));
@@ -572,8 +736,26 @@ async function testBazelBuild() {
     name: 'test',
     stdio: ['ignore', runStream, 'ignore'],
   });
+  await bazelCmds.run({
+    root: `${tmp}/tmp/bazel-rules`,
+    cwd: `${tmp}/tmp/bazel-rules/projects/a`,
+    args: ['uber-b:global-script'],
+    name: 'script',
+    stdio: ['ignore', runStream, 'ignore'],
+  });
+  await expectProcessExit(11, () =>
+    bazelCmds.run({
+      root: `${tmp}/tmp/bazel-rules`,
+      cwd: `${tmp}/tmp/bazel-rules/projects/a`,
+      args: ['foo-exit'],
+      name: 'script',
+      stdio: ['ignore', runStream, 'ignore'],
+    })
+  );
   const runData = await read(runStreamFile, 'utf8');
-  assert(runData.includes('\nb\nv12.16.1'));
+  assert(runData.includes('\nb\nv16.15.0'));
+  assert(runData.includes('\nfoo exit'));
+  assert(runData.includes('\nhello from @uber/b'));
 
   // lint
   const lintStreamFile = `${tmp}/tmp/bazel-rules/lint-stream.txt`;
@@ -743,26 +925,25 @@ async function testFindChangedTargets() {
     const files = `${tmp}/tmp/find-changed-targets/bazel/changes.txt`;
     await install({
       root: `${tmp}/tmp/find-changed-targets/bazel`,
-      cwd: `${tmp}/tmp/find-changed-targets/bazel/a`,
-    });
-    await install({
-      root: `${tmp}/tmp/find-changed-targets/bazel`,
-      cwd: `${tmp}/tmp/find-changed-targets/bazel/b`,
-    });
-    await install({
-      root: `${tmp}/tmp/find-changed-targets/bazel`,
-      cwd: `${tmp}/tmp/find-changed-targets/bazel/c`,
+      cwd: `${tmp}/tmp/find-changed-targets/bazel`,
     });
     const targets = await findChangedTargets({root, files, format: 'targets'});
     assert.deepEqual(
       targets.sort(),
       [
-        '//b:test',
-        '//b:lint',
-        '//b:flow',
-        '//a:test',
-        '//a:lint',
+        '//a:a',
+        '//a:dev',
         '//a:flow',
+        '//a:library',
+        '//a:lint',
+        '//a:test',
+        '//b:b',
+        '//b:dev',
+        '//b:flow',
+        '//b:library',
+        '//b:lint',
+        '//b:test',
+        '//d:library', // this should appear here because it depends on non-js/x.txt
       ].sort()
     );
   }
@@ -916,8 +1097,56 @@ async function testGetDownstreams() {
       depth: 1,
     },
   ];
-  const downstreams = getDownstreams(deps, deps[0]);
+  const downstreams = getDownstreams({deps, dep: deps[0]});
   assert.deepEqual(downstreams, deps.slice(1));
+}
+
+async function testGetDownstreamsExclude() {
+  const deps = [
+    {
+      dir: `${tmp}/tmp/get-downstreams/a`,
+      meta: {
+        name: 'a',
+        version: '0.0.0',
+      },
+      depth: 1,
+    },
+    {
+      dir: `${tmp}/tmp/get-downstreams/b`,
+      meta: {
+        name: 'b',
+        version: '0.0.0',
+        dependencies: {a: 'workspace:*'},
+      },
+      depth: 3,
+    },
+    {
+      dir: `${tmp}/tmp/get-downstreams/c`,
+      meta: {
+        name: 'c',
+        version: '0.0.0',
+        dependencies: {b: '0.0.0'},
+      },
+      depth: 2,
+    },
+    {
+      dir: `${tmp}/tmp/get-downstreams/d`,
+      meta: {
+        name: 'd',
+        version: '0.0.0',
+        dependencies: {a: '0.0.0'},
+      },
+      depth: 2,
+    },
+  ];
+  const downstreams = getDownstreams({
+    deps,
+    dep: deps[0],
+    excludeWorkspaceDeps: true,
+  });
+  // `d` should be the only downstream returned, since b and c are
+  // downstream as a result of `workspace:*` and should be excluded
+  assert.deepEqual(downstreams, [deps[3]]);
 }
 
 async function testGetLocalDependencies() {
@@ -1243,6 +1472,21 @@ async function testNodeHelpers() {
   assert(!(await exists(`${tmp}/tmp/node-helpers-remove`)));
 }
 
+async function testUntarCopy() {
+  const cwd = `${tmp}/tmp/test-untar`;
+  await exec(`mkdir -p ${cwd}/very/long/path/`);
+  await exec(`mkdir -p ${cwd}/bar/dir/`);
+  await exec(`mkdir -p ${cwd}/bar2/`);
+  await exec(`touch ${cwd}/very/long/path/original-file.txt`);
+  assert.doesNotThrow(() => {
+    copy(`${cwd}`, `${cwd}/foo`, 'very/long/path');
+  }, 'Should not error making a very long path');
+
+  assert.doesNotThrow(() => {
+    copy(`${cwd}/bar`, `${cwd}/bar2`, 'dir');
+  }, 'Should not error making a short path');
+}
+
 async function testParse() {
   assert.deepEqual(parse(['hello', '--foo', '111', '--bar=222', '--baz']), {
     name: 'hello',
@@ -1261,9 +1505,10 @@ async function testReportMismatchedTopLevelDeps() {
   const cmd = `cp -r ${__dirname}/fixtures/report-mismatched-top-level-deps/ ${tmp}/tmp/report-mismatched-top-level-deps`;
   await exec(cmd);
 
+  const root = `${tmp}/tmp/report-mismatched-top-level-deps`;
   const withoutLockstep = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: false,
       exceptions: ['no-bugs', '@uber/mismatched'],
@@ -1282,8 +1527,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withoutPartialLockstep = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: false,
       exceptions: ['@uber/mismatched'],
@@ -1298,8 +1543,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withLockstep = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: true,
       exceptions: ['no-bugs'],
@@ -1314,8 +1559,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withAllExceptions = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: true,
       exceptions: ['no-bugs', '@uber/mismatched'],
@@ -1328,8 +1573,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withVersionedExceptions = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: false,
       exceptions: [{name: '@uber/mismatched', versions: ['^1.0.0']}],
@@ -1345,8 +1590,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withAllVersionedExceptions = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: false,
       exceptions: [{name: '@uber/mismatched', versions: ['^1.0.0', '^2.0.0']}],
@@ -1362,8 +1607,8 @@ async function testReportMismatchedTopLevelDeps() {
   });
 
   const withLockstepVersionedExceptions = await reportMismatchedTopLevelDeps({
-    root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-    projects: ['packages/a', 'packages/b', 'packages/c'],
+    root,
+    dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: true,
       exceptions: ['no-bugs', {name: '@uber/mismatched', versions: ['^1.0.0']}],
@@ -1380,8 +1625,8 @@ async function testReportMismatchedTopLevelDeps() {
 
   const withLockstepAllVersionedExceptions = await reportMismatchedTopLevelDeps(
     {
-      root: `${tmp}/tmp/report-mismatched-top-level-deps`,
-      projects: ['packages/a', 'packages/b', 'packages/c'],
+      root,
+      dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
       versionPolicy: {
         lockstep: true,
         exceptions: [
@@ -1482,6 +1727,21 @@ web_library(    # comment
   ]             # comment
 )               # comment`;
     assert.equal(clean.trim(), reset.trim());
+  }
+  {
+    const buildFile = `${tmp}/tmp/starlark/unsorted/BUILD.bazel`;
+    const unsorted = await read(buildFile, 'utf8');
+    const sorted = sortCallArgItems(unsorted, 'web_library', 'deps');
+
+    const expected = `
+web_library(
+  name = "foo",
+  deps = [
+    "//a:a",
+    "//b:b",
+  ]
+)`;
+    assert.equal(sorted.trim(), expected.trim());
   }
 }
 
@@ -1837,6 +2097,49 @@ async function testBazelCommand() {
   assert((await read(bazelStreamFile, 'utf8')).includes('Build label:'));
 }
 
+async function testDevCommand() {
+  const tmpRoot = path.join(tmp, 'tmp', 'bin');
+
+  const cmd = `cp -r ${path.join(__dirname, 'fixtures', 'bin')} ${tmpRoot}`;
+  await exec(cmd);
+
+  const workspaceFile = path.join(tmpRoot, 'WORKSPACE');
+  const workspace = await read(workspaceFile, 'utf8');
+  const replaced = workspace.replace(
+    'path = "../../.."',
+    `path = "${__dirname}/.."`
+  );
+  await write(workspaceFile, replaced, 'utf8');
+
+  const cwd = tmpRoot;
+  const jazelle = `${__dirname}/../bin/bootstrap.sh`;
+
+  const devStreamFile = path.join(tmpRoot, 'dev-stream.txt');
+  const devStream = createWriteStream(devStreamFile);
+  await new Promise(resolve => devStream.on('open', resolve));
+
+  await install({root: cwd, cwd: `${cwd}/a`});
+
+  await spawn('./test-sigint.sh', [], {
+    env: {
+      ...process.env,
+      JAZELLE: jazelle,
+    },
+    cwd: `${cwd}/a`,
+    // Test script expects the process to run in its own process group
+    detached: true,
+    shell: true,
+    stdio: ['ignore', devStream, devStream],
+  });
+
+  const lines = (await read(devStreamFile, 'utf8')).split('\n');
+  assert(lines.includes('Dev: started'));
+  assert(lines.includes('Dev: running'));
+  assert(lines.includes('Dev: received SIGINT; gracefully terminating'));
+  assert(lines.includes('Dev: exiting'));
+  assert(lines.includes('Dev process exited'));
+}
+
 async function testStartCommand() {
   const cmd = `cp -r ${__dirname}/fixtures/bin ${tmp}/tmp/bin`;
   await exec(cmd);
@@ -2053,29 +2356,136 @@ async function testOutdated() {
 
   // Sanity check
   await outdated({root, logger});
+
+  // helper function to sort an array of objects by their
+  // 'packageName' property.
+  function packageNameCmpFunc(a, b) {
+    if (a.packageName < b.packageName) {
+      return -1;
+    } else if (a.packageName > b.packageName) {
+      return 1;
+    }
+    return 0;
+  }
+
+  data.sort();
   assert.equal(data[0], 'only-version-one-zero-zero 0.1.0 1.0.0');
   assert.equal(data[1], 'only-version-one-zero-zero 0.2.0 1.0.0');
+  assert.equal(data[2].substring(0, 'semver ^6.2.0 '.length), 'semver ^6.2.0 ');
+  assert.equal(
+    data[3].substring(0, 'serialize-javascript ^4.0.0 '.length),
+    'serialize-javascript ^4.0.0 '
+  );
   flush();
 
   // Test --dedup option
   await outdated({root, logger, dedup: true});
-  assert.equal(data.join(), 'only-version-one-zero-zero 0.1.0 0.2.0 1.0.0');
+  data.sort();
+  assert.equal(data[0], 'only-version-one-zero-zero 0.1.0 0.2.0 1.0.0');
+  assert.equal(data[1].substring(0, 'semver ^6.2.0 '.length), 'semver ^6.2.0 ');
+  assert.equal(
+    data[2].substring(0, 'serialize-javascript ^4.0.0 '.length),
+    'serialize-javascript ^4.0.0 '
+  );
   flush();
 
-  // Test --json option w/ --dedup
-  await outdated({root, logger, json: true, dedup: true});
-  let parsed /*: ?{[string]: string} */;
-  try {
-    parsed = JSON.parse(data.join(''));
-  } catch (e) {
-    // $FlowFixMe
-    assert.fail(`Unable to call JSON.parse on data: ${data.join('')}`);
+  // Test --json option w/out --dedup
+  {
+    await outdated({root, logger, json: true, dedup: false});
+    let parsed /*: Array<{[string]: string}> */ = [];
+    try {
+      parsed = JSON.parse(data.join(''));
+    } catch (e) {
+      // $FlowFixMe
+      assert.fail(`Unable to call JSON.parse on data: ${data.join('')}`);
+    }
+    assert.equal(parsed.length, 4);
+
+    // sort objects by package name, and over-write latest version of
+    // semver and serialize-javascript
+    parsed.sort(packageNameCmpFunc);
+    assert.equal(parsed[2].packageName, 'semver');
+    parsed[2]['latest'] = 'semver-latest';
+    assert.equal(parsed[3].packageName, 'serialize-javascript');
+    parsed[3]['latest'] = 'serialize-javascript-latest';
+
+    assert.deepEqual(parsed, [
+      {
+        packageName: 'only-version-one-zero-zero',
+        installed: ['0.1.0'],
+        latest: '1.0.0',
+      },
+      {
+        packageName: 'only-version-one-zero-zero',
+        installed: ['0.2.0'],
+        latest: '1.0.0',
+      },
+      {
+        packageName: 'semver',
+        installed: ['^6.2.0'],
+        latest: 'semver-latest',
+      },
+      {
+        packageName: 'serialize-javascript',
+        installed: ['^4.0.0'],
+        latest: 'serialize-javascript-latest',
+      },
+    ]);
+    flush();
   }
-  assert.deepEqual(parsed, [
-    {
-      packageName: 'only-version-one-zero-zero',
-      installed: ['0.1.0', '0.2.0'],
-      latest: '1.0.0',
-    },
-  ]);
+
+  // Test --json option w/ --dedup
+  {
+    await outdated({root, logger, json: true, dedup: true});
+
+    let parsed /*: Array<{[string]: string}> */ = [];
+    try {
+      parsed = JSON.parse(data.join(''));
+    } catch (e) {
+      // $FlowFixMe
+      assert.fail(`Unable to call JSON.parse on data: ${data.join('')}`);
+    }
+    assert.equal(parsed.length, 3);
+
+    // sort objects by package name, and over-write latest version of
+    // semver and serialize-javascript
+    parsed.sort(packageNameCmpFunc);
+    assert.equal(parsed[1].packageName, 'semver');
+    parsed[1]['latest'] = 'semver-latest';
+    assert.equal(parsed[2].packageName, 'serialize-javascript');
+    parsed[2]['latest'] = 'serialize-javascript-latest';
+
+    assert.deepEqual(parsed, [
+      {
+        packageName: 'only-version-one-zero-zero',
+        installed: ['0.1.0', '0.2.0'],
+        latest: '1.0.0',
+      },
+      {
+        packageName: 'semver',
+        installed: ['^6.2.0'],
+        latest: 'semver-latest',
+      },
+      {
+        packageName: 'serialize-javascript',
+        installed: ['^4.0.0'],
+        latest: 'serialize-javascript-latest',
+      },
+    ]);
+    flush();
+  }
+}
+
+async function testShouldInstall() {
+  const cmd = `cp -r ${__dirname}/fixtures/should-install ${tmp}/tmp/should-install`;
+  await exec(cmd);
+
+  const root = `${tmp}/tmp/should-install`;
+
+  // should bypass yarn install due to bool_shouldinstall
+  await install({root, cwd: root});
+  assert.equal(await read(`${root}/yarn.lock`), '');
+
+  await focus({root, cwd: root, packages: ['a']});
+  assert.equal(await read(`${root}/yarn.lock`), '');
 }

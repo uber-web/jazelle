@@ -16,12 +16,23 @@ const getAllDependencies /*: GetAllDependencies */ = async ({
   projects,
 }) => {
   const roots = projects.map(dir => `${root}/${dir}`);
-  return Promise.all(
+  const metadatas = await Promise.all(
     roots.map(async dir => ({
       depth: 0,
       dir,
-      meta: JSON.parse(await read(`${dir}/package.json`, 'utf8')),
+      meta: await parseMetadata(dir),
     }))
+  );
+  // $FlowFixMe
+  return metadatas.filter(m => m.meta != null);
+};
+
+const parseMetadata = async dir => {
+  // allow JSON.parse to throw if the file does exist but is not formatted correctly
+  // but ignore error if file is non-existent, as it may mean we're in a sparse checkout
+  return read(`${dir}/package.json`, 'utf8').then(
+    meta => JSON.parse(meta),
+    e => null
   );
 };
 

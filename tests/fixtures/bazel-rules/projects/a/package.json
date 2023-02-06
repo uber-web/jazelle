@@ -12,6 +12,7 @@
     "test": "node index.js",
     "lint": "echo 111",
     "flow": "echo 222",
-    "start": "echo 333"
+    "start": "echo 333",
+    "foo-exit": "echo foo exit && exit 11"
   }
 }

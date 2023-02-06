@@ -1,7 +1,19 @@
 #!/bin/bash
 BIN=$(dirname "$0")
-case $OSTYPE in
-  darwin*) "$BIN/bazelisk-darwin-amd64" "$@" ;;
-  linux*) "$BIN/bazelisk-linux-amd64" "$@" ;;
-  *) "$BIN/bazelisk-linux-amd64" "$@" ;;
+
+# export because we need this value in rules/jazelle-dependencies.bzl because ctx.os.arch yields incorrect value in arm64
+export CPU=$(uname -m)
+
+case $CPU in
+  arm*)
+    case $OSTYPE in
+      darwin*) "$BIN/bazelisk-darwin-arm64" "$@" ;;
+      *) "$BIN/bazelisk-linux-arm64" "$@" ;;
+    esac;;
+  *)
+    case $OSTYPE in
+      darwin*) "$BIN/bazelisk-darwin-amd64" "$@" ;;
+      linux*) "$BIN/bazelisk-linux-amd64" "$@" ;;
+      *) "$BIN/bazelisk-windows-amd64.exe" "$@" ;;
+    esac;;
 esac

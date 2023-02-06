@@ -1,11 +1,10 @@
 // @flow
-const {minVersion, satisfies} = require('../utils/cached-semver');
+const {minVersion, satisfies, valid} = require('../utils/cached-semver');
 const {getManifest} = require('../utils/get-manifest.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
 const {read, write} = require('../utils/node-helpers.js');
 const {spawn} = require('../utils/node-helpers.js');
 const {node, yarn} = require('../utils/binary-paths.js');
-const {install} = require('./install.js');
 
 /*::
 export type UpgradeArgs = {
@@ -56,18 +55,17 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
     const deps = externals.map(({name, range}) => {
       return name + (range ? `@${range}` : '');
     });
-    await spawn(node, [yarn, 'up', '-C', ...deps], {
+    await spawn(node, [yarn, 'up', '-C', ...deps, '--mode', 'skip-build'], {
       cwd: root,
       stdio: 'inherit',
     });
-    await install({root, cwd: root, frozenLockfile: true, conservative: true});
   }
 };
 
 const update = (meta, type, name, version, from) => {
   if (meta[type] && meta[type][name]) {
-    const min = minVersion(meta[type][name]);
-    const inRange = !from || satisfies(min, from);
+    const curr = meta[type][name];
+    const inRange = !valid(curr) || !from || satisfies(minVersion(curr), from);
     if (inRange && !meta[type][name].includes('*')) meta[type][name] = version;
   }
 };

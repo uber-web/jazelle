@@ -13,27 +13,41 @@ alias(name = "yarn", actual = "{yarn}")
 """
 
 ARCHITECTURES = {
-  "mac os x": ("mac", "darwin", "tar.gz", "bin/node", "bin/npm", "bin/npx"),
-  "linux": ("linux", "linux", "tar.xz", "bin/node", "bin/npm", "bin/npx"),
-  "windows": ("windows", "win", "zip", "bin/node.exe", "bin/npm.cmd", "bin/npx.cmd"),
+  "mac os x": ("darwin", "tar.gz", "bin/node", "bin/npm", "bin/npx"),
+  "linux": ("linux", "tar.xz", "bin/node", "bin/npm", "bin/npx"),
+  "windows": ("win", "zip", "bin/node.exe", "bin/npm.cmd", "bin/npx.cmd"),
+}
+CPUS = {
+  "x86_64": "x64",
+  "arm64": "arm64",
 }
 def _jazelle_dependencies_impl(ctx):
   os = ctx.os.name.lower()
   node_version = ctx.attr.node_version
+  arch, ext, node, npm, npx = ARCHITECTURES.get(os, "mac os x")
+
+  major, dot, rest = node_version.partition(".")
+  if int(major) >= 16:
+    cpu = CPUS.get(ctx.os.environ.get("CPU", "x86_64"), "x64") # CPU env var comes from bin/bazelisk
+  else:
+    cpu = "x64" # only node 16 and above provide arm64 binaries
+
   node_sha256 = ctx.attr.node_sha256
-  label, arch, ext, node, npm, npx = ARCHITECTURES.get(os, "mac os x")
+  binary = "{arch}-{cpu}".format(arch = arch, cpu = cpu)
 
   ctx.download_and_extract(
-    url = "https://nodejs.org/dist/v{version}/node-v{version}-{arch}-x64.{ext}".format(
+    url = "https://nodejs.org/dist/v{version}/node-v{version}-{arch}-{cpu}.{ext}".format(
       version = node_version,
       arch = arch,
+      cpu = cpu,
       ext = ext,
     ),
-    stripPrefix = "node-v{version}-{arch}-x64".format(
+    stripPrefix = "node-v{version}-{arch}-{cpu}".format(
       version = node_version,
       arch = arch,
+      cpu = cpu,
     ),
-    sha256 = node_sha256[label],
+    sha256 = node_sha256[binary],
   )
 
   yarn_version = ctx.attr.yarn_version

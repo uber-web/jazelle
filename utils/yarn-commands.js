@@ -2,7 +2,7 @@
 const {dirname} = require('path');
 const {checksumCache} = require('./checksum-cache.js');
 const {getDownstreams} = require('./get-downstreams.js');
-const {spawn} = require('./node-helpers.js');
+const {spawnOrExit} = require('./node-helpers.js');
 const {bazel, node, yarn} = require('./binary-paths.js');
 
 const errorsOnly = ['ignore', 'ignore', 'inherit'];
@@ -34,10 +34,14 @@ const buildCacheable = async ({root, dep, deps, stdio}) => {
   if (!(await cache.isCached(dir))) {
     console.log(`Building ${meta.name}`);
     if (meta.scripts && meta.scripts.build) {
-      await spawn(node, [yarn, 'build'], {stdio, env: process.env, cwd: dir});
+      await spawnOrExit(node, [yarn, 'build'], {
+        stdio,
+        env: {...process.env},
+        cwd: dir,
+      });
     }
 
-    getDownstreams(deps, dep).forEach(d => {
+    getDownstreams({deps, dep}).forEach(d => {
       // check depth to ensure we only invalidate downstreams, not cyclical deps
       if (dep.depth < d.depth) cache.invalidate(d.dir);
     });
@@ -72,9 +76,9 @@ export type Dev = (DevArgs) => Promise<void>;
 const dev /*: Dev */ = async ({root, deps, args, stdio = 'inherit'}) => {
   const main = deps.slice(-1).pop();
   await batchBuild({root, deps, self: false, stdio: errorsOnly});
-  await spawn(node, [yarn, 'dev', ...args], {
+  await spawnOrExit(node, [yarn, 'dev', ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };
@@ -91,9 +95,9 @@ export type Test = (TestArgs) => Promise<void>;
 const test /*: Test */ = async ({root, deps, args, stdio = 'inherit'}) => {
   const main = deps.slice(-1).pop();
   await batchBuild({root, deps, self: false, stdio: errorsOnly});
-  await spawn(node, [yarn, 'test', ...args], {
+  await spawnOrExit(node, [yarn, 'test', ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };
@@ -110,9 +114,9 @@ export type Lint = (LintArgs) => Promise<void>;
 const lint /*: Lint */ = async ({root, deps, args, stdio = 'inherit'}) => {
   const main = deps.slice(-1).pop();
   await batchBuild({root, deps, self: false, stdio: errorsOnly});
-  await spawn(node, [yarn, 'lint', ...args], {
+  await spawnOrExit(node, [yarn, 'lint', ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };
@@ -129,9 +133,9 @@ export type Flow = (FlowArgs) => Promise<void>;
 const flow /*: Flow */ = async ({root, deps, args, stdio = 'inherit'}) => {
   const main = deps.slice(-1).pop();
   await batchBuild({root, deps, self: false, stdio: errorsOnly});
-  await spawn(node, [yarn, 'flow', ...args], {
+  await spawnOrExit(node, [yarn, 'flow', ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };
@@ -148,9 +152,9 @@ export type Start = (StartArgs) => Promise<void>;
 const start /*: Start */ = async ({root, deps, args, stdio = 'inherit'}) => {
   const main = deps.slice(-1).pop();
   await batchBuild({root, deps, self: true, stdio: errorsOnly});
-  await spawn(node, [yarn, 'start', ...args], {
+  await spawnOrExit(node, [yarn, 'start', ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };
@@ -172,7 +176,7 @@ const exec /*: Exec */ = async ({root, deps, args, stdio = 'inherit'}) => {
   const bazelDir = dirname(bazel);
   const nodeDir = dirname(node);
   const env = {PATH: `${bazelDir}:${nodeDir}:${path}`};
-  await spawn(command, params, {stdio, env, cwd});
+  await spawnOrExit(command, params, {stdio, env, cwd});
 };
 
 /*::
@@ -194,9 +198,9 @@ const script /*: Script */ = async ({
 }) => {
   const main = deps.slice(-1).pop();
   await batchBuild({root, deps, self: false, stdio: errorsOnly});
-  await spawn(node, [yarn, command, ...args], {
+  await spawnOrExit(node, [yarn, command, ...args], {
     stdio,
-    env: process.env,
+    env: {...process.env},
     cwd: main.dir,
   });
 };

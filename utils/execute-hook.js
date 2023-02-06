@@ -3,6 +3,13 @@ const {dirname} = require('path');
 const {node} = require('./binary-paths.js');
 const {exec} = require('./node-helpers.js');
 
+function clearPrevLine() {
+  // $FlowFixMe
+  if (process.stdout.moveCursor) process.stdout.moveCursor(0, -1);
+  // $FlowFixMe
+  if (process.stdout.clearLine) process.stdout.clearLine(1);
+}
+
 /*::
 type Opts = {
   env?: {},
@@ -29,19 +36,19 @@ const executeHook /*: ExecuteHook */ = async (hook, root, opts = {}) => {
       cwd: root,
     };
 
+    const output = await exec(hook, execOpts, [process.stdout, process.stderr]);
+
     if (opts.isBooleanHook) {
-      const output = await exec(hook, execOpts);
       const lines = output.split('\n').filter(Boolean);
       const lastLine = lines[lines.length - 1];
 
       if (lastLine === 'true') {
+        clearPrevLine();
         return true;
       } else if (lastLine === 'false') {
+        clearPrevLine();
         return false;
       }
-    } else {
-      const stdio = [process.stdout, process.stderr];
-      await exec(hook, execOpts, stdio);
     }
   }
 };

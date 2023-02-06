@@ -35,7 +35,11 @@ const bump /*: Bump */ = async ({
     }),
   ]);
   const dep = deps.find(({dir}) => dir === cwd);
-  const downstreams = await getDownstreams(deps, dep);
+  const downstreams = await getDownstreams({
+    deps,
+    dep,
+    excludeWorkspaceDeps: true,
+  });
   downstreams.push(dep);
 
   const types = /^(major|premajor|minor|preminor|patch|prepatch|prerelease|none)$/;
@@ -45,7 +49,7 @@ const bump /*: Bump */ = async ({
     );
   }
 
-  const options = {cwd: root, env: process.env};
+  const options = {cwd: root, env: {...process.env}};
   for (const dep of downstreams) {
     const query = `${node} ${yarn} npm info ${dep.meta.name} --json`;
     const data = await exec(query, options).catch(() => null);

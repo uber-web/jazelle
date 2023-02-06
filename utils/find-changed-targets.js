@@ -78,7 +78,7 @@ const findChangedBazelTargets = async ({root, files}) => {
   const opts = {cwd: root, maxBuffer: 1e9};
   if (workspace === 'sandbox') {
     if (lines.includes('WORKSPACE') || lines.includes('.bazelversion')) {
-      const cmd = `${bazel} query 'kind(".*_test rule", "...")'`;
+      const cmd = `${bazel} query 'kind("(web_.*|.*_test) rule", "...")'`;
       const result = await exec(cmd, opts);
       const unfiltered = result.split('\n').filter(Boolean);
       const targets = unfiltered.filter(target => {
@@ -115,7 +115,7 @@ const findChangedBazelTargets = async ({root, files}) => {
         batches(queryables, 1000), // batching required, else E2BIG errors
         async q => {
           const innerQuery = q.join(' union ');
-          const cmd = `${bazel} query 'let graph = kind(".*_test rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label`;
+          const cmd = `${bazel} query 'let graph = kind("(web_.*|.*_test|filegroup) rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label`;
           return exec(cmd, opts);
         }
       );
@@ -161,7 +161,7 @@ const findChangedBazelTargets = async ({root, files}) => {
       for (const target of set) {
         const dep = allProjects.find(project => project.dir === target);
         if (dep) {
-          const downstreamDeps = getDownstreams(allProjects, dep);
+          const downstreamDeps = getDownstreams({deps: allProjects, dep});
           for (const downstreamDep of downstreamDeps) {
             changeSet.add(downstreamDep.dir);
           }
@@ -193,15 +193,25 @@ async function batch(root, items, fn) {
   ].filter(Boolean);
 }
 
-// for each folder, we typically only need to check one file,
+// Optimization: For each folder, we typically only need to check one file,
 // since all files will generally map to the same target
 // given how jazelle generates BUILD.bazel files
+// However, this is only true of js files
+// For other types of targets, we need to be conservative and keep the entire list of files
 const getTargetRepresentatives = files => {
   const map = new Map();
   for (const file of files) {
-    map.set(dirname(file), file);
+    const dir = dirname(file);
+    const list = map.get(dir) || map.set(dir, []).get(dir);
+    if (file.match(/(.jsx?|.tsx?)$/)) {
+      map.set(dir, [file]);
+    } else {
+      // $FlowFixMe
+      list.push(file);
+    }
   }
-  return [...map.values()];
+  // $FlowFixMe
+  return [...map.values()].flat();
 };
 
 module.exports = {findChangedTargets};

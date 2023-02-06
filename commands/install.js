@@ -25,6 +25,7 @@ export type InstallArgs = {
   conservative?: boolean,
   skipPreinstall?: boolean,
   skipPostinstall?: boolean,
+  mode?: string,
   verbose?: boolean,
 }
 export type Install = (InstallArgs) => Promise<void>
@@ -36,9 +37,10 @@ const install /*: Install */ = async ({
   conservative = true,
   skipPreinstall = false,
   skipPostinstall = false,
+  mode,
   verbose = false,
 }) => {
-  let isRootInstall = root === cwd;
+  const isRootInstall = root === cwd;
 
   if (!isRootInstall) {
     await assertProjectDir({dir: cwd});
@@ -56,19 +58,6 @@ const install /*: Install */ = async ({
     validateRegistration({root, cwd, projects});
   }
 
-  if (hooks.bool_shouldinstall) {
-    const hookResult = await executeHook(hooks.bool_shouldinstall, root, {
-      isBooleanHook: true,
-    });
-
-    if (hookResult === false) {
-      console.log(
-        '`bool_shouldinstall` hook returned `false`; skipping install'
-      );
-      return;
-    }
-  }
-
   const all = await getAllDependencies({root, projects});
 
   const deps = isRootInstall
@@ -80,7 +69,7 @@ const install /*: Install */ = async ({
       });
 
   validateDeps({deps});
-  await validateVersionPolicy({root, projects, versionPolicy});
+  await validateVersionPolicy({dirs: deps.map(dep => dep.dir), versionPolicy});
 
   if (workspace === 'sandbox' && frozenLockfile === false) {
     await generateBazelignore({root});
@@ -92,6 +81,16 @@ const install /*: Install */ = async ({
     });
   }
 
+  if (hooks.bool_shouldinstall) {
+    const hookResult = await executeHook(hooks.bool_shouldinstall, root, {
+      isBooleanHook: true,
+    });
+
+    if (hookResult === false) {
+      return;
+    }
+  }
+
   if (skipPreinstall === false) {
     await executeHook(hooks.preinstall, root);
   }
@@ -100,6 +99,10 @@ const install /*: Install */ = async ({
   const spawnArgs = [yarn, 'install'];
   if (frozenLockfile) {
     spawnArgs.push('--immutable');
+  }
+
+  if (mode) {
+    spawnArgs.push('--mode', mode);
   }
 
   if (verbose) {
@@ -162,10 +165,9 @@ const validateDeps = ({deps}) => {
   }
 };
 
-const validateVersionPolicy = async ({root, projects, versionPolicy}) => {
+const validateVersionPolicy = async ({dirs, versionPolicy}) => {
   const result = await reportMismatchedTopLevelDeps({
-    root,
-    projects,
+    dirs,
     versionPolicy,
   });
   if (!result.valid) throw new Error(getErrorMessage(result, false));

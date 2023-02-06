@@ -7,6 +7,7 @@ const {init} = require('./commands/init.js');
 const {scaffold} = require('./commands/scaffold.js');
 const {install} = require('./commands/install.js');
 const {ci} = require('./commands/ci.js');
+const {focus} = require('./commands/focus.js');
 const {add} = require('./commands/add.js');
 const {remove} = require('./commands/remove.js');
 const {upgrade} = require('./commands/upgrade.js');
@@ -78,26 +79,56 @@ const runCLI /*: RunCLI */ = async argv => {
           }),
       ],
       install: [
-        `Install all dependencies for a project, modifying lockfiles and Bazel BUILD files if necessary
+        `Install all dependencies for all projects, modifying lockfiles and Bazel BUILD files if necessary
 
         --cwd [cwd]                Project directory to use
         --skipPreinstall           Skip the preinstall hook
         --skipPostinstall          Skip the postinstall hook
+        --mode                     If set to skip-build, skips build scripts. If set to update-lockfile, skips link step
         --verbose`,
-        async ({cwd, skipPreinstall, skipPostinstall, verbose}) =>
+        async ({cwd, skipPreinstall, skipPostinstall, mode, verbose}) =>
           install({
             root: await rootOf(args),
             cwd,
             skipPreinstall: Boolean(skipPreinstall),
             skipPostinstall: Boolean(skipPostinstall),
+            mode,
             verbose: Boolean(verbose),
           }),
       ],
       ci: [
-        `Install all dependencies for a project without modifying source files
+        `Install all dependencies for all project without modifying source files
 
         --cwd [cwd]                Project directory to use`,
         async ({cwd}) => ci({root: await rootOf(args), cwd}),
+      ],
+      focus: [
+        `Install all dependencies for one or more projects without installing the rest
+        
+        --cwd [cwd]                Project directory to use
+        --all                      Install all dependencies, like regular yarn install
+        --production               Install only production dependencies, not devDependencies
+        --skipPreinstall           Skip the preinstall hook
+        --skipPostinstall          Skip the postinstall hook
+        --verbose`,
+        async ({
+          cwd,
+          all,
+          production,
+          skipPreinstall,
+          skipPostinstall,
+          verbose,
+        }) =>
+          focus({
+            root: await rootOf(args),
+            cwd,
+            all: Boolean(all),
+            production: Boolean(production),
+            packages: rest.filter(v => !v.startsWith('-')),
+            skipPreinstall: Boolean(skipPreinstall),
+            skipPostinstall: Boolean(skipPostinstall),
+            verbose: Boolean(verbose),
+          }),
       ],
       add: [
         `Install a package and any packages that it depends on
@@ -339,6 +370,7 @@ module.exports = {
   scaffold,
   install,
   ci,
+  focus,
   add,
   remove,
   upgrade,

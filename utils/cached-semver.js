@@ -7,6 +7,7 @@ const {
   compare,
   gt,
   coerce,
+  valid,
 } = require('../vendor/semver');
 const {cachedArity1, cachedArity2} = require('./cached');
 
@@ -18,4 +19,5 @@ module.exports = {
   gt: cachedArity2(gt),
   validRange: cachedArity1(validRange),
   intersects: cachedArity2(intersects),
+  valid: cachedArity1(valid),
 };
