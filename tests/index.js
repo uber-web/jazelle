@@ -535,7 +535,7 @@ async function testBump() {
 
   // downstream is greenkept
   const meta = JSON.parse(await read(downstreamMeta));
-  assert.equal(meta.dependencies['not-a-real-project'], '0.1.0-0');
+  assert.equal(meta.dependencies['@uber/not-a-real-project'], '0.1.0-0');
   assert.equal(meta.version, '0.1.0-0');
 }
 
