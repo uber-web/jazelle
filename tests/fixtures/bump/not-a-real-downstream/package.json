@@ -1,7 +1,7 @@
 {
-  "name": "not-a-real-downstream",
+  "name": "@uber/not-a-real-downstream",
   "version": "0.0.0",
   "dependencies": {
-    "not-a-real-project": "0.0.0"
+    "@uber/not-a-real-project": "0.0.0"
   }
 }
