@@ -23,7 +23,15 @@ const remove /*: Remove */ = async ({root, cwd, args}) => {
   const meta = JSON.parse(await read(`${cwd}/package.json`, 'utf8'));
   const params = getPassThroughArgs(args);
   if (params.length > 0) {
-    const cmdArgs = [yarn, 'workspace', meta.name, 'remove', ...params];
+    const cmdArgs = [
+      yarn,
+      'workspace',
+      meta.name,
+      'remove',
+      '--mode',
+      'skip-build',
+      ...params,
+    ];
     await spawn(node, cmdArgs, {cwd: root, stdio: 'inherit'});
 
     const {projects, dependencySyncRule} = /*:: await */ await getManifest({
