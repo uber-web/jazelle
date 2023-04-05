@@ -29,7 +29,7 @@ const remove /*: Remove */ = async ({root, cwd, args}) => {
       meta.name,
       'remove',
       '--mode',
-      '--skip-build',
+      'skip-build',
       ...params,
     ];
     await spawn(node, cmdArgs, {cwd: root, stdio: 'inherit'});
