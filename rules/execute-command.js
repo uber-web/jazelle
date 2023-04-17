@@ -67,7 +67,10 @@ async function run() {
         exec(`mkdir -p "${dist}"`, {cwd: main});
       }
     }
-    exec(`tar czf "${out}" ${dirsString}`, {cwd: main, stdio: 'inherit'});
+    // write to temp file and then move it to update inode contents atomically
+    // this prevents error in parallel processes reading from the same tarball
+    const random = Math.random();
+    exec(`tar czf "${random}.${out}" ${dirsString} && mv "${random}.${out}" "${out}"`, {cwd: main, stdio: 'inherit'});
   } else {
     await runCommands(command, args);
     // handle `gen_srcs`:
