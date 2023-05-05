@@ -17,6 +17,12 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
   const {projects} = await getManifest({root});
   const roots = projects.map(dir => `${root}/${dir}`);
 
+  if (!args.length) {
+    throw new Error(
+      'Command must have at least one dependency name. \nUsage: jazelle upgrade [dependency]\n'
+    );
+  }
+
   // group by whether the dep is local (listed in manifest.json) or external (from registry)
   const locals = [];
   const externals = [];
@@ -38,10 +44,12 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
             throw new Error(error);
           }
 
+          const localVersion = 'workspace:*';
+
           // don't update peerDependencies, we don't want to inadvertedly cause downstreams to have multiple versions of things
-          update(meta, 'dependencies', name, local.meta.version);
-          update(meta, 'devDependencies', name, local.meta.version);
-          update(meta, 'optionalDependencies', name, local.meta.version);
+          update(meta, 'dependencies', name, localVersion);
+          update(meta, 'devDependencies', name, localVersion);
+          update(meta, 'optionalDependencies', name, localVersion);
         }
         await write(
           `${cwd}/package.json`,
