@@ -13,12 +13,17 @@ const paths = {
 };
 
 try {
-  const berryPath = path.join(
-    getRootDir({dir: process.cwd()}),
-    '.yarn/releases/yarn-sources.cjs'
-  );
-  if (fs.existsSync(berryPath)) {
-    paths.yarn = berryPath;
+  const rootDir = getRootDir({dir: process.cwd()});
+  const yarnrcPath = path.join(rootDir, '.yarnrc.yml');
+  if (fs.existsSync(yarnrcPath)) {
+    const yarnrcContents = fs.readFileSync(yarnrcPath, 'utf8');
+    const yarnPathMatch = yarnrcContents.match(/^yarnPath:(.*)/m);
+    if (yarnPathMatch && yarnPathMatch[1]) {
+      const yarnPath = path.resolve(rootDir, yarnPathMatch[1].trim());
+      if (fs.existsSync(yarnPath)) {
+        paths.yarn = yarnPath;
+      }
+    }
   }
   /* eslint-disable-next-line no-empty */
 } catch (e) {}
