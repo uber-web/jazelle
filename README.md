@@ -1818,13 +1818,13 @@ Note that updating `buildFileTemplate` does not change existing BUILD.bazel file
 
 ---
 
-## Lockfile delegation
+## Top-level file delegation
 
-By default you must declare `//:yarn.lock` and `//:.pnp.cjs` as explicit `deps` in any target that needs to consume Javascript packages if you want fully hermetic lockfiles.
+By default you must declare files that are required by the package manager to work (e.g., `//:yarn.lock`, `//:.pnp.cjs` etc.) as explicit `deps` in any target that needs to consume Javascript packages if you want fully hermetic builds.
 
-However, Jazelle does work even if they are not specified. Jazelle supports the ability of inferring the location of yarn.lock (and .pnp.cjs) without those files being present in the Bazel graph. This allows a repo to implement a custom yarn plugin that outputs files describing the version locking requirements per project (as opposed to having all of that information tied to a single top-level file). See [yarn-plugin-workspace-deps](https://github.com/uber-workflow/yarn-plugin-workspace-deps/blob/main/workspace-deps/sources/index.ts) for an example.
+However, Jazelle does work even if they are not specified. Jazelle supports the ability of inferring the location of a set number of top-level files located in the monorepo root without those files being present in the Bazel graph. For example, this allows a repo to implement a custom yarn plugin that outputs files describing the version locking requirements per project (as opposed to having all of that information tied to a single top-level file). See [yarn-plugin-workspace-deps](https://github.com/uber-workflow/yarn-plugin-workspace-deps/blob/main/workspace-deps/sources/index.ts) for an example.
 
-The benefit of inferred top-level lockfile is that in large enough repos, yarn.lock is changed frequently by multiple different teams, and it leads to poor cacheability of targets if any team's changes can blow away the cache of unrelated projects.
+The benefit of inferred top-level files is that in large enough repos, those files are changed frequently by multiple different teams, and it leads to poor cacheability of targets if any team's changes can blow away the cache of unrelated projects.
 
 ---
 
