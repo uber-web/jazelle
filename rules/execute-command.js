@@ -26,11 +26,6 @@ const [
   ...args
 ] = process.argv;
 
-const {scripts = {}} = JSON.parse(read(`${main}/package.json`, 'utf8'));
-const {scripts: rootScripts = {}} = JSON.parse(
-  read(`${rootDir}/package.json`, 'utf8')
-);
-
 async function run() {
   if (out) {
     await runCommands(command, args);
@@ -86,9 +81,13 @@ async function runCommands(command, args) {
 }
 
 async function runCommand(command, args = []) {
-  const options = {cwd: main, env: process.env, stdio: 'inherit'};
+  smuggleMonorepoFiles(rootDir);
 
-  smuggleLockfile(rootDir);
+  const {scripts = {}} = JSON.parse(read(`${main}/package.json`, 'utf8'));
+  const {scripts: rootScripts = {}} = JSON.parse(
+    read(`${rootDir}/package.json`, 'utf8')
+  );
+  const options = {cwd: main, env: process.env, stdio: 'inherit'};
   if (command.includes('${NODE}')) {
     // Support `build = "${NODE} ${ROOT_DIR}/foo.js"` as a web_binary build argument (instead of a package.json script name)
     const loaderPath = join(rootDir, '.pnp.loader.mjs');
@@ -132,33 +131,41 @@ async function runCommand(command, args = []) {
   }
 }
 
-function smuggleLockfile(rootDir) {
-  // Support non-hermetic yarn.lock/.pnp.cjs/.pnp.loader.mjs smuggling into sandbox
+function smuggleMonorepoFiles(rootDir) {
+  // Support non-hermetic yarn.lock/.pnp.cjs/.pnp.loader.mjs/package.json/manifest.json smuggling into sandbox
   // This allows a repo to use yarn plugins to implement custom change detection
   // to avoid invalidating top-level cache in cases where yarn.lock is touched but only affects certain projects
   // See: Lockfile delegation section in README
 
-  try {
-    const realRoot = dirname(realpath(`${rootDir}/package.json`)); // FIXME: technically a target may not depend on this file, so it's not actually guaranteed to exist, even though it usually does
+  // @see {@link https://github.com/yarnpkg/berry/blob/07cf3531002a3f25fd6309e05d0cf1b233c59cd4/packages/yarnpkg-fslib/sources/path.ts#L21-L35}
+  const monorepoFiles = [
+    // Yarn Berry
+    'yarn.lock',
+    '.pnp.data.json',
+    '.pnp.loader.mjs',
+    '.pnp.cjs',
+    '.yarnrc.yml',
+    'package.json',
+    // jazelle
+    'manifest.json',
+  ];
 
-    //only smuggle if needed
-    const yarnLock = `${rootDir}/yarn.lock`;
-    const realYarnLock = `${realRoot}/yarn.lock`;
-    if (!exists(yarnLock) && exists(realYarnLock)) {
-      symlink(realYarnLock, yarnLock, 'file');
-    }
-    const pnpCjs = `${rootDir}/.pnp.cjs`;
-    const realPnpCjs = `${realRoot}/.pnp.cjs`;
-    if (!exists(pnpCjs) && exists(realPnpCjs)) {
-      symlink(realPnpCjs, pnpCjs, 'file');
-    }
-    const pnpLoader = `${rootDir}/.pnp.loader.mjs`;
-    const realPnpLoader = `${realRoot}/.pnp.loader.mjs`;
-    if (!exists(pnpLoader) && exists(realPnpLoader)) {
-      symlink(realPnpLoader, pnpLoader, 'file');
+  try {
+    const realRootDir = dirname(realpath(`${rootDir}/WORKSPACE`));
+    for (const file of monorepoFiles) {
+      try {
+        // only smuggle if needed
+        const filepath = `${rootDir}/${file}`;
+        const realFilepath = `${realRootDir}/${file}`;
+        if (!exists(filepath) && exists(realFilepath)) {
+          symlink(realFilepath, filepath, 'file');
+        }
+      } catch (e) {
+        // smuggling failed, assume a file already exists and keep going
+      }
     }
   } catch (e) {
-    // smuggling failed, assume yarn.lock exists and keep going
+    // smuggling failed, assume required files are already imported into bazel sandbox
   }
 }
 
