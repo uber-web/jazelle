@@ -83,11 +83,8 @@ async function runCommands(command, args) {
 async function runCommand(command, args = []) {
   smuggleMonorepoFiles(rootDir);
 
-  const {scripts = {}} = JSON.parse(read(`${main}/package.json`, 'utf8'));
-  const {scripts: rootScripts = {}} = JSON.parse(
-    read(`${rootDir}/package.json`, 'utf8')
-  );
   const options = {cwd: main, env: process.env, stdio: 'inherit'};
+
   if (command.includes('${NODE}')) {
     // Support `build = "${NODE} ${ROOT_DIR}/foo.js"` as a web_binary build argument (instead of a package.json script name)
     const loaderPath = join(rootDir, '.pnp.loader.mjs');
@@ -104,7 +101,13 @@ async function runCommand(command, args = []) {
       ...options,
       shell: true,
     });
-  } else if (
+
+    return;
+  }
+
+  const {scripts = {}} = JSON.parse(read(`${main}/package.json`, 'utf8'));
+
+  if (
     command in scripts ||
     // Special case of Yarn v2 global scripts:
     //  > Scripts containing `:` (the colon character) are globals to your
@@ -117,18 +120,28 @@ async function runCommand(command, args = []) {
       [`${yarn}`, 'run', `${command}`, ...args],
       options
     );
-  } else if (command in rootScripts) {
+
+    return;
+  }
+
+  const {scripts: rootScripts = {}} = JSON.parse(
+    read(`${rootDir}/package.json`, 'utf8')
+  );
+
+  if (command in rootScripts) {
     // if command exists at root level but not at project level, run the root level command instead of erroring
     await spawnOrExit(`${node}`, [`${yarn}`, 'run', `${command}`, ...args], {
       ...options,
       cwd: rootDir,
     });
-  } else {
-    // do not allow running arbitrary shell commands
-    // users should run such commands directly instead of running them through jazelle
-    console.error('Invalid command: ' + command);
-    process.exitCode = 1;
+
+    return;
   }
+
+  // do not allow running arbitrary shell commands
+  // users should run such commands directly instead of running them through jazelle
+  console.error('Invalid command: ' + command);
+  process.exitCode = 1;
 }
 
 function smuggleMonorepoFiles(rootDir) {
