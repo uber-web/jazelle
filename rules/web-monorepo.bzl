@@ -73,6 +73,7 @@ def _web_binary_impl(ctx):
   )
 
   ctx.actions.run_shell(
+    mnemonic = ctx.attr.mnemonic,
     command = """
     export NODE_PRESERVE_SYMLINKS='{preserve_symlinks}';
     export CWD=$(cd `dirname '{srcdir}'` && pwd);
@@ -144,11 +145,15 @@ web_binary = rule(
     "skip_pnp": attr.bool(
       default = False,
     ),
+    "mnemonic": attr.string(
+      default = "WebBinary",
+      doc = "Custom one-word name of the rule",
+    ),
   },
   executable = True,
   outputs = {
     "out": "__jazelle__%{name}.tgz"
-  },
+  }
 )
 
 def _web_executable_impl(ctx):
