@@ -112,7 +112,7 @@ const findChangedBazelTargets = async ({root, files}) => {
       const queryables = [...exists, ...recoveredMissing];
       const unfiltered = await batch(
         root,
-        batches(queryables, 1000), // batching required, else E2BIG errors
+        batches(queryables, 500), // batching required, else E2BIG errors
         async q => {
           const innerQuery = q.join(' union ');
           const cmd = `${bazel} query 'let graph = kind("(web_.*|.*_test|filegroup) rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label`;
