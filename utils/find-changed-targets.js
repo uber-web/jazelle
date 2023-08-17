@@ -115,7 +115,7 @@ const findChangedBazelTargets = async ({root, files}) => {
         batches(queryables, 1000), // batching required, else E2BIG errors
         async q => {
           const innerQuery = q.join(' union ');
-          const cmd = `${bazel} query 'let graph = kind("(web_.*|.*_test|filegroup) rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label`;
+          const cmd = `${bazel} query 'let graph = kind("(web_.*|.*_test|filegroup) rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label --keep_going`;
           return exec(cmd, opts);
         }
       );
