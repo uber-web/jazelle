@@ -36,17 +36,22 @@ run() {
     USE_BAZEL_VERSION=$(cat "$BIN/../templates/scaffold/.bazelversion")
   fi
 
-  BAZELISK_PATH="$ROOT/bazel-bin/jazelle.runfiles/jazelle/bin/bazelisk"
-  if [ ! -f "$BAZELISK_PATH" ]
+  if [ ! -z "$BAZEL" ]
   then
-    BAZELISK_PATH="$BIN/bazelisk"
-  fi
+    BAZELISK_PATH="$BAZEL"
+  else
+    BAZELISK_PATH="$ROOT/bazel-bin/jazelle.runfiles/jazelle/bin/bazelisk"
+    if [ ! -f "$BAZELISK_PATH" ]
+    then
+      BAZELISK_PATH="$BIN/bazelisk"
+    fi
 
-  # if actual version is not the one listed in WORKSPACE, update
-  ACTUAL_VERSION=$(cat "$ROOT/bazel-bin/jazelle.runfiles/jazelle/package.json" | grep version | awk '{print substr($2, 2, length($2) - 3)}')
-  if ! grep "$ACTUAL_VERSION" "$ROOT/WORKSPACE" || [[ $ACTUAL_VERSION = "" ]] || [ ! -f "$ROOT/bazel-bin/jazelle.runfiles/jazelle/bin/cli.sh" ]
-  then
-    "$BAZELISK_PATH" --host_jvm_args=-Xmx15g run //:jazelle -- setup 2>/tmp/jazelle.log || true
+    # if actual version is not the one listed in WORKSPACE, update
+    ACTUAL_VERSION=$(cat "$ROOT/bazel-bin/jazelle.runfiles/jazelle/package.json" | grep version | awk '{print substr($2, 2, length($2) - 3)}')
+    if ! grep "$ACTUAL_VERSION" "$ROOT/WORKSPACE" || [[ $ACTUAL_VERSION = "" ]] || [ ! -f "$ROOT/bazel-bin/jazelle.runfiles/jazelle/bin/cli.sh" ]
+    then
+      "$BAZELISK_PATH" --host_jvm_args=-Xmx15g run //:jazelle -- setup 2>/tmp/jazelle.log || true
+    fi
   fi
 }
 
