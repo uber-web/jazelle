@@ -89,7 +89,7 @@ const exec /*: Exec */ = (cmd, opts = {}, stdio = []) => {
     const child = proc.exec(cmd, opts, (err, stdout, stderr) => {
       removeActiveChild(child);
 
-      if (err && !opts.keepGoing) {
+      if (err) {
         // $FlowFixMe
         errorWithSyncStackTrace.status = err.code;
         errorWithSyncStackTrace.message = err.message;
