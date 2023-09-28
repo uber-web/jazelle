@@ -1,7 +1,7 @@
 // @flow
-const proc = require('child_process');
-const {promisify} = require('util');
-const {tmpdir} = require('os');
+const proc = require("child_process");
+const { promisify } = require("util");
+const { tmpdir } = require("os");
 const {
   readFile,
   writeFile,
@@ -10,11 +10,11 @@ const {
   mkdir: makeDir,
   lstat,
   realpath,
-} = require('fs');
+} = require("fs");
 const {
   chunksToLinesAsync,
   streamWrite,
-} = require('../vendor/@rauschma/stringio');
+} = require("../vendor/@rauschma/stringio");
 
 /*::
 import {Writable, Readable, Duplex} from 'stream';
@@ -49,7 +49,7 @@ function sigtermHandler() {
   // parent process responsibility to propagate the signal to
   // the spawned child process.
   for (const child of activeChildren) {
-    child.kill('SIGTERM');
+    child.kill("SIGTERM");
   }
 }
 
@@ -66,9 +66,9 @@ function addActiveChild(child) {
   activeChildren.add(child);
 
   if (activeChildren.size === 1) {
-    process.on('SIGINT', sigintHandler);
-    process.on('SIGTERM', sigtermHandler);
-    process.on('exit', exitHandler);
+    process.on("SIGINT", sigintHandler);
+    process.on("SIGTERM", sigtermHandler);
+    process.on("exit", exitHandler);
   }
 }
 
@@ -76,9 +76,9 @@ function removeActiveChild(child) {
   activeChildren.delete(child);
 
   if (activeChildren.size === 0) {
-    process.off('SIGINT', sigintHandler);
-    process.off('SIGTERM', sigtermHandler);
-    process.off('exit', exitHandler);
+    process.off("SIGINT", sigintHandler);
+    process.off("SIGTERM", sigtermHandler);
+    process.off("exit", exitHandler);
   }
 }
 
@@ -89,7 +89,7 @@ const exec /*: Exec */ = (cmd, opts = {}, stdio = []) => {
     const child = proc.exec(cmd, opts, (err, stdout, stderr) => {
       removeActiveChild(child);
 
-      if (err && !opts.keepGoing) {
+      if (err) {
         // $FlowFixMe
         errorWithSyncStackTrace.status = err.code;
         errorWithSyncStackTrace.message = err.message;
@@ -127,11 +127,11 @@ export type Stdio = string | Array<string | number | null | Writable | Readable 
 */
 // use spawn if you just need to run a command for its side effects, or if you want to pipe output straight back to the parent shell
 const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
-  if (typeof process.env.NODE_OPTIONS !== 'string') {
-    process.env.NODE_OPTIONS = '--max_old_space_size=16384';
-  } else if (!process.env.NODE_OPTIONS.includes('--max_old_space_size')) {
+  if (typeof process.env.NODE_OPTIONS !== "string") {
+    process.env.NODE_OPTIONS = "--max_old_space_size=16384";
+  } else if (!process.env.NODE_OPTIONS.includes("--max_old_space_size")) {
     // $FlowFixMe
-    process.env.NODE_OPTIONS += ' --max_old_space_size=16384';
+    process.env.NODE_OPTIONS += " --max_old_space_size=16384";
   }
   const errorWithSyncStackTrace = new Error();
 
@@ -146,12 +146,12 @@ const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
   }
 
   return new Promise((resolve, reject) => {
-    if (opts && typeof opts.filterOutput === 'function') {
-      opts.stdio = ['ignore', 'pipe', 'pipe'];
+    if (opts && typeof opts.filterOutput === "function") {
+      opts.stdio = ["ignore", "pipe", "pipe"];
     }
 
     if (opts.env == null) {
-      opts.env = {...process.env};
+      opts.env = { ...process.env };
     } else {
       opts.env.NODE_OPTIONS = process.env.NODE_OPTIONS;
     }
@@ -159,22 +159,22 @@ const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
     const child = proc.spawn(cmd, argv, opts);
     addActiveChild(child);
 
-    if (opts && typeof opts.filterOutput === 'function') {
-      filter(child.stdout, process.stdout, 'stdout');
-      filter(child.stderr, process.stderr, 'stderr');
+    if (opts && typeof opts.filterOutput === "function") {
+      filter(child.stdout, process.stdout, "stdout");
+      filter(child.stderr, process.stderr, "stderr");
     }
 
-    child.on('error', e => {
+    child.on("error", (e) => {
       removeActiveChild(child);
 
       reject(new Error(e));
     });
-    child.on('close', code => {
+    child.on("close", (code) => {
       removeActiveChild(child);
 
       if (code > 0) {
-        const args = argv.join(' ');
-        const cwd = opts && opts.cwd ? `at ${opts.cwd} ` : '';
+        const args = argv.join(" ");
+        const cwd = opts && opts.cwd ? `at ${opts.cwd} ` : "";
         errorWithSyncStackTrace.message = `Process failed ${cwd}with exit code ${code}: ${cmd} ${args}`;
         // $FlowFixMe - maybe create specific error class to contain exit code?
         errorWithSyncStackTrace.status = code;
@@ -184,7 +184,7 @@ const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
       }
     });
 
-    if (opts.detached && (!opts.stdio || opts.stdio === 'ignore')) {
+    if (opts.detached && (!opts.stdio || opts.stdio === "ignore")) {
       child.unref();
     }
   });
@@ -202,7 +202,7 @@ const accessFile = promisify(access);
 /*::
 export type Exists = (string) => Promise<boolean>;
 */
-const exists /*: Exists */ = filename =>
+const exists /*: Exists */ = (filename) =>
   accessFile(filename)
     .then(() => true)
     .catch(() => false);
@@ -218,21 +218,21 @@ const realpathP = promisify(realpath);
 export type Move = (string, string) => Promise<void>
 */
 const move /*: Move */ = async (from, to) => {
-  await spawn('mv', [from, to]); // fs.rename can't move across devices/partitions so it can die w/ EXDEV error
+  await spawn("mv", [from, to]); // fs.rename can't move across devices/partitions so it can die w/ EXDEV error
 };
 
 /*::
 export type Remove = (string) => Promise<void>;
 */
-const remove /*: Remove */ = async dir => {
+const remove /*: Remove */ = async (dir) => {
   const tmp = `${tmpdir()}/${Math.random() * 1e17}`;
   // $FlowFixMe flow can't handle statics of async function
   const fork = remove.fork;
   if (await exists(dir)) {
     await exec(`mkdir -p ${tmp} && mv ${dir} ${tmp}`);
-    const child = proc.spawn('rm', ['-rf', tmp], {
+    const child = proc.spawn("rm", ["-rf", tmp], {
       detached: fork,
-      stdio: 'ignore',
+      stdio: "ignore",
     });
     if (fork) child.unref();
   }
