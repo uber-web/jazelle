@@ -75,7 +75,7 @@ const findChangedBazelTargets = async ({root, files}) => {
   if (invalid) throw new Error(`File path cannot contain spaces: ${invalid}`);
 
   const {projects, workspace} = await getManifest({root});
-  const opts = {cwd: root, keepGoing: true, maxBuffer: 1e9};
+  const opts = {cwd: root, maxBuffer: 1e9};
   if (workspace === 'sandbox') {
     if (lines.includes('WORKSPACE') || lines.includes('.bazelversion')) {
       const cmd = `${bazel} query 'kind("(web_.*|.*_test) rule", "...")'`;
@@ -115,7 +115,7 @@ const findChangedBazelTargets = async ({root, files}) => {
         batches(queryables, 500), // batching required, else E2BIG errors
         async q => {
           const innerQuery = q.join(' union ');
-          const cmd = `${bazel} query 'let graph = kind("(web_.*|.*_test|filegroup) rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label --keep_going`;
+          const cmd = `${bazel} query 'let graph = kind("(web_.*|.*_test|filegroup) rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label`;
           return exec(cmd, opts);
         }
       );
