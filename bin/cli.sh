@@ -50,8 +50,10 @@ else
     # if we're in a repo, jazelle declaration in WORKSPACE is wrong, so we should error out
     if [ -f "$ROOT/WORKSPACE" ]
     then
-      cat /tmp/jazelle.log 2>/dev/null # logged by bootstrap.sh
-      echo "Attempting to use system Node/Yarn/Jazelle versions..."
+      # bazel info messages go to stderr; discarding any errors from cat,
+      # e.g., if log file does not exist
+      cat /tmp/jazelle.log >&2 2>/dev/null # logged by bootstrap.sh
+      echo "Attempting to use system Node/Yarn/Jazelle versions..." >&2
     fi
     NODE="$(which node)"
     YARN="$BIN/yarn.js"
