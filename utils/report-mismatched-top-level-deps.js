@@ -79,7 +79,7 @@ export type GetErrorMessage = (Report, boolean) => string;
 const getErrorMessage /*: GetErrorMessage */ = (result, json = false) => {
   if (!result.valid) {
     const message = red(
-      `Version policy violation. Use \`jazelle upgrade\` to ensure all projects use the same dependency version`
+      `Version policy violation. Use \`jazelle upgrade [dependency]\` to ensure all projects use the same dependency version`
     );
     const report = JSON.stringify(result.reported, null, 2);
     let violations = `\nViolations:\n${report}`;
