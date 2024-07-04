@@ -1,8 +1,7 @@
 // @flow
 const {dirname} = require('path');
+const {bazelQuery} = require('./bazel-commands.js');
 const {getManifest} = require('./get-manifest.js');
-const {exec} = require('./node-helpers.js');
-const {bazel} = require('./binary-paths.js');
 const {getDownstreams} = require('../utils/get-downstreams.js');
 const {exists, read} = require('../utils/node-helpers.js');
 
@@ -44,15 +43,6 @@ const scan = async (root, lines) => {
   ];
 };
 
-const batches = (q, size) => {
-  const result = [];
-  const copy = [...q];
-  while (copy.length) {
-    result.push(copy.splice(0, size));
-  }
-  return result;
-};
-
 const findChangedBazelTargets = async ({root, files}) => {
   const bazelignore = await read(`${root}/.bazelignore`, 'utf8').catch(
     () => ''
@@ -75,11 +65,12 @@ const findChangedBazelTargets = async ({root, files}) => {
   if (invalid) throw new Error(`File path cannot contain spaces: ${invalid}`);
 
   const {projects, workspace} = await getManifest({root});
-  const opts = {cwd: root, maxBuffer: 1e9};
   if (workspace === 'sandbox') {
     if (lines.includes('WORKSPACE') || lines.includes('.bazelversion')) {
-      const cmd = `${bazel} query 'kind("(web_.*|.*_test) rule", "...")'`;
-      const result = await exec(cmd, opts);
+      const result = await bazelQuery({
+        cwd: root,
+        query: 'kind("(web_.*|.*_test) rule", "...")',
+      });
       const unfiltered = result.split('\n').filter(Boolean);
       const targets = unfiltered.filter(target => {
         const path = target.replace(/\/\/(.+?):.+/, '$1');
@@ -93,32 +84,42 @@ const findChangedBazelTargets = async ({root, files}) => {
       */
       const representatives = getTargetRepresentatives(lines);
       const [missing, exists] = await scan(root, representatives);
-      const recoveredMissing = await batch(root, missing, async file => {
-        // $FlowFixMe: flow thinks `file` is an array for some reason
-        const find = `${bazel} query "${file}"`;
-        const result = await exec(find, opts).catch(async e => {
-          // if file doesn't exist, find which package it would've belong to, and find another file in the same package
-          // doing so is sufficient, because we just want to find out which targets have changed
-          // - in the case the file was deleted but a package still exists, pkg will refer to the package
-          // - in the case the package itself was deleted, pkg will refer to the root package (which will typically yield no targets in a typical Jazelle setup)
-          const regex = /not declared in package '(.*?)'/;
-          const [, pkg = ''] = e.message.match(regex) || [];
-          if (pkg === '') return '';
-          const cmd = `${bazel} query 'kind("source file", //${pkg}:*)' | head -n 1`;
-          return exec(cmd, opts).catch(() => '');
-        });
-        return result;
-      });
-      const queryables = [...exists, ...recoveredMissing];
-      const unfiltered = await batch(
-        root,
-        batches(queryables, 500), // batching required, else E2BIG errors
-        async q => {
-          const innerQuery = q.join(' union ');
-          const cmd = `${bazel} query 'let graph = kind("(web_.*|.*_test|filegroup) rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)' --output label`;
-          return exec(cmd, opts);
-        }
-      );
+      const recoveredMissing = missing.length
+        ? await bazelQuery({
+            cwd: root,
+            query: missing.join(' + '),
+            args: ['--keep_going'],
+          })
+            .then(() => {
+              // This should never hit because we're checking for missing files,
+              // but if it does, we still want to hit the catch block below
+              throw new Error('');
+            })
+            .catch(e => {
+              // if file doesn't exist, find which package it would've belong to, and take source files in the same package
+              // doing so is sufficient, because we just want to find out which targets have changed
+              // - in the case the file was deleted but a package still exists, pkg will refer to the package
+              // - in the case the package itself was deleted, pkg will refer to the root package (which will typically yield no targets in a typical Jazelle setup)
+              const regex = /not declared in package '(.*?)'/g;
+              return Array.from(e.message.matchAll(regex))
+                .map(([, pkg]) =>
+                  pkg ? `kind("source file", //${pkg}:*)` : ''
+                )
+                .filter(Boolean);
+            })
+        : [];
+      const innerQuery = [...exists, ...recoveredMissing].join(' + ');
+      const unfiltered = innerQuery.length
+        ? (
+            await bazelQuery({
+              cwd: root,
+              query: `let graph = kind("(web_.*|.*_test|filegroup) rule", rdeps("...", ${innerQuery})) in $graph except filter("node_modules", $graph)`,
+              args: ['--output=label'],
+            })
+          )
+            .split('\n')
+            .filter(Boolean)
+        : [];
 
       const targets = unfiltered.filter(target => {
         const path = target.replace(/\/\/(.+?):.+/, '$1');
@@ -180,18 +181,6 @@ const findChangedBazelTargets = async ({root, files}) => {
     }
   }
 };
-
-async function batch(root, items, fn) {
-  const stdouts = await Promise.all(items.map(fn));
-  return [
-    ...new Set(
-      stdouts
-        .map(r => r.trim())
-        .join('\n')
-        .split('\n')
-    ),
-  ].filter(Boolean);
-}
 
 // Optimization: For each folder, we typically only need to check one file,
 // since all files will generally map to the same target
