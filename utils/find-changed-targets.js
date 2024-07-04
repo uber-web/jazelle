@@ -96,17 +96,19 @@ const findChangedBazelTargets = async ({root, files}) => {
               throw new Error('');
             })
             .catch(e => {
-              // if file doesn't exist, find which package it would've belong to, and find another file in the same package
+              // if file doesn't exist, find which package it would've belong to, and take source files in the same package
               // doing so is sufficient, because we just want to find out which targets have changed
               // - in the case the file was deleted but a package still exists, pkg will refer to the package
               // - in the case the package itself was deleted, pkg will refer to the root package (which will typically yield no targets in a typical Jazelle setup)
-              const regex = /not declared in package '(.+?)'/g;
-              return Array.from(e.message.matchAll(regex)).map(
-                ([, pkg]) => `kind("source file", //${pkg}:*)`
-              );
+              const regex = /not declared in package '(.*?)'/g;
+              return Array.from(e.message.matchAll(regex))
+                .map(([, pkg]) =>
+                  pkg ? `kind("source file", //${pkg}:*)` : ''
+                )
+                .filter(Boolean);
             })
         : [];
-      const innerQuery = [...exists, ...recoveredMissing].join(' union ');
+      const innerQuery = [...exists, ...recoveredMissing].join(' + ');
       const unfiltered = innerQuery.length
         ? (
             await bazelQuery({
