@@ -1,7 +1,10 @@
 // @flow
-const {relative, basename, dirname} = require('path');
+const {relative, basename, dirname, join} = require('path');
+const fs = require('fs');
+const os = require('os');
+const {randomBytes} = require('crypto');
 const {bazel, node} = require('./binary-paths.js');
-const {spawnOrExit} = require('./node-helpers.js');
+const {spawnOrExit, exec: nodeExec} = require('./node-helpers.js');
 
 const startupFlags = ['--host_jvm_args=-Xmx15g'];
 
@@ -217,8 +220,35 @@ const script /*: Script */ = async ({
   await run({root, cwd, args: [command, ...args], name: 'script', stdio});
 };
 
+/*::
+export type BazelQueryArgs = {
+  cwd: string,
+  query: string,
+  args?: Array<string>
+};
+type BazelQuery = (BazelQueryArgs) => Promise<string>;
+*/
+const bazelQuery /*: BazelQuery */ = async ({cwd, query, args = []}) => {
+  const queryFilePath = join(
+    os.tmpdir(),
+    `tmp-bazel-query-${randomBytes(6).toString('hex')}`
+  );
+  await fs.promises.writeFile(queryFilePath, query);
+
+  try {
+    const queryArgs = [`--query_file=${queryFilePath}`, ...args].join(' ');
+    return await nodeExec(`${bazel} query ${queryArgs}`, {
+      cwd,
+      maxBuffer: 1e9,
+    });
+  } finally {
+    fs.promises.unlink(queryFilePath);
+  }
+};
+
 module.exports = {
   startupFlags,
+  bazelQuery,
   build,
   test,
   lint,
