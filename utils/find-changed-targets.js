@@ -1,5 +1,4 @@
 // @flow
-const {dirname} = require('path');
 const {bazelQuery} = require('./bazel-commands.js');
 const {getManifest} = require('./get-manifest.js');
 const {getDownstreams} = require('../utils/get-downstreams.js');
@@ -82,8 +81,7 @@ const findChangedBazelTargets = async ({root, files}) => {
         Separate files into two categories: files that exist and files that have been deleted
         For files that have been deleted, try to recover some other file in the package
       */
-      const representatives = getTargetRepresentatives(lines);
-      const [missing, exists] = await scan(root, representatives);
+      const [missing, exists] = await scan(root, lines);
       const recoveredMissing = missing.length
         ? await bazelQuery({
             cwd: root,
@@ -108,7 +106,9 @@ const findChangedBazelTargets = async ({root, files}) => {
                 .filter(Boolean);
             })
         : [];
-      const innerQuery = [...exists, ...recoveredMissing].join(' + ');
+      const innerQuery = Array.from(
+        new Set([...exists, ...recoveredMissing])
+      ).join(' + ');
       const unfiltered = innerQuery.length
         ? (
             await bazelQuery({
@@ -180,27 +180,6 @@ const findChangedBazelTargets = async ({root, files}) => {
       return {workspace, targets};
     }
   }
-};
-
-// Optimization: For each folder, we typically only need to check one file,
-// since all files will generally map to the same target
-// given how jazelle generates BUILD.bazel files
-// However, this is only true of js files
-// For other types of targets, we need to be conservative and keep the entire list of files
-const getTargetRepresentatives = files => {
-  const map = new Map();
-  for (const file of files) {
-    const dir = dirname(file);
-    const list = map.get(dir) || map.set(dir, []).get(dir);
-    if (file.match(/(.jsx?|.tsx?)$/)) {
-      map.set(dir, [file]);
-    } else {
-      // $FlowFixMe
-      list.push(file);
-    }
-  }
-  // $FlowFixMe
-  return [...map.values()].flat();
 };
 
 module.exports = {findChangedTargets};
