@@ -1,5 +1,4 @@
 // @flow
-const {dirname} = require('path');
 const {bazelQuery} = require('./bazel-commands.js');
 const {getManifest} = require('./get-manifest.js');
 const {getDownstreams} = require('../utils/get-downstreams.js');
@@ -43,6 +42,10 @@ const scan = async (root, lines) => {
   ];
 };
 
+function quoteFilePaths(paths) {
+  return paths.map(path => `"${path}"`);
+}
+
 const findChangedBazelTargets = async ({root, files}) => {
   const bazelignore = await read(`${root}/.bazelignore`, 'utf8').catch(
     () => ''
@@ -61,8 +64,17 @@ const findChangedBazelTargets = async ({root, files}) => {
     .map(line => line.trim())
     .filter(line => !ignored.find(i => line.startsWith(i)));
 
-  const invalid = lines.find(line => line.includes(' '));
-  if (invalid) throw new Error(`File path cannot contain spaces: ${invalid}`);
+  const invalid = lines.find(line => line.includes('"'));
+  if (invalid) {
+    // Disallow double quote (") character in file paths, because Bazel query syntax
+    // utilizes double quotes to encapsulate strings. Including a double quote within
+    // a file path could lead to syntax errors in the Bazel query.
+    // Note: In the future, we may relax this constraint if support is required. This could
+    // be achieved by running multiple queries, where file paths containing special characters
+    // like single or double quotes could be queried separately. File paths with single quotes
+    // could be encapsulated using double quotes, and vice versa, to ensure query integrity.
+    throw new Error(`File path cannot contain double quotes: '${invalid}'`);
+  }
 
   const {projects, workspace} = await getManifest({root});
   if (workspace === 'sandbox') {
@@ -82,12 +94,11 @@ const findChangedBazelTargets = async ({root, files}) => {
         Separate files into two categories: files that exist and files that have been deleted
         For files that have been deleted, try to recover some other file in the package
       */
-      const representatives = getTargetRepresentatives(lines);
-      const [missing, exists] = await scan(root, representatives);
+      const [missing, exists] = await scan(root, lines);
       const recoveredMissing = missing.length
         ? await bazelQuery({
             cwd: root,
-            query: missing.join(' + '),
+            query: quoteFilePaths(missing).join(' + '),
             args: ['--keep_going'],
           })
             .then(() => {
@@ -103,12 +114,14 @@ const findChangedBazelTargets = async ({root, files}) => {
               const regex = /not declared in package '(.*?)'/g;
               return Array.from(e.message.matchAll(regex))
                 .map(([, pkg]) =>
-                  pkg ? `kind("source file", //${pkg}:*)` : ''
+                  pkg ? `kind("source file", "//${pkg}:*")` : ''
                 )
                 .filter(Boolean);
             })
         : [];
-      const innerQuery = [...exists, ...recoveredMissing].join(' + ');
+      const innerQuery = Array.from(
+        new Set([...quoteFilePaths(exists), ...recoveredMissing])
+      ).join(' + ');
       const unfiltered = innerQuery.length
         ? (
             await bazelQuery({
@@ -180,27 +193,6 @@ const findChangedBazelTargets = async ({root, files}) => {
       return {workspace, targets};
     }
   }
-};
-
-// Optimization: For each folder, we typically only need to check one file,
-// since all files will generally map to the same target
-// given how jazelle generates BUILD.bazel files
-// However, this is only true of js files
-// For other types of targets, we need to be conservative and keep the entire list of files
-const getTargetRepresentatives = files => {
-  const map = new Map();
-  for (const file of files) {
-    const dir = dirname(file);
-    const list = map.get(dir) || map.set(dir, []).get(dir);
-    if (file.match(/(.jsx?|.tsx?)$/)) {
-      map.set(dir, [file]);
-    } else {
-      // $FlowFixMe
-      list.push(file);
-    }
-  }
-  // $FlowFixMe
-  return [...map.values()].flat();
 };
 
 module.exports = {findChangedTargets};
