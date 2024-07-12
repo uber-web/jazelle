@@ -42,6 +42,10 @@ const scan = async (root, lines) => {
   ];
 };
 
+function quoteFilePaths(paths) {
+  return paths.map(path => `'${path}'`);
+}
+
 const findChangedBazelTargets = async ({root, files}) => {
   const bazelignore = await read(`${root}/.bazelignore`, 'utf8').catch(
     () => ''
@@ -85,7 +89,7 @@ const findChangedBazelTargets = async ({root, files}) => {
       const recoveredMissing = missing.length
         ? await bazelQuery({
             cwd: root,
-            query: missing.join(' + '),
+            query: quoteFilePaths(missing).join(' + '),
             args: ['--keep_going'],
           })
             .then(() => {
@@ -107,7 +111,7 @@ const findChangedBazelTargets = async ({root, files}) => {
             })
         : [];
       const innerQuery = Array.from(
-        new Set([...exists, ...recoveredMissing])
+        new Set([...quoteFilePaths(exists), ...recoveredMissing])
       ).join(' + ');
       const unfiltered = innerQuery.length
         ? (
