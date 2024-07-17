@@ -1,0 +1,7 @@
+{
+  "name": "test-missing-file",
+  "version": "0.0.0",
+  "dependencies": {
+    "test-missing-file-dep": "0.0.0"
+  }
+}

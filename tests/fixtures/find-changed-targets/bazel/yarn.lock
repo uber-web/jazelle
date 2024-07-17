@@ -37,3 +37,31 @@ __metadata:
   resolution: "root-workspace-0b6124@workspace:."
   languageName: unknown
   linkType: soft
+
+"test-missing-file-dep@0.0.0, test-missing-file-dep@workspace:test-missing-file-dep":
+  version: 0.0.0-use.local
+  resolution: "test-missing-file-dep@workspace:test-missing-file-dep"
+  languageName: unknown
+  linkType: soft
+
+"test-missing-file-label-only-dep@0.0.0, test-missing-file-label-only-dep@workspace:test-missing-file-label-only-dep":
+  version: 0.0.0-use.local
+  resolution: "test-missing-file-label-only-dep@workspace:test-missing-file-label-only-dep"
+  languageName: unknown
+  linkType: soft
+
+"test-missing-file-label-only@workspace:test-missing-file-label-only":
+  version: 0.0.0-use.local
+  resolution: "test-missing-file-label-only@workspace:test-missing-file-label-only"
+  dependencies:
+    test-missing-file-label-only-dep: 0.0.0
+  languageName: unknown
+  linkType: soft
+
+"test-missing-file@workspace:test-missing-file":
+  version: 0.0.0-use.local
+  resolution: "test-missing-file@workspace:test-missing-file"
+  dependencies:
+    test-missing-file-dep: 0.0.0
+  languageName: unknown
+  linkType: soft

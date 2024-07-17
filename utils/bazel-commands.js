@@ -10,6 +10,7 @@ const startupFlags = ['--host_jvm_args=-Xmx15g'];
 
 /*::
 import type {Stdio} from './node-helpers.js';
+export type {ExecException as BazelQueryException} from './node-helpers.js';
 
 export type BuildArgs = {
   root: string,

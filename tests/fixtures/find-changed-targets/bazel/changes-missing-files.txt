@@ -1,0 +1,2 @@
+test-missing-file-dep/some-missing-file.js
+test-missing-file-label-only-dep/missing-file-label.js

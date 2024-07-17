@@ -1,0 +1,7 @@
+{
+  "name": "test-missing-file-label-only",
+  "version": "0.0.0",
+  "dependencies": {
+    "test-missing-file-label-only-dep": "0.0.0"
+  }
+}

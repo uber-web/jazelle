@@ -34,6 +34,11 @@ export type ExecOptions = void | {
   gid?: number,
   windowsHide?:boolean,
 };
+export interface ExecException extends Error {
+  status?: number;
+  stdout?: string;
+  stderr?: string;
+}
 export type StdioOptions = Array<Writable>;
 */
 
@@ -84,15 +89,16 @@ function removeActiveChild(child) {
 
 // use exec if you need stdout as a string, or if you need to explicitly setup shell in some way (e.g. export an env var)
 const exec /*: Exec */ = (cmd, opts = {}, stdio = []) => {
-  const errorWithSyncStackTrace = new Error(); // grab stack trace outside of promise so errors are easier to narrow down
+  const errorWithSyncStackTrace /*: ExecException */ = new Error(); // grab stack trace outside of promise so errors are easier to narrow down
   return new Promise((resolve, reject) => {
     const child = proc.exec(cmd, opts, (err, stdout, stderr) => {
       removeActiveChild(child);
 
       if (err) {
-        // $FlowFixMe
-        errorWithSyncStackTrace.status = err.code;
         errorWithSyncStackTrace.message = err.message;
+        errorWithSyncStackTrace.status = Number(err.code || 0);
+        errorWithSyncStackTrace.stdout = String(stdout);
+        errorWithSyncStackTrace.stderr = String(stderr);
         reject(errorWithSyncStackTrace);
       } else {
         resolve(String(stdout));

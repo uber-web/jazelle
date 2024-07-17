@@ -5,6 +5,7 @@ const {getDownstreams} = require('../utils/get-downstreams.js');
 const {exists, read} = require('../utils/node-helpers.js');
 
 /*::
+import type {BazelQueryException} from './bazel-commands.js';
 export type FindChangedTargetsArgs = {
   root: string,
   files?: string,
@@ -12,6 +13,7 @@ export type FindChangedTargetsArgs = {
 };
 export type FindChangedTargets = (FindChangedTargetsArgs) => Promise<Array<string>>;
 */
+
 const findChangedTargets /*: FindChangedTargets */ = async ({
   root,
   files,
@@ -101,22 +103,31 @@ const findChangedBazelTargets = async ({root, files}) => {
             query: quoteFilePaths(missing).join(' + '),
             args: ['--keep_going'],
           })
-            .then(() => {
+            .then(stdout => {
               // This should never hit because we're checking for missing files,
               // but if it does, we still want to hit the catch block below
-              throw new Error('');
+              const err /*: BazelQueryException */ = new Error('');
+              err.stdout = stdout;
+              throw err;
             })
-            .catch(e => {
+            .catch((e /*: BazelQueryException */) => {
               // if file doesn't exist, find which package it would've belong to, and take source files in the same package
               // doing so is sufficient, because we just want to find out which targets have changed
               // - in the case the file was deleted but a package still exists, pkg will refer to the package
               // - in the case the package itself was deleted, pkg will refer to the root package (which will typically yield no targets in a typical Jazelle setup)
               const regex = /not declared in package '(.*?)'/g;
-              return Array.from(e.message.matchAll(regex))
-                .map(([, pkg]) =>
-                  pkg ? `kind("source file", "//${pkg}:*")` : ''
-                )
-                .filter(Boolean);
+              const recovered = e.stderr
+                ? Array.from(e.stderr.matchAll(regex))
+                    .map(([, pkg]) =>
+                      pkg ? `kind("source file", "//${pkg}:*")` : ''
+                    )
+                    .filter(Boolean)
+                : [];
+              // Some files may have been deleted, but still have labels in the BUILD files
+              const filesWithLabels = e.stdout
+                ? e.stdout.trim().split('\n')
+                : [];
+              return [...filesWithLabels, ...recovered];
             })
         : [];
       const innerQuery = Array.from(
