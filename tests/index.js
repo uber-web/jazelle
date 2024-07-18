@@ -923,6 +923,8 @@ async function testFindChangedTargets() {
 
     const root = `${tmp}/tmp/find-changed-targets/bazel`;
     const files = `${tmp}/tmp/find-changed-targets/bazel/changes.txt`;
+    const missingFiles = `${tmp}/tmp/find-changed-targets/bazel/changes-missing-files.txt`;
+    const missingFilesLabelOnly = `${tmp}/tmp/find-changed-targets/bazel/changes-missing-files-label-only.txt`;
     await install({
       root: `${tmp}/tmp/find-changed-targets/bazel`,
       cwd: `${tmp}/tmp/find-changed-targets/bazel`,
@@ -944,6 +946,35 @@ async function testFindChangedTargets() {
         '//b:lint',
         '//b:test',
         '//d:library', // this should appear here because it depends on non-js/x.txt
+      ].sort()
+    );
+
+    const recoveredTargetsDirs = await findChangedTargets({
+      root,
+      files: missingFiles,
+      format: 'dirs',
+    });
+    assert.deepEqual(
+      recoveredTargetsDirs.sort(),
+      [
+        'test-missing-file',
+        'test-missing-file-dep',
+        'test-missing-file-label-only',
+        'test-missing-file-label-only-dep',
+      ].sort()
+    );
+
+    // Happy path: underlying bazel query returns known labels for missing files
+    const recoveredTargetsDirsLabelOnly = await findChangedTargets({
+      root,
+      files: missingFilesLabelOnly,
+      format: 'dirs',
+    });
+    assert.deepEqual(
+      recoveredTargetsDirsLabelOnly.sort(),
+      [
+        'test-missing-file-label-only',
+        'test-missing-file-label-only-dep',
       ].sort()
     );
   }
