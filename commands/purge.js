@@ -1,4 +1,5 @@
 // @flow
+const {homedir} = require('os');
 const {getManifest} = require('../utils/get-manifest.js');
 const {spawn, remove} = require('../utils/node-helpers.js');
 const {bazel} = require('../utils/binary-paths.js');
@@ -20,6 +21,7 @@ const purge /*: Purge */ = async ({root}) => {
     remove(`${root}/.yarn/unplugged`),
     remove(`${root}/.yarn/build-state.yml`),
     remove(`${root}/.yarn/install-state.gz`),
+    remove(`${homedir()}/.yarn/berry/cache`),
     spawn(bazel, ['clean', '--expunge'], {
       cwd: root,
       stdio: 'inherit',
