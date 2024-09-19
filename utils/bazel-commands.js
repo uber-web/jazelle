@@ -27,15 +27,11 @@ const build /*: Build */ = async ({
   stdio = 'inherit',
 }) => {
   cwd = relative(root, cwd);
-  await spawnOrExit(
-    bazel,
-    [...startupFlags, 'build', `//${cwd}:${name}`, '--sandbox_debug'],
-    {
-      stdio,
-      env: {...process.env},
-      cwd: root,
-    }
-  );
+  await spawnOrExit(bazel, [...startupFlags, 'build', `//${cwd}:${name}`], {
+    stdio,
+    env: {...process.env},
+    cwd: root,
+  });
 };
 
 /*::
@@ -59,13 +55,7 @@ const test /*: Test */ = async ({
   const testParams = args.map(arg => `--test_arg=${arg}`);
   await spawnOrExit(
     bazel,
-    [
-      ...startupFlags,
-      'run',
-      `//${cwd}:${name}`,
-      '--sandbox_debug',
-      ...testParams,
-    ],
+    [...startupFlags, 'run', `//${cwd}:${name}`, ...testParams],
     {
       stdio,
       env: {...process.env},
@@ -95,13 +85,7 @@ const run /*: Run */ = async ({
   const runParams = args.length > 0 ? ['--', ...args] : [];
   await spawnOrExit(
     bazel,
-    [
-      ...startupFlags,
-      'run',
-      `//${cwd}:${name}`,
-      '--sandbox_debug',
-      ...runParams,
-    ],
+    [...startupFlags, 'run', `//${cwd}:${name}`, ...runParams],
     {
       stdio,
       env: {...process.env},
