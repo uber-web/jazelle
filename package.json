@@ -1,6 +1,6 @@
 {
   "name": "jazelle",
-  "version": "0.0.0-standalone.95",
+  "version": "0.0.0-standalone.96",
   "main": "index.js",
   "bin": {
     "barn": "bin/bootstrap.sh",
@@ -29,5 +29,9 @@
     "preupdate-vendor": "mv vendor/.gitignore .vendor-gitignore",
     "postupdate-vendor": "mv .vendor-gitignore vendor/.gitignore",
     "update-vendor": "yarn install --prod --flat --frozen-lockfile --modules-folder=vendor"
+  },
+  "volta": {
+    "node": "16.15.0",
+    "yarn": "1.19.1"
   }
 }
