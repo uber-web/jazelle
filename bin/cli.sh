@@ -69,7 +69,9 @@ else
   # precommand hook
   NOW=$(bash -p "$GLOBAL_BIN/now")
   DURATION=$((NOW - START + BOOTSTRAP_TIME))
-  (cd "$ROOT" && VERSION="$VERSION" DURATION="$DURATION" COMMAND="$1" COMMAND_ARGS="${@:2}" EXIT_CODE=$EXIT_CODE eval "$PRECOMMAND")
+  pushd $ROOT > /dev/null
+  VERSION="$VERSION" DURATION="$DURATION" COMMAND="$1" COMMAND_ARGS="${@:2}" EXIT_CODE=$EXIT_CODE eval "$PRECOMMAND"
+  popd > /dev/null
 
   # payload
   export NODE_NO_WARNINGS=1 # hide [MODULE_NOT_FOUND] errors
