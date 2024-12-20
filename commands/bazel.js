@@ -2,7 +2,6 @@
 const {bazel} = require('../utils/binary-paths.js');
 const {spawnOrExit} = require('../utils/node-helpers.js');
 const {getPassThroughArgs} = require('../utils/parse-argv.js');
-const {startupFlags} = require('../utils/bazel-commands.js');
 
 /*::
 import type {Stdio} from '../utils/node-helpers.js';
@@ -16,7 +15,7 @@ export type Bazel = (BazelArgs) => Promise<void>
 */
 const runBazel /*: Bazel */ = async ({root, args, stdio = 'inherit'}) => {
   const params = getPassThroughArgs(args);
-  await spawnOrExit(bazel, [...startupFlags, ...params], {
+  await spawnOrExit(bazel, [...params], {
     stdio,
     env: {...process.env},
     cwd: root,
