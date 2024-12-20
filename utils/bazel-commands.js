@@ -6,8 +6,6 @@ const {randomBytes} = require('crypto');
 const {bazel, node} = require('./binary-paths.js');
 const {spawnOrExit, exec: nodeExec} = require('./node-helpers.js');
 
-const startupFlags = ['--host_jvm_args=-Xmx15g'];
-
 /*::
 import type {Stdio} from './node-helpers.js';
 export type {ExecException as BazelQueryException} from './node-helpers.js';
@@ -27,7 +25,7 @@ const build /*: Build */ = async ({
   stdio = 'inherit',
 }) => {
   cwd = relative(root, cwd);
-  await spawnOrExit(bazel, [...startupFlags, 'build', `//${cwd}:${name}`], {
+  await spawnOrExit(bazel, ['build', `//${cwd}:${name}`], {
     stdio,
     env: {...process.env},
     cwd: root,
@@ -53,15 +51,11 @@ const test /*: Test */ = async ({
 }) => {
   cwd = relative(root, cwd);
   const testParams = args.map(arg => `--test_arg=${arg}`);
-  await spawnOrExit(
-    bazel,
-    [...startupFlags, 'run', `//${cwd}:${name}`, ...testParams],
-    {
-      stdio,
-      env: {...process.env},
-      cwd: root,
-    }
-  );
+  await spawnOrExit(bazel, ['run', `//${cwd}:${name}`, ...testParams], {
+    stdio,
+    env: {...process.env},
+    cwd: root,
+  });
 };
 
 /*::
@@ -83,15 +77,11 @@ const run /*: Run */ = async ({
 }) => {
   cwd = relative(root, cwd);
   const runParams = args.length > 0 ? ['--', ...args] : [];
-  await spawnOrExit(
-    bazel,
-    [...startupFlags, 'run', `//${cwd}:${name}`, ...runParams],
-    {
-      stdio,
-      env: {...process.env},
-      cwd: root,
-    }
-  );
+  await spawnOrExit(bazel, ['run', `//${cwd}:${name}`, ...runParams], {
+    stdio,
+    env: {...process.env},
+    cwd: root,
+  });
 };
 
 /*::
@@ -232,7 +222,6 @@ const bazelQuery /*: BazelQuery */ = async ({cwd, query, args = []}) => {
 };
 
 module.exports = {
-  startupFlags,
   bazelQuery,
   build,
   test,
