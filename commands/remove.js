@@ -41,7 +41,13 @@ const remove /*: Remove */ = async ({root, cwd, args}) => {
       dirs: projects.map(dir => `${root}/${dir}`),
       target: resolve(root, cwd),
     });
-    await generateBazelBuildRules({root, deps, projects, dependencySyncRule});
+    await generateBazelBuildRules({
+      root,
+      deps,
+      projects,
+      dependencySyncRule,
+      immutable: false,
+    });
   }
 };
 

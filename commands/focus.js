@@ -88,12 +88,13 @@ const focus /*: Focus */ = async ({
   await validateVersionPolicy({dirs: deps.map(dep => dep.dir), versionPolicy});
 
   if (workspace === 'sandbox') {
-    await generateBazelignore({root});
+    await generateBazelignore({root, immutable: false});
     await generateBazelBuildRules({
       root,
       deps,
       projects,
       dependencySyncRule,
+      immutable: false,
     });
   }
 

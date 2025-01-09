@@ -17,8 +17,10 @@ export type GenerateBazelBuildRulesArgs = {
   deps: Array<Metadata>,
   projects: Array<string>,
   dependencySyncRule: string,
+  immutable: boolean,
 }
-export type GenerateBazelBuildRules = (GenerateBazelBuildRulesArgs) => Promise<void>
+// returns list of changed files
+export type GenerateBazelBuildRules = (GenerateBazelBuildRulesArgs) => Promise<Array<string>>
 export type TemplateArgs = {
   name: string,
   path: string,
@@ -32,22 +34,35 @@ const generateBazelBuildRules /*: GenerateBazelBuildRules */ = async ({
   deps,
   projects,
   dependencySyncRule,
+  immutable,
 }) => {
   const depMap = deps.reduce((map, dep) => {
     map[dep.meta.name] = dep;
     return map;
   }, {});
 
+  const changedFiles /*: Array<string> */ = [];
   await Promise.all(
     deps.map(async dep => {
-      const build = `${dep.dir}/BUILD.bazel`;
+      const buildFilePath = `${dep.dir}/BUILD.bazel`;
+      const buildFileExists = await exists(buildFilePath);
+
+      if (!buildFileExists) {
+        changedFiles.push(relative(root, buildFilePath));
+
+        if (immutable) {
+          // don't need to do any more work since we know it will change
+          return;
+        }
+      }
+
       const dependencies = [
         ...new Set([
           ...getDepLabels(root, depMap, dep.meta.dependencies),
           ...getDepLabels(root, depMap, dep.meta.devDependencies),
         ]),
       ].sort();
-      if (!(await exists(build))) {
+      if (!buildFileExists) {
         // generate BUILD.bazel file
         const path = relative(root, dep.dir);
         const name = basename(path);
@@ -59,10 +74,10 @@ const generateBazelBuildRules /*: GenerateBazelBuildRules */ = async ({
           label: `//${path}:${name}`,
           dependencies,
         });
-        await write(build, rules.trim(), 'utf8');
+        await write(buildFilePath, rules.trim(), 'utf8');
       } else {
         // sync web_library deps list in BUILD.bazel with local dependencies in package.json
-        const src = await read(build, 'utf8');
+        const src = await read(buildFilePath, 'utf8');
         let code = src;
         const items = getCallArgItems(code, dependencySyncRule, 'deps');
         dependencies
@@ -91,10 +106,18 @@ const generateBazelBuildRules /*: GenerateBazelBuildRules */ = async ({
           }
         });
         const sorted = sortCallArgItems(code, dependencySyncRule, 'deps');
-        if (src.trim() !== sorted.trim()) await write(build, sorted, 'utf8');
+        if (src.trim() !== sorted.trim()) {
+          changedFiles.push(relative(root, buildFilePath));
+
+          if (!immutable) {
+            await write(buildFilePath, sorted, 'utf8');
+          }
+        }
       }
     })
   );
+
+  return changedFiles;
 };
 
 const getDepLabels = (root, depMap, dependencies = {}) => {

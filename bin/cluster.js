@@ -49,7 +49,7 @@ async function runMaster() {
       await install({
         root,
         cwd: `${root}/${data[0].dir}`,
-        frozenLockfile: true,
+        immutable: true,
         conservative: true,
       });
 

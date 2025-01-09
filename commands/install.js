@@ -21,7 +21,7 @@ const {node, yarn} = require('../utils/binary-paths.js');
 export type InstallArgs = {
   root: string,
   cwd: string,
-  frozenLockfile?: boolean,
+  immutable?: boolean,
   conservative?: boolean,
   skipPreinstall?: boolean,
   skipPostinstall?: boolean,
@@ -33,7 +33,7 @@ export type Install = (InstallArgs) => Promise<void>
 const install /*: Install */ = async ({
   root,
   cwd,
-  frozenLockfile = false,
+  immutable = false,
   conservative = true,
   skipPreinstall = false,
   skipPostinstall = false,
@@ -71,14 +71,27 @@ const install /*: Install */ = async ({
   validateDeps({deps});
   await validateVersionPolicy({dirs: deps.map(dep => dep.dir), versionPolicy});
 
-  if (workspace === 'sandbox' && frozenLockfile === false) {
-    await generateBazelignore({root});
-    await generateBazelBuildRules({
-      root,
-      deps: all,
-      projects,
-      dependencySyncRule,
-    });
+  if (workspace === 'sandbox') {
+    const changedGeneratedFiles = [
+      ...(await generateBazelignore({
+        root,
+        immutable,
+      })),
+      ...(await generateBazelBuildRules({
+        root,
+        deps: all,
+        projects,
+        dependencySyncRule,
+        immutable,
+      })),
+    ];
+
+    if (immutable && changedGeneratedFiles.length > 0) {
+      throw new ImmutableInstallError(
+        `Generated files would have changed, but 'immutable' arg was passed`,
+        changedGeneratedFiles
+      );
+    }
   }
 
   if (hooks.bool_shouldinstall) {
@@ -97,7 +110,7 @@ const install /*: Install */ = async ({
   const env = process.env;
   const path = dirname(node) + ':' + String(process.env.PATH);
   const spawnArgs = [yarn, 'install'];
-  if (frozenLockfile) {
+  if (immutable) {
     spawnArgs.push('--immutable');
   }
 
@@ -130,6 +143,19 @@ const install /*: Install */ = async ({
     await executeHook(hooks.postinstall, root);
   }
 };
+
+/**
+ * An error that's thrown when the `immutable` flag is
+ * `true` and generated files would have changed.
+ */
+class ImmutableInstallError extends Error {
+  /*:: changedFiles: Array<string>; */
+
+  constructor(message /*: string */, changedFiles /*: Array<string> */) {
+    super(message);
+    this.changedFiles = changedFiles;
+  }
+}
 
 const validateRegistration = ({root, cwd, projects}) => {
   if (!projects.find(dir => resolve(`${root}/${dir}`) === cwd)) {
@@ -173,4 +199,4 @@ const validateVersionPolicy = async ({dirs, versionPolicy}) => {
   if (!result.valid) throw new Error(getErrorMessage(result, false));
 };
 
-module.exports = {install};
+module.exports = {install, ImmutableInstallError};
