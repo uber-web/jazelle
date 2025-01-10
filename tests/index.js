@@ -1111,7 +1111,7 @@ async function testImmutableInstall() {
 
     // first run an install without `immutable` to prime the fixture
     // with all the generated files
-    await install({root, cwd: root, verbose: true});
+    await install({root, cwd: root});
 
     try {
       await install({root, cwd: root, immutable: true});
