@@ -104,7 +104,7 @@ const sortCallArgItems /*: SortCallArgItems */ = (code, caller, argName) => {
           .filter(Boolean)
           .sort()
           .join(',');
-        return `[${sorted},${dedent}]`.replace(/,]/, ']');
+        return `[${sorted},${dedent}]`.replace(/,]/, ']').replace(/\[,/, '[');
       });
     });
   });
