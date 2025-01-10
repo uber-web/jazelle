@@ -110,7 +110,13 @@ const add /*: Add */ = async ({root, cwd, args, dev = false}) => {
       dirs: projects.map(dir => `${root}/${dir}`),
       target: resolve(root, cwd),
     });
-    await generateBazelBuildRules({root, deps, projects, dependencySyncRule});
+    await generateBazelBuildRules({
+      root,
+      deps,
+      projects,
+      dependencySyncRule,
+      immutable: false,
+    });
   }
 };
 

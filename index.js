@@ -1,11 +1,11 @@
 // @flow
 const {getRootDir} = require('./utils/get-root-dir.js');
 const {parse, normalize} = require('./utils/parse-argv.js');
-const {cli} = require('./utils/cli.js');
+const {cli, CliError} = require('./utils/cli.js');
 const {version} = require('./commands/version.js');
 const {init} = require('./commands/init.js');
 const {scaffold} = require('./commands/scaffold.js');
-const {install} = require('./commands/install.js');
+const {install, ImmutableInstallError} = require('./commands/install.js');
 const {ci} = require('./commands/ci.js');
 const {focus} = require('./commands/focus.js');
 const {add} = require('./commands/add.js');
@@ -86,26 +86,46 @@ const runCLI /*: RunCLI */ = async argv => {
         --skipPreinstall           Skip the preinstall hook
         --skipPostinstall          Skip the postinstall hook
         --mode                     If set to skip-build, skips build scripts. If set to update-lockfile, skips link step
+        --immutable                Fail if generated files need to be modified
         --verbose`,
-        async ({cwd, skipPreinstall, skipPostinstall, mode, verbose}) =>
-          install({
-            root: await rootOf(args),
-            cwd,
-            skipPreinstall: Boolean(skipPreinstall),
-            skipPostinstall: Boolean(skipPostinstall),
-            mode,
-            verbose: Boolean(verbose),
-          }),
+        async ({
+          cwd,
+          skipPreinstall,
+          skipPostinstall,
+          mode,
+          immutable,
+          verbose,
+        }) => {
+          try {
+            await install({
+              root: await rootOf(args),
+              cwd,
+              skipPreinstall: Boolean(skipPreinstall),
+              skipPostinstall: Boolean(skipPostinstall),
+              mode,
+              immutable: Boolean(immutable),
+              verbose: Boolean(verbose),
+            });
+          } catch (error) {
+            handleInstallError(error);
+          }
+        },
       ],
       ci: [
-        `Install all dependencies for all project without modifying source files
+        `Install all dependencies for all projects, failing if any generated files need to be modified
 
         --cwd [cwd]                Project directory to use`,
-        async ({cwd}) => ci({root: await rootOf(args), cwd}),
+        async ({cwd}) => {
+          try {
+            await ci({root: await rootOf(args), cwd});
+          } catch (error) {
+            handleInstallError(error);
+          }
+        },
       ],
       focus: [
         `Install all dependencies for one or more projects without installing the rest
-        
+
         --cwd [cwd]                Project directory to use
         --all                      Install all dependencies, like regular yarn install
         --production               Install only production dependencies, not devDependencies
@@ -365,6 +385,32 @@ const runCLI /*: RunCLI */ = async argv => {
       })
   );
 };
+
+const ansiRed = '\x1b[91m';
+const ansiReset = '\x1b[0m';
+/**
+ * Checks whether the provided error is a `ImmutableInstallError`,
+ * and if it is, throws a `CliError` with a formatted message.
+ */
+function handleInstallError(error /*: Error | ImmutableInstallError */) {
+  if (error instanceof ImmutableInstallError) {
+    const shouldUseColors = process.stdout.isTTY || process.env.FORCE_COLOR;
+    const errorMessage =
+      (shouldUseColors ? ansiRed : '') +
+      'ERROR: ' +
+      error.message +
+      '\n' +
+      error.changedFiles
+        .sort((a, b) => a.localeCompare(b))
+        .map(l => '  - ' + l)
+        .join('\n') +
+      (shouldUseColors ? ansiReset : '');
+
+    throw new CliError(errorMessage, 1);
+  } else {
+    throw error;
+  }
+}
 
 async function rootOf(args) {
   return getRootDir({dir: args.cwd});

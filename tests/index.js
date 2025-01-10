@@ -6,7 +6,7 @@ const {readFileSync, createWriteStream} = require('fs');
 const {runCLI} = require('../index');
 const {init} = require('../commands/init.js');
 const {scaffold} = require('../commands/scaffold.js');
-const {install} = require('../commands/install.js');
+const {install, ImmutableInstallError} = require('../commands/install.js');
 const {add} = require('../commands/add.js');
 const {bazel: bazelCmd} = require('../commands/bazel.js');
 const {upgrade} = require('../commands/upgrade.js');
@@ -233,6 +233,7 @@ async function runTests() {
   await t(testBazelDependentBuilds);
   await t(testBazelDependentFailure);
   await t(testShouldInstall);
+  await t(testImmutableInstall);
 
   await exec(`rm -rf ${tmp}/tmp`);
   console.log('All tests pass');
@@ -1058,11 +1059,75 @@ async function testFindLocalDependency() {
   assert.deepEqual(notFound, undefined);
 }
 
+async function testImmutableInstall() {
+  const fixtureName = 'immutable-install';
+  const fixturePath = `${__dirname}/fixtures/${fixtureName}`;
+  const root = `${tmp}/tmp/${fixtureName}`;
+
+  // fails when files would have been generated
+  {
+    await exec(`rm -rf ${root}`);
+    await exec(`cp -r ${fixturePath}/ ${root}`);
+
+    try {
+      await install({root, cwd: root, immutable: true});
+      // $FlowFixMe: bad libdef?
+      assert.fail('install should not succeed');
+    } catch (error) {
+      if (!(error instanceof ImmutableInstallError)) throw error;
+
+      const expectedChangedFiles = [
+        '.bazelignore',
+        'a/BUILD.bazel',
+        'b/BUILD.bazel',
+      ];
+      assert(error.changedFiles.length === expectedChangedFiles.length);
+      for (const file of expectedChangedFiles) {
+        assert(
+          error.changedFiles.includes(file),
+          `${file} should have been returned as a changed file`
+        );
+        if (file === 'b/BUILD.bazel') {
+          // compare file with the original fixture file
+          assert(
+            (await read(`${root}/${file}`, 'utf-8')) ===
+              (await read(`${fixturePath}/${file}`, 'utf-8')),
+            `${file} should not have been changed`
+          );
+        } else {
+          assert(
+            !(await exists(`${root}/${file}`)),
+            `${file} should not have been written to disk`
+          );
+        }
+      }
+    }
+  }
+
+  // passes when no files need to be generated
+  {
+    await exec(`rm -rf ${root}`);
+    await exec(`cp -r ${fixturePath}/ ${root}`);
+
+    // first run an install without `immutable` to prime the fixture
+    // with all the generated files
+    await install({root, cwd: root});
+
+    try {
+      await install({root, cwd: root, immutable: true});
+    } catch (error) {
+      // $FlowFixMe: bad libdef?
+      assert.fail('install should succeed');
+    }
+  }
+}
+
 async function testGenerateBazelignore() {
   const cmd = `cp -r ${__dirname}/fixtures/generate-bazelignore/ ${tmp}/tmp/generate-bazelignore`;
   await exec(cmd);
   await generateBazelignore({
     root: `${tmp}/tmp/generate-bazelignore`,
+    immutable: false,
     projects: ['a', 'b'],
   });
   const bazelignoreFile = `${tmp}/tmp/generate-bazelignore/.bazelignore`;
@@ -1076,6 +1141,7 @@ async function testGenerateBazelBuildRules() {
   await exec(cmd);
   await generateBazelBuildRules({
     root: `${tmp}/tmp/generate-bazel-build-rules`,
+    immutable: false,
     deps: [
       {
         meta: JSON.parse(
@@ -1122,6 +1188,7 @@ async function testGenerateBazelBuildRulesUpdate() {
   await exec(cmd);
   await generateBazelBuildRules({
     root: `${tmp}/tmp/generate-bazel-build-rules-update`,
+    immutable: false,
     deps: [
       {
         meta: JSON.parse(

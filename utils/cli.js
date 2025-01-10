@@ -44,14 +44,32 @@ const cli /*: Cli */ = async (command, args, options, fallback) => {
         }
       }
     } catch (error) {
-      console.error(error.stack);
-      if (typeof error.status === 'number') {
-        process.exit(error.status);
+      if (error instanceof CliError) {
+        console.error(error.message);
+        process.exit(error.exitCode);
       } else {
-        process.exit(1);
+        console.error(error.stack);
+        if (typeof error.status === 'number') {
+          process.exit(error.status);
+        } else {
+          process.exit(1);
+        }
       }
     }
   }
 };
 
-module.exports = {cli};
+/**
+ * A way for a CLI command to control the error message
+ * that's emitted and the exit code of the process.
+ */
+class CliError extends Error {
+  /*:: exitCode: number; */
+
+  constructor(message /*: string */, exitCode /*: number */) {
+    super(message);
+    this.exitCode = exitCode;
+  }
+}
+
+module.exports = {cli, CliError};

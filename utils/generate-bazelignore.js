@@ -4,13 +4,20 @@ const {read, write} = require('./node-helpers.js');
 /*::
 export type GenerateBazelignoreArgs = {
   root: string,
+  immutable: boolean,
 };
-export type GenerateBazelignore = (GenerateBazelignoreArgs) => Promise<void>;
+// returns list of changed files
+export type GenerateBazelignore = (GenerateBazelignoreArgs) => Promise<Array<string>>;
 */
 
-const generateBazelignore /*: GenerateBazelignore */ = async ({root}) => {
-  const file = `${root}/.bazelignore`;
+const generateBazelignore /*: GenerateBazelignore */ = async ({
+  root,
+  immutable,
+}) => {
+  const fileName = '.bazelignore';
+  const file = `${root}/${fileName}`;
   const bazelignore = await read(file, 'utf8').catch(() => '');
+  const changedFiles /*: Array<string> */ = [];
 
   const ignorePaths = [
     ...new Set([
@@ -21,8 +28,14 @@ const generateBazelignore /*: GenerateBazelignore */ = async ({root}) => {
   ];
   const updated = ignorePaths.sort().filter(Boolean).join('\n');
   if (bazelignore.trim() !== updated.trim()) {
-    await write(`${root}/.bazelignore`, updated + '\n', 'utf8');
+    changedFiles.push(fileName);
+
+    if (!immutable) {
+      await write(`${root}/.bazelignore`, updated + '\n', 'utf8');
+    }
   }
+
+  return changedFiles;
 };
 
 module.exports = {generateBazelignore};
