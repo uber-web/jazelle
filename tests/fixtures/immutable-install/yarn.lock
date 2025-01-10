@@ -2,10 +2,9 @@
 # Manual changes might be lost - proceed with caution!
 
 __metadata:
-  version: 8
-  cacheKey: 10c0
+  version: 6
 
-"a@npm:0.0.0, a@workspace:a":
+"a@0.0.0, a@workspace:a":
   version: 0.0.0-use.local
   resolution: "a@workspace:a"
   languageName: unknown
@@ -15,7 +14,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "b@workspace:b"
   dependencies:
-    a: "npm:0.0.0"
+    a: 0.0.0
   languageName: unknown
   linkType: soft
 
