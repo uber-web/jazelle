@@ -67,9 +67,10 @@ const {shouldSync, getVersion} = require('../utils/version-onboarding.js');
 const yarnCmds = require('../utils/yarn-commands.js');
 const {sortPackageJson} = require('../utils/sort-package-json');
 
+const originalProcessExit = process.exit;
 process.on('unhandledRejection', e => {
   console.error(e.stack);
-  process.exit(1);
+  originalProcessExit(1);
 });
 
 // $FlowFixMe flow can't handle statics of async function
@@ -80,32 +81,88 @@ const tmp = tmpdir();
 runTests();
 
 async function t(test) {
+  const testName = test.name;
   const match = (process.argv[2] || '').toLowerCase();
-  if (test.name.toLowerCase().indexOf(match) > -1) {
+
+  if (testName.toLowerCase().indexOf(match) > -1) {
     if (match) console.log(`Testing ${test.name}`);
     try {
       await test();
+      console.log(`✅ ${testName}`);
     } catch (e) {
-      console.error(`\n\nTest "${test.name}" failed with error:`);
+      console.log(`❌ ${testName}`);
       throw e;
     }
   }
 }
 
+/**
+ * Uses an error stack trace to determine which test from this
+ * file caused a given function to be called.
+ */
+function getCallingTestFn() {
+  const error = new Error();
+  if (!error.stack) return null;
+
+  const errorStackLines = error.stack.split('\n');
+  for (const line of errorStackLines) {
+    const trimmedLine = line.split('at ')[1];
+    if (!trimmedLine) continue;
+
+    const [, fnName, filePath] =
+      trimmedLine.match(
+        /^(?:async )?(?:(.+) \()?(?:file:\/\/)?([^:]+):(\d+):(\d+)\)?$/
+      ) || [];
+
+    if (
+      filePath === __filename &&
+      fnName.startsWith('test') &&
+      fnName.length > 4
+    ) {
+      return fnName;
+    }
+  }
+
+  return null;
+}
+
+const testsExpectingExit /*: Map<string, number> */ = new Map();
+// $FlowFixMe
+process.exit = (code = 0) => {
+  const callingTest = getCallingTestFn();
+  if (callingTest && testsExpectingExit.has(callingTest)) {
+    testsExpectingExit.set(callingTest, code);
+    return;
+  }
+
+  // $FlowFixMe: bad libdef
+  assert.fail(`'process.exit' was unexpectedly called with code '${code}'`);
+};
+
 async function expectProcessExit(expectedExitCode, run) {
+  const callingTest = getCallingTestFn() || '';
+  const shouldUseFallbackExitMock = !callingTest;
+
   let exitCode = 0;
-  // $FlowFixMe
   const originalExit = process.exit;
-  // $FlowFixMe
-  process.exit = (code = 0) => {
-    exitCode = code;
-  };
+  if (shouldUseFallbackExitMock) {
+    // $FlowFixMe
+    process.exit = (code = 0) => {
+      exitCode = code;
+    };
+  } else {
+    testsExpectingExit.set(callingTest, 0);
+  }
 
   try {
     await run();
   } finally {
-    // $FlowFixMe
-    process.exit = originalExit;
+    if (shouldUseFallbackExitMock) {
+      // $FlowFixMe
+      process.exit = originalExit;
+    } else {
+      exitCode = testsExpectingExit.get(callingTest) || 0;
+    }
 
     assert.strictEqual(
       exitCode,
