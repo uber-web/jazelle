@@ -71,7 +71,7 @@ else
   DURATION=$((NOW - START + BOOTSTRAP_TIME))
   COMMAND_CWD=$(pwd)
   cd $ROOT
-  VERSION="$VERSION" DURATION="$DURATION" COMMAND="$1" COMMAND_ARGS="${@:2}" EXIT_CODE=$EXIT_CODE eval "$PRECOMMAND"
+  VERSION="$VERSION" DURATION="$DURATION" COMMAND="$1" COMMAND_ARGS="${@:2}" COMMAND_CWD="$COMMAND_CWD" EXIT_CODE=$EXIT_CODE eval "$PRECOMMAND"
   cd $COMMAND_CWD
 
   # payload
@@ -83,7 +83,7 @@ else
   # postcommand hook
   END=$(bash -p "$GLOBAL_BIN/now") # we don't use `time` because otherwise it would mess w/ stdio piping of the main command
   DURATION=$((END - START + BOOTSTRAP_TIME))
-  (cd "$ROOT" && VERSION="$VERSION" DURATION="$DURATION" COMMAND="$1" COMMAND_ARGS="${@:2}" EXIT_CODE=$EXIT_CODE eval "$POSTCOMMAND")
+  (cd "$ROOT" && VERSION="$VERSION" DURATION="$DURATION" COMMAND="$1" COMMAND_ARGS="${@:2}" COMMAND_CWD="$COMMAND_CWD" EXIT_CODE=$EXIT_CODE eval "$POSTCOMMAND")
 
   exit $EXIT_CODE
 fi
