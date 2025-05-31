@@ -431,11 +431,14 @@ async function testFocus() {
 }
 
 async function testUpgrade() {
+  const errorMessage =
+    'Command must have at least one dependency name. \nUsage: jazelle upgrade [dependency]\n';
   const meta = `${tmp}/tmp/upgrade/a/package.json`;
   const lockfile = `${tmp}/tmp/upgrade/yarn.lock`;
   const cmd = `cp -r ${__dirname}/fixtures/upgrade/ ${tmp}/tmp/upgrade`;
   await exec(cmd);
 
+  // external upgrade
   await upgrade({
     root: `${tmp}/tmp/upgrade`,
     args: ['has@1.0.3'],
@@ -443,8 +446,17 @@ async function testUpgrade() {
   assert((await read(meta, 'utf8')).includes('"has": "1.0.3"'));
   assert((await read(lockfile, 'utf8')).includes('function-bind'));
 
+  // internal upgrade
   await upgrade({root: `${tmp}/tmp/upgrade`, args: ['b']});
-  assert((await read(meta, 'utf8')).includes('"b": "1.0.0"'));
+  assert((await read(meta, 'utf8')).includes('"b": "workspace:*"'));
+
+  // missing dependency
+  try {
+    await upgrade({root: `${tmp}/tmp/upgrade`, args: []});
+  } catch (e) {
+    // $FlowFixMe
+    assert(e.message.includes(errorMessage));
+  }
 }
 
 async function testPurge() {
@@ -593,7 +605,7 @@ async function testBump() {
 
   // downstream is greenkept
   const meta = JSON.parse(await read(downstreamMeta));
-  assert.equal(meta.dependencies['@uber/not-a-real-project'], '0.1.0-0');
+  assert.equal(meta.dependencies['@uber/not-a-real-project'], 'workspace:*');
   assert.equal(meta.version, '0.1.0-0');
 }
 
