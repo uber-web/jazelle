@@ -1,0 +1,11 @@
+{
+    "name": "test-app",
+    "version": "1.0.0",
+    "dependencies": {
+        "lodash": "4.17.20",
+        "axios": "0.27.0"
+    },
+    "devDependencies": {
+        "@types/lodash": "4.14.180"
+    }
+}
