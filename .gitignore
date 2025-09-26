@@ -3,3 +3,7 @@ node_modules
 tests/tmp
 yarn-error.log
 !tests/fixtures/bazel-*
+
+# Auto-generated Bazel files
+MODULE.bazel
+MODULE.bazel.lock
