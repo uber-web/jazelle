@@ -2,18 +2,32 @@
 const {minVersion, satisfies, valid} = require('../utils/cached-semver');
 const {getManifest} = require('../utils/get-manifest.js');
 const {findLocalDependency} = require('../utils/find-local-dependency.js');
-const {read, write} = require('../utils/node-helpers.js');
-const {spawn} = require('../utils/node-helpers.js');
+const {read, write, spawn} = require('../utils/node-helpers.js');
 const {node, yarn} = require('../utils/binary-paths.js');
+const {
+  getTypesPackages,
+  checkBundledTypes,
+  findBestTypesVersion,
+  removeTypesPackage,
+} = require('../utils/types-manager.js');
+const {promptForTypesVersion} = require('../utils/upgrade-prompts.js');
 
 /*::
 export type UpgradeArgs = {
   root: string,
   args: Array<string>,
+  interactive?: boolean,
 };
 export type Upgrade = (UpgradeArgs) => Promise<void>;
+type ExternalDep = {name: string, range?: string};
+type CheckBundledTypes = (string, ?string, string) => Promise<any>;
+type FindBestTypesVersion = (string, ?string, string, (string, ?string, Array<string>, boolean) => Promise<?string>) => Promise<?string>;
+type GetTypesPackages = (Array<ExternalDep>, string, Array<string>, (string, ?string, Array<string>, boolean) => Promise<?string>) => Promise<Array<string>>;
+type RemoveTypesPackage = (string, Array<string>) => Promise<void>;
+type PromptForTypesVersion = (string, ?string, Array<string>, boolean) => Promise<?string>;
 */
-const upgrade /*: Upgrade */ = async ({root, args}) => {
+
+const upgrade /*: Upgrade */ = async ({root, args, interactive = true}) => {
   const {projects} = await getManifest({root});
   const roots = projects.map(dir => `${root}/${dir}`);
 
@@ -43,6 +57,7 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
           update(meta, 'devDependencies', name, local.meta.version);
           update(meta, 'optionalDependencies', name, local.meta.version);
         }
+
         await write(
           `${cwd}/package.json`,
           JSON.stringify(meta, null, 2) + '\n',
@@ -51,14 +66,28 @@ const upgrade /*: Upgrade */ = async ({root, args}) => {
       })
     );
   }
+
   if (externals.length > 0) {
     const deps = externals.map(({name, range}) => {
       return name + (range ? `@${range}` : '');
     });
-    await spawn(node, [yarn, 'up', '-C', ...deps, '--mode', 'skip-build'], {
-      cwd: root,
-      stdio: 'inherit',
-    });
+
+    // Add @types packages
+    const typesDeps = await getTypesPackages(
+      externals,
+      root,
+      roots,
+      promptForTypesVersion
+    );
+
+    await spawn(
+      node,
+      [yarn, 'up', '-C', ...deps, ...typesDeps, '--mode', 'skip-build'],
+      {
+        cwd: root,
+        stdio: 'inherit',
+      }
+    );
   }
 };
 
@@ -70,4 +99,12 @@ const update = (meta, type, name, version, from) => {
   }
 };
 
-module.exports = {upgrade};
+module.exports = {
+  upgrade,
+  // Re-exported for backward compatibility with existing tests
+  findBestTypesVersion,
+  checkBundledTypes,
+  getTypesPackages,
+  removeTypesPackage,
+  promptForTypesVersion,
+};

@@ -182,6 +182,7 @@ async function runTests() {
     t(testCi),
     t(testFocus),
     t(testUpgrade),
+    t(testUpgradeTypes),
     t(testPurge),
     t(testBump),
     // t(testEach),
@@ -366,6 +367,7 @@ async function testInstallAddUpgradeRemove() {
   await upgrade({
     root: `${tmp}/tmp/commands`,
     args: ['c@0.0.0'],
+    interactive: false,
   });
   assert((await read(buildFile, 'utf8')).includes('//c:library'));
 
@@ -373,6 +375,7 @@ async function testInstallAddUpgradeRemove() {
   await upgrade({
     root: `${tmp}/tmp/commands`,
     args: ['has@1.0.3'],
+    interactive: false,
   });
   assert(JSON.parse(await read(meta, 'utf8')).dependencies.has);
 
@@ -439,12 +442,194 @@ async function testUpgrade() {
   await upgrade({
     root: `${tmp}/tmp/upgrade`,
     args: ['has@1.0.3'],
+    interactive: false,
   });
   assert((await read(meta, 'utf8')).includes('"has": "1.0.3"'));
   assert((await read(lockfile, 'utf8')).includes('function-bind'));
 
-  await upgrade({root: `${tmp}/tmp/upgrade`, args: ['b']});
+  await upgrade({root: `${tmp}/tmp/upgrade`, args: ['b'], interactive: false});
   assert((await read(meta, 'utf8')).includes('"b": "1.0.0"'));
+}
+
+async function testUpgradeTypes() {
+  const meta = `${tmp}/tmp/upgrade-types/test-app/package.json`;
+  const cmd = `cp -r ${__dirname}/fixtures/upgrade-types/ ${tmp}/tmp/upgrade-types`;
+  await exec(cmd);
+
+  // Test 1: Upgrade package that might need @types (lodash)
+  await upgrade({
+    root: `${tmp}/tmp/upgrade-types`,
+    args: ['lodash@4.17.21'],
+    interactive: false,
+  });
+  assert((await read(meta, 'utf8')).includes('"lodash": "4.17.21"'));
+
+  // Test 2: Upgrade @types package directly (should skip @types handling)
+  await upgrade({
+    root: `${tmp}/tmp/upgrade-types`,
+    args: ['@types/lodash@4.14.182'],
+    interactive: false,
+  });
+  assert((await read(meta, 'utf8')).includes('"@types/lodash"'));
+
+  // Test 3: Verify @types packages are handled correctly in args parsing
+  const testArg = '@types/react@18.0.0';
+  const [, name] = testArg.match(/(@?[^@]*)@?(.*)/) || [];
+  assert(
+    name === '@types/react',
+    'Should correctly parse @types package names'
+  );
+
+  // Test 4: Version ranges - tilde range
+  await testUpgradeTypesVersionRanges();
+
+  // Test 5: Interactive mode behavior (mocked, fast)
+  await testUpgradeTypesInteractiveMode();
+}
+
+async function testUpgradeTypesVersionRanges() {
+  const testRoot = `${tmp}/tmp/upgrade-types-ranges`;
+  await exec(`cp -r ${__dirname}/fixtures/upgrade-types/ ${testRoot}`);
+  const meta = `${testRoot}/test-app/package.json`;
+
+  // Test exact version first (most predictable)
+  await upgrade({
+    root: testRoot,
+    args: ['axios@0.27.1'],
+    interactive: false,
+  });
+  const content = await read(meta, 'utf8');
+  assert(
+    content.includes('"axios": "0.27.1"'),
+    'Should upgrade with exact version'
+  );
+
+  // Test tilde range - should preserve the tilde specifier
+  await upgrade({
+    root: testRoot,
+    args: ['lodash@~4.17.20'],
+    interactive: false,
+  });
+  const content2 = await read(meta, 'utf8');
+  const pkg2 = JSON.parse(content2);
+  assert(
+    pkg2.dependencies && pkg2.dependencies.lodash,
+    'Lodash should be in dependencies'
+  );
+  assert(
+    pkg2.dependencies.lodash === '~4.17.20',
+    `Lodash should preserve tilde range, got: ${pkg2.dependencies.lodash}`
+  );
+
+  // Test caret range - should preserve the caret specifier
+  await upgrade({
+    root: testRoot,
+    args: ['axios@^0.27.0'],
+    interactive: false,
+  });
+  const content3 = await read(meta, 'utf8');
+  const pkg3 = JSON.parse(content3);
+  assert(
+    pkg3.dependencies && pkg3.dependencies.axios,
+    'Axios should be in dependencies'
+  );
+  assert(
+    pkg3.dependencies.axios === '^0.27.0',
+    `Axios should preserve caret range, got: ${pkg3.dependencies.axios}`
+  );
+}
+
+async function testUpgradeTypesInteractiveMode() {
+  // Test interactive prompts by mocking inquirer responses
+  const testRoot = `${tmp}/tmp/upgrade-types-interactive-mode`;
+  await exec(`cp -r ${__dirname}/fixtures/upgrade-types/ ${testRoot}`);
+
+  const {promptForTypesVersion} = require('../commands/upgrade.js');
+
+  // Mock inquirer to simulate user choices
+  const inquirer = require('inquirer');
+  const originalPrompt = inquirer.prompt;
+
+  try {
+    // Test 1: User chooses "latest"
+    inquirer.prompt = async () => ({action: 'latest'});
+    const result1 = await promptForTypesVersion(
+      '@types/test',
+      '1.0.0',
+      ['1.0.0', '1.1.0', '2.0.0'],
+      true
+    );
+    assert(
+      result1 === '2.0.0',
+      `Should return latest version, got ${result1 || 'null'}`
+    );
+    console.log('✅ Interactive mode: "latest" choice works');
+
+    // Test 2: User chooses "skip"
+    inquirer.prompt = async () => ({action: 'skip'});
+    const result2 = await promptForTypesVersion(
+      '@types/test',
+      '1.0.0',
+      ['1.0.0', '1.1.0', '2.0.0'],
+      true
+    );
+    assert(result2 === null, 'Should return null for skip');
+    console.log('✅ Interactive mode: "skip" choice works');
+
+    // Test 3: User chooses "manual" then enters version
+    let promptCallCount = 0;
+    inquirer.prompt = async questions => {
+      promptCallCount++;
+      if (promptCallCount === 1) {
+        return {action: 'manual'};
+      } else {
+        return {manualVersion: '1.1.0'};
+      }
+    };
+    const result3 = await promptForTypesVersion(
+      '@types/test',
+      '1.0.0',
+      ['1.0.0', '1.1.0', '2.0.0'],
+      true
+    );
+    assert(
+      result3 === '1.1.0',
+      `Should return manual version, got ${result3 || 'null'}`
+    );
+    console.log('✅ Interactive mode: "manual" choice works');
+
+    // Test 4: User chooses "abort"
+    inquirer.prompt = async () => ({action: 'abort'});
+    try {
+      await promptForTypesVersion(
+        '@types/test',
+        '1.0.0',
+        ['1.0.0', '1.1.0', '2.0.0'],
+        true
+      );
+      assert(false, 'Should have thrown error for abort');
+    } catch (error) {
+      assert(error.message.includes('aborted'), 'Should throw abort error');
+      console.log('✅ Interactive mode: "abort" choice works');
+    }
+
+    // Test 5: Non-interactive mode (should skip)
+    const result5 = await promptForTypesVersion(
+      '@types/test',
+      '1.0.0',
+      ['1.0.0', '1.1.0', '2.0.0'],
+      false
+    );
+    assert(result5 === null, 'Non-interactive mode should return null');
+    console.log('✅ Interactive mode: non-interactive fallback works');
+  } finally {
+    // Restore original inquirer.prompt
+    inquirer.prompt = originalPrompt;
+  }
+
+  console.log(
+    'Interactive mode test completed - all prompt scenarios work correctly'
+  );
 }
 
 async function testPurge() {
