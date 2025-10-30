@@ -12,10 +12,8 @@ type ShouldSyncArgs = {
 type ShouldSync = (ShouldSyncArgs) => boolean;
 */
 const shouldSync /*: ShouldSync */ = ({versionPolicy, name}) => {
-  const {
-    lockstep = false,
-    exceptions = [],
-  } /*: VersionPolicy */ = versionPolicy;
+  const {lockstep = false, exceptions = []} /*: VersionPolicy */ =
+    versionPolicy;
   return (
     (lockstep && !exceptions.includes(name)) ||
     (!lockstep &&

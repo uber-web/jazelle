@@ -21,57 +21,55 @@ export type DependencyReport = {
   },
 };
 */
-const reportMismatchedTopLevelDeps /*: ReportMismatchedTopLevelDeps */ = async ({
-  dirs,
-  versionPolicy,
-}) => {
-  const reported = await checkDeps({roots: dirs});
-  if (!versionPolicy) {
-    return {
-      valid: true,
-      policy: {
-        lockstep: false,
-        exceptions: [],
-      },
-      reported,
+const reportMismatchedTopLevelDeps /*: ReportMismatchedTopLevelDeps */ =
+  async ({dirs, versionPolicy}) => {
+    const reported = await checkDeps({roots: dirs});
+    if (!versionPolicy) {
+      return {
+        valid: true,
+        policy: {
+          lockstep: false,
+          exceptions: [],
+        },
+        reported,
+      };
+    }
+
+    const policy = {
+      lockstep: !!versionPolicy.lockstep,
+      exceptions: versionPolicy.exceptions || [],
     };
-  }
 
-  const policy = {
-    lockstep: !!versionPolicy.lockstep,
-    exceptions: versionPolicy.exceptions || [],
-  };
+    let reportedFilter = Object.keys(reported)
+      .filter((dep /*: string */) =>
+        policy.lockstep
+          ? !policy.exceptions.includes(dep)
+          : policy.exceptions.filter(
+              // $FlowFixMe
+              exception => exception === dep || exception.name === dep
+            ).length > 0
+      )
+      .reduce((obj, dep /*: string */) => {
+        const meta /*: ExceptionMetadata */ = (policy.exceptions /*: any */)
+          .filter(meta => meta.name === dep)[0];
 
-  let reportedFilter = Object.keys(reported)
-    .filter((dep /*: string */) =>
-      policy.lockstep
-        ? !policy.exceptions.includes(dep)
-        : policy.exceptions.filter(
-            // $FlowFixMe
-            exception => exception === dep || exception.name === dep
-          ).length > 0
-    )
-    .reduce((obj, dep /*: string */) => {
-      const meta /*: ExceptionMetadata */ = (policy.exceptions /*: any */)
-        .filter(meta => meta.name === dep)[0];
-
-      if (!meta) {
-        // for blanket exemptions, include all reportedly mismatched versions
-        obj[dep] = reported[dep];
-      } else {
-        // otherwise, keep only versions that are not specifically exempt in the version policy
-        for (let version of Object.keys(reported[dep])) {
-          if (!meta.versions.includes(version)) {
-            if (!obj[dep]) obj[dep] = {};
-            obj[dep][version] = reported[dep][version];
+        if (!meta) {
+          // for blanket exemptions, include all reportedly mismatched versions
+          obj[dep] = reported[dep];
+        } else {
+          // otherwise, keep only versions that are not specifically exempt in the version policy
+          for (let version of Object.keys(reported[dep])) {
+            if (!meta.versions.includes(version)) {
+              if (!obj[dep]) obj[dep] = {};
+              obj[dep][version] = reported[dep][version];
+            }
           }
         }
-      }
-      return obj;
-    }, {});
-  const valid = Object.keys(reportedFilter).length === 0;
-  return {valid, policy, reported: reportedFilter};
-};
+        return obj;
+      }, {});
+    const valid = Object.keys(reportedFilter).length === 0;
+    return {valid, policy, reported: reportedFilter};
+  };
 
 /*::
 export type GetErrorMessage = (Report, boolean) => string;

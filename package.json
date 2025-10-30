@@ -1,6 +1,6 @@
 {
   "name": "jazelle",
-  "version": "0.0.0-standalone.101",
+  "version": "0.0.0-standalone.102",
   "main": "index.js",
   "bin": {
     "barn": "bin/bootstrap.sh",
@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@rauschma/stringio": "1.4.0",
-    "inquirer": "8.2.6",
+    "prompts": "^2.4.2",
     "semver": "^6.3.1"
   },
   "devDependencies": {
@@ -20,9 +20,6 @@
     "eslint-plugin-prettier": "^3.1.4",
     "flow-bin": "0.109.0",
     "prettier": "^2.1.2"
-  },
-  "resolutions": {
-    "tmp": "0.2.4"
   },
   "license": "MIT",
   "scripts": {

@@ -13,18 +13,8 @@ const {yarn} = require('../utils/binary-paths.js');
 const {spawnOrExit} = require('../utils/node-helpers.js');
 
 const root = process.cwd();
-const [
-  node,
-  ,
-  rootDir,
-  main,
-  ,
-  command,
-  distPaths,
-  gen,
-  out,
-  ...args
-] = process.argv;
+const [node, , rootDir, main, , command, distPaths, gen, out, ...args] =
+  process.argv;
 
 async function run() {
   if (out) {
