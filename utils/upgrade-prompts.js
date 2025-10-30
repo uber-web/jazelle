@@ -1,5 +1,5 @@
 // @flow
-const inquirer = require('inquirer');
+const prompts = require('prompts');
 const {rsort} = require('semver');
 
 /*::
@@ -12,30 +12,28 @@ type PromptForTypesVersion = (
 */
 
 const createPromptChoices = latest => [
-  {name: `Use latest version (${latest})`, value: 'latest'},
-  {name: 'Enter a specific version manually', value: 'manual'},
-  {name: 'Skip this package', value: 'skip'},
-  {name: 'Abort the upgrade process', value: 'abort'},
+  {title: `Use latest version (${latest})`, value: 'latest'},
+  {title: 'Enter a specific version manually', value: 'manual'},
+  {title: 'Skip this package', value: 'skip'},
+  {title: 'Abort the upgrade process', value: 'abort'},
 ];
 
 const promptForManualVersion = async versions => {
-  const {manualVersion} = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'manualVersion',
-      message: 'Enter the specific version:',
-      validate: input => {
-        if (!input.trim()) return 'Version cannot be empty';
-        if (!versions.includes(input.trim())) {
-          return `Version "${input.trim()}" not found. Available versions: ${versions.join(
-            ', '
-          )}`;
-        }
-        return true;
-      },
+  const {manualVersion} = await prompts({
+    type: 'text',
+    name: 'manualVersion',
+    message: 'Enter the specific version:',
+    validate: input => {
+      if (!input.trim()) return 'Version cannot be empty';
+      if (!versions.includes(input.trim())) {
+        return `Version "${input.trim()}" not found. Available versions: ${versions.join(
+          ', '
+        )}`;
+      }
+      return true;
     },
-  ]);
-  return manualVersion.trim();
+  });
+  return manualVersion ? manualVersion.trim() : null;
 };
 
 const handlePromptAction = async (action, latest, versions) => {
@@ -79,16 +77,14 @@ const promptForTypesVersion /*: PromptForTypesVersion */ = async (
 
   const choices = createPromptChoices(latest);
 
-  const {action} = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'action',
-      message: `What would you like to do for ${typesPackageName}?`,
-      choices,
-    },
-  ]);
+  const {action} = await prompts({
+    type: 'select',
+    name: 'action',
+    message: `What would you like to do for ${typesPackageName}?`,
+    choices,
+  });
 
-  return await handlePromptAction(action, latest, versions);
+  return action ? await handlePromptAction(action, latest, versions) : null;
 };
 
 module.exports = {

@@ -42,7 +42,8 @@ const bump /*: Bump */ = async ({
   });
   downstreams.push(dep);
 
-  const types = /^(major|premajor|minor|preminor|patch|prepatch|prerelease|none)$/;
+  const types =
+    /^(major|premajor|minor|preminor|patch|prepatch|prerelease|none)$/;
   if (!types.test(type)) {
     throw new Error(
       `Invalid bump type: ${type}. Must be major, premajor, minor, preminor, patch, prepatch, prerelease or none`
