@@ -42,12 +42,10 @@ const partition /*: <T: any>(Array<T>, number) => Array<Array<T>> */ = (
 /**
  * An async implementation that mirrors Array.prototype.forEach.
  */
-const forEachAsync /*: <TSrc: any, TDest: any>(Array<TSrc>, TSrc => Promise<TDest>) => Promise<void> */ = async (
-  arr,
-  callback
-) => {
-  await Promise.all(arr.map(callback));
-};
+const forEachAsync /*: <TSrc: any, TDest: any>(Array<TSrc>, TSrc => Promise<TDest>) => Promise<void> */ =
+  async (arr, callback) => {
+    await Promise.all(arr.map(callback));
+  };
 
 /**
  * Fetches metadata for the provided packages via the 'npm info' command.
