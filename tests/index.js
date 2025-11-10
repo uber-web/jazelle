@@ -1,34 +1,34 @@
 // @flow
 const assert = require('assert');
-const { tmpdir } = require('os');
+const {tmpdir} = require('os');
 const path = require('path');
-const { readFileSync, createWriteStream } = require('fs');
-const { runCLI } = require('../index');
-const { init } = require('../commands/init.js');
-const { scaffold } = require('../commands/scaffold.js');
-const { install, ImmutableInstallError } = require('../commands/install.js');
-const { add } = require('../commands/add.js');
-const { bazel: bazelCmd } = require('../commands/bazel.js');
-const { upgrade } = require('../commands/upgrade.js');
-const { remove } = require('../commands/remove.js');
-const { ci } = require('../commands/ci.js');
-const { focus } = require('../commands/focus.js');
-const { purge } = require('../commands/purge.js');
-const { node: nodeCmd } = require('../commands/node.js');
-const { yarn: yarnCmd } = require('../commands/yarn.js');
-const { bump } = require('../commands/bump.js');
-const { script } = require('../commands/script.js');
-const { localize } = require('../commands/localize.js');
-const { check } = require('../commands/check.js');
-const { outdated } = require('../commands/outdated.js');
+const {readFileSync, createWriteStream} = require('fs');
+const {runCLI} = require('../index');
+const {init} = require('../commands/init.js');
+const {scaffold} = require('../commands/scaffold.js');
+const {install, ImmutableInstallError} = require('../commands/install.js');
+const {add} = require('../commands/add.js');
+const {bazel: bazelCmd} = require('../commands/bazel.js');
+const {upgrade} = require('../commands/upgrade.js');
+const {remove} = require('../commands/remove.js');
+const {ci} = require('../commands/ci.js');
+const {focus} = require('../commands/focus.js');
+const {purge} = require('../commands/purge.js');
+const {node: nodeCmd} = require('../commands/node.js');
+const {yarn: yarnCmd} = require('../commands/yarn.js');
+const {bump} = require('../commands/bump.js');
+const {script} = require('../commands/script.js');
+const {localize} = require('../commands/localize.js');
+const {check} = require('../commands/check.js');
+const {outdated} = require('../commands/outdated.js');
 
-const { assertProjectDir } = require('../utils/assert-project-dir.js');
-const { batchTestGroup } = require('../utils/batch-test-group');
+const {assertProjectDir} = require('../utils/assert-project-dir.js');
+const {batchTestGroup} = require('../utils/batch-test-group');
 const bazelCmds = require('../utils/bazel-commands.js');
-const { bazel, node, yarn } = require('../utils/binary-paths.js');
-const { cli } = require('../utils/cli.js');
-const { detectCyclicDeps } = require('../utils/detect-cyclic-deps.js');
-const { copy } = require('../rules/untar');
+const {bazel, node, yarn} = require('../utils/binary-paths.js');
+const {cli} = require('../utils/cli.js');
+const {detectCyclicDeps} = require('../utils/detect-cyclic-deps.js');
+const {copy} = require('../rules/untar');
 const {
   exec,
   exists,
@@ -39,20 +39,20 @@ const {
   remove: rm,
   spawn,
 } = require('../utils/node-helpers.js');
-const { findChangedTargets } = require('../utils/find-changed-targets.js');
-const { findLocalDependency } = require('../utils/find-local-dependency.js');
+const {findChangedTargets} = require('../utils/find-changed-targets.js');
+const {findLocalDependency} = require('../utils/find-local-dependency.js');
 const {
   generateBazelBuildRules,
 } = require('../utils/generate-bazel-build-rules.js');
-const { generateBazelignore } = require('../utils/generate-bazelignore.js');
-const { getDownstreams } = require('../utils/get-downstreams.js');
-const { getManifest } = require('../utils/get-manifest.js');
-const { getLocalDependencies } = require('../utils/get-local-dependencies.js');
-const { getRootDir } = require('../utils/get-root-dir.js');
-const { getTestGroups } = require('../utils/get-test-groups.js');
-const { groupByDepsets } = require('../utils/group-by-depsets.js');
-const { isYarnResolution } = require('../utils/is-yarn-resolution.js');
-const { parse, getPassThroughArgs } = require('../utils/parse-argv.js');
+const {generateBazelignore} = require('../utils/generate-bazelignore.js');
+const {getDownstreams} = require('../utils/get-downstreams.js');
+const {getManifest} = require('../utils/get-manifest.js');
+const {getLocalDependencies} = require('../utils/get-local-dependencies.js');
+const {getRootDir} = require('../utils/get-root-dir.js');
+const {getTestGroups} = require('../utils/get-test-groups.js');
+const {groupByDepsets} = require('../utils/group-by-depsets.js');
+const {isYarnResolution} = require('../utils/is-yarn-resolution.js');
+const {parse, getPassThroughArgs} = require('../utils/parse-argv.js');
 
 const {
   reportMismatchedTopLevelDeps,
@@ -63,9 +63,9 @@ const {
   removeCallArgItem,
   sortCallArgItems,
 } = require('../utils/starlark.js');
-const { shouldSync, getVersion } = require('../utils/version-onboarding.js');
+const {shouldSync, getVersion} = require('../utils/version-onboarding.js');
 const yarnCmds = require('../utils/yarn-commands.js');
-const { sortPackageJson } = require('../utils/sort-package-json');
+const {sortPackageJson} = require('../utils/sort-package-json');
 
 const originalProcessExit = process.exit;
 process.on('unhandledRejection', e => {
@@ -270,7 +270,7 @@ async function testBazel() {
 
   // @see: https://bazel.build/run/scripts#exit-codes
   await expectProcessExit(2, () =>
-    bazelCmd({ root, args: ['run'], stdio: ['ignore', stream, stream] })
+    bazelCmd({root, args: ['run'], stdio: ['ignore', stream, stream]})
   );
 
   const output = await read(streamFile, 'utf8');
@@ -280,7 +280,7 @@ async function testBazel() {
 
 async function testInit() {
   await exec(`mkdir ${tmp}/tmp/init`);
-  await init({ cwd: `${tmp}/tmp/init` });
+  await init({cwd: `${tmp}/tmp/init`});
   assert(await exists(`${tmp}/tmp/init/WORKSPACE`));
   assert(await exists(`${tmp}/tmp/init/BUILD.bazel`));
   assert(await exists(`${tmp}/tmp/init/.bazelversion`));
@@ -299,7 +299,7 @@ async function testScaffold() {
   const from = 'template';
   const to = 'foo';
   const name = '@foo/foo';
-  await scaffold({ root, cwd, from, to, name });
+  await scaffold({root, cwd, from, to, name});
 
   assert(await exists(`${tmp}/tmp/scaffold/foo/BUILD.bazel`));
   assert(await exists(`${tmp}/tmp/scaffold/foo/package.json`));
@@ -314,11 +314,11 @@ async function testScaffold() {
   assert.equal(meta.name, '@foo/foo');
 
   const manifestFile = `${tmp}/tmp/scaffold/manifest.json`;
-  const { projects } = JSON.parse(await read(manifestFile, 'utf8'));
+  const {projects} = JSON.parse(await read(manifestFile, 'utf8'));
   assert(projects === undefined);
 
   const rootMeta = `${tmp}/tmp/scaffold/package.json`;
-  const { workspaces } = JSON.parse(await read(rootMeta, 'utf8'));
+  const {workspaces} = JSON.parse(await read(rootMeta, 'utf8'));
   assert(workspaces.includes('foo'));
 }
 
@@ -447,7 +447,7 @@ async function testUpgrade() {
   assert((await read(meta, 'utf8')).includes('"has": "1.0.3"'));
   assert((await read(lockfile, 'utf8')).includes('function-bind'));
 
-  await upgrade({ root: `${tmp}/tmp/upgrade`, args: ['b'], interactive: false });
+  await upgrade({root: `${tmp}/tmp/upgrade`, args: ['b'], interactive: false});
   assert((await read(meta, 'utf8')).includes('"b": "1.0.0"'));
 }
 
@@ -544,7 +544,7 @@ async function testUpgradeTypesInteractiveMode() {
   const testRoot = `${tmp}/tmp/upgrade-types-interactive-mode`;
   await exec(`cp -r ${__dirname}/fixtures/upgrade-types/ ${testRoot}`);
 
-  const { promptForTypesVersion } = require('../commands/upgrade.js');
+  const {promptForTypesVersion} = require('../commands/upgrade.js');
 
   // Test non-interactive mode (interactive tests require stdin mocking - skip for now)
   const result = await promptForTypesVersion(
@@ -563,7 +563,7 @@ async function testUpgradeTypesInteractiveMode() {
 
 async function testPurge() {
   await exec(`cp -r ${__dirname}/fixtures/purge/ ${tmp}/tmp/purge`);
-  await purge({ root: `${tmp}/tmp/purge`, force: false });
+  await purge({root: `${tmp}/tmp/purge`, force: false});
   const nodeModules = `${tmp}/tmp/purge/a/node_modules`;
   const globalNodeModules = `${tmp}/tmp/purge/node_modules`;
   const temp = `${__dirname}/third_party/jazelle/temp`;
@@ -600,7 +600,7 @@ async function testNode() {
   const stream = createWriteStream(streamFile);
   await new Promise(resolve => stream.on('open', resolve));
 
-  await install({ root, cwd });
+  await install({root, cwd});
 
   await nodeCmd({
     root,
@@ -635,7 +635,7 @@ async function testYarn() {
   const stream = createWriteStream(streamFile);
   await new Promise(resolve => stream.on('open', resolve));
 
-  await install({ root, cwd });
+  await install({root, cwd});
 
   await yarnCmd({
     cwd,
@@ -665,8 +665,8 @@ async function testEach() {
   const root = `${tmp}/tmp/each`;
 
   const plan = [
-    { type: 'dir', dir: 'a', action: 'exec', args: ['foo'] },
-    { type: 'dir', dir: 'a', action: 'exec', args: ['bash', '-c', 'echo $PWD'] },
+    {type: 'dir', dir: 'a', action: 'exec', args: ['foo']},
+    {type: 'dir', dir: 'a', action: 'exec', args: ['bash', '-c', 'echo $PWD']},
   ];
   const failed = /*:: await */ await batchTestGroup({
     root,
@@ -691,17 +691,17 @@ async function testBump() {
   // do not update package.json files in CI
   // $FlowFixMe `assert` typedef is missing `rejects` method
   await assert.rejects(
-    bump({ root, cwd, type: 'preminor', frozenPackageJson: true })
+    bump({root, cwd, type: 'preminor', frozenPackageJson: true})
   );
   assert(JSON.parse(await read(pkgMeta)).version, '0.0.0');
   assert(JSON.parse(await read(depMeta)).version, '0.0.0');
 
-  await bump({ root, cwd, type: 'preminor' });
+  await bump({root, cwd, type: 'preminor'});
   assert(JSON.parse(await read(pkgMeta)).version, '0.1.0-0');
   assert(JSON.parse(await read(depMeta)).version, '0.1.0-0');
 
   // command should be idempotent
-  await bump({ root, cwd, type: 'preminor' });
+  await bump({root, cwd, type: 'preminor'});
   assert.equal(JSON.parse(await read(pkgMeta)).version, '0.1.0-0');
   assert.equal(JSON.parse(await read(depMeta)).version, '0.0.0');
 
@@ -729,7 +729,7 @@ async function testScriptCommand() {
   const stream = createWriteStream(streamFile);
   await new Promise(resolve => stream.on('open', resolve));
 
-  await install({ root, cwd });
+  await install({root, cwd});
 
   await script({
     root,
@@ -758,11 +758,11 @@ async function testAssertProjectDir() {
   const dir1 = `${__dirname}/fixtures/project-dir`;
   const t = () => true;
   const f = () => false;
-  const result1 = await assertProjectDir({ dir: dir1 }).then(t, f);
+  const result1 = await assertProjectDir({dir: dir1}).then(t, f);
   assert(result1);
 
   const dir2 = `${__dirname}/fixtures/not-project-dir`;
-  const result2 = await assertProjectDir({ dir: dir2 }).then(f, t);
+  const result2 = await assertProjectDir({dir: dir2}).then(f, t);
   assert(result2);
 }
 
@@ -789,14 +789,14 @@ async function testBatchTestGroup() {
     root: `${tmp}/tmp/batch-test-group`,
     data: [
       [
-        { type: 'bazel', dir: 'a', action: 'flow', args: [] },
-        { type: 'bazel', dir: 'a', action: 'lint', args: [] },
-        { type: 'bazel', dir: 'a', action: 'test', args: [] },
+        {type: 'bazel', dir: 'a', action: 'flow', args: []},
+        {type: 'bazel', dir: 'a', action: 'lint', args: []},
+        {type: 'bazel', dir: 'a', action: 'test', args: []},
       ],
       [
-        { type: 'bazel', dir: 'b', action: 'lint', args: [] },
-        { type: 'bazel', dir: 'b', action: 'test', args: [] },
-        { type: 'bazel', dir: 'c', action: 'test', args: [] },
+        {type: 'bazel', dir: 'b', action: 'lint', args: []},
+        {type: 'bazel', dir: 'b', action: 'test', args: []},
+        {type: 'bazel', dir: 'c', action: 'test', args: []},
       ],
     ],
     index: 0,
@@ -982,12 +982,12 @@ async function testCLI() {
       `Foo
 
       --bar [bar]     bar`,
-      async ({ bar }) => {
+      async ({bar}) => {
         called = bar;
       },
     ],
   };
-  cli('foo', { bar: '1' }, cmds, async () => { });
+  cli('foo', {bar: '1'}, cmds, async () => {});
   assert.equal(called, '1');
 }
 
@@ -1078,7 +1078,7 @@ async function testFindChangedTargets() {
   {
     const root = `${__dirname}/fixtures/find-changed-targets/dirs`;
     const files = `${__dirname}/fixtures/find-changed-targets/dirs/changes.txt`;
-    const dirs = await findChangedTargets({ root, files, format: 'dirs' });
+    const dirs = await findChangedTargets({root, files, format: 'dirs'});
     assert.deepEqual(dirs, ['b', 'a']);
   }
   {
@@ -1101,7 +1101,7 @@ async function testFindChangedTargets() {
       root: `${tmp}/tmp/find-changed-targets/bazel`,
       cwd: `${tmp}/tmp/find-changed-targets/bazel`,
     });
-    const targets = await findChangedTargets({ root, files, format: 'targets' });
+    const targets = await findChangedTargets({root, files, format: 'targets'});
     assert.deepEqual(
       targets.sort(),
       [
@@ -1153,7 +1153,7 @@ async function testFindChangedTargets() {
   {
     const root = `${__dirname}/fixtures/find-changed-targets/no-target`;
     const files = `${__dirname}/fixtures/find-changed-targets/no-target/changes.txt`;
-    const dirs = await findChangedTargets({ root, files, format: 'dirs' });
+    const dirs = await findChangedTargets({root, files, format: 'dirs'});
     assert.deepEqual(dirs, []);
   }
 }
@@ -1184,7 +1184,7 @@ async function testImmutableInstall() {
     await exec(`cp -r ${fixturePath}/ ${root}`);
 
     try {
-      await install({ root, cwd: root, immutable: true });
+      await install({root, cwd: root, immutable: true});
       // $FlowFixMe: bad libdef?
       assert.fail('install should not succeed');
     } catch (error) {
@@ -1205,7 +1205,7 @@ async function testImmutableInstall() {
           // compare file with the original fixture file
           assert(
             (await read(`${root}/${file}`, 'utf-8')) ===
-            (await read(`${fixturePath}/${file}`, 'utf-8')),
+              (await read(`${fixturePath}/${file}`, 'utf-8')),
             `${file} should not have been changed`
           );
         } else {
@@ -1225,10 +1225,10 @@ async function testImmutableInstall() {
 
     // first run an install without `immutable` to prime the fixture
     // with all the generated files
-    await install({ root, cwd: root });
+    await install({root, cwd: root});
 
     try {
-      await install({ root, cwd: root, immutable: true });
+      await install({root, cwd: root, immutable: true});
     } catch (error) {
       // $FlowFixMe: bad libdef?
       assert.fail('install should succeed');
@@ -1343,7 +1343,7 @@ async function testGetDownstreams() {
       meta: {
         name: 'a',
         version: '0.0.0',
-        dependencies: { b: '0.0.0' }, // cyclical dep should not break test
+        dependencies: {b: '0.0.0'}, // cyclical dep should not break test
       },
       depth: 3,
     },
@@ -1352,7 +1352,7 @@ async function testGetDownstreams() {
       meta: {
         name: 'b',
         version: '0.0.0',
-        dependencies: { a: '0.0.0' },
+        dependencies: {a: '0.0.0'},
       },
       depth: 2,
     },
@@ -1361,12 +1361,12 @@ async function testGetDownstreams() {
       meta: {
         name: 'c',
         version: '0.0.0',
-        dependencies: { b: '0.0.0' },
+        dependencies: {b: '0.0.0'},
       },
       depth: 1,
     },
   ];
-  const downstreams = getDownstreams({ deps, dep: deps[0] });
+  const downstreams = getDownstreams({deps, dep: deps[0]});
   assert.deepEqual(downstreams, deps.slice(1));
 }
 
@@ -1385,7 +1385,7 @@ async function testGetDownstreamsExclude() {
       meta: {
         name: 'b',
         version: '0.0.0',
-        dependencies: { a: 'workspace:*' },
+        dependencies: {a: 'workspace:*'},
       },
       depth: 3,
     },
@@ -1394,7 +1394,7 @@ async function testGetDownstreamsExclude() {
       meta: {
         name: 'c',
         version: '0.0.0',
-        dependencies: { b: '0.0.0' },
+        dependencies: {b: '0.0.0'},
       },
       depth: 2,
     },
@@ -1403,7 +1403,7 @@ async function testGetDownstreamsExclude() {
       meta: {
         name: 'd',
         version: '0.0.0',
-        dependencies: { a: '0.0.0' },
+        dependencies: {a: '0.0.0'},
       },
       depth: 2,
     },
@@ -1449,7 +1449,7 @@ async function testGetLocalDependencies() {
 
 async function testGetManifest() {
   assert.deepEqual(
-    await getManifest({ root: `${__dirname}/fixtures/get-all-project-paths` }),
+    await getManifest({root: `${__dirname}/fixtures/get-all-project-paths`}),
     {
       projects: ['path/to/a', 'path/to/b'],
       workspace: 'host',
@@ -1460,7 +1460,7 @@ async function testGetManifest() {
 
 async function testGetRootDir() {
   const dir = `${__dirname}/fixtures/get-root-dir/a`;
-  const result = getRootDir({ dir });
+  const result = getRootDir({dir});
   assert(result);
 }
 
@@ -1482,14 +1482,14 @@ async function testGetTestGroups() {
   });
   assert.deepEqual(bazelByTwo, [
     [
-      { type: 'bazel', dir: 'a', action: 'test', args: [] },
-      { type: 'bazel', dir: 'a', action: 'lint', args: [] },
-      { type: 'bazel', dir: 'a', action: 'flow', args: [] },
+      {type: 'bazel', dir: 'a', action: 'test', args: []},
+      {type: 'bazel', dir: 'a', action: 'lint', args: []},
+      {type: 'bazel', dir: 'a', action: 'flow', args: []},
     ],
     [
-      { type: 'bazel', dir: 'b', action: 'test', args: [] },
-      { type: 'bazel', dir: 'b', action: 'lint', args: [] },
-      { type: 'bazel', dir: 'c', action: 'test', args: [] },
+      {type: 'bazel', dir: 'b', action: 'test', args: []},
+      {type: 'bazel', dir: 'b', action: 'lint', args: []},
+      {type: 'bazel', dir: 'c', action: 'test', args: []},
     ],
   ]);
 
@@ -1507,15 +1507,15 @@ async function testGetTestGroups() {
   });
   assert.deepEqual(bazelByFour, [
     [
-      { type: 'bazel', dir: 'a', action: 'lint', args: [] },
-      { type: 'bazel', dir: 'a', action: 'flow', args: [] },
+      {type: 'bazel', dir: 'a', action: 'lint', args: []},
+      {type: 'bazel', dir: 'a', action: 'flow', args: []},
     ],
-    [{ type: 'bazel', dir: 'a', action: 'test', args: [] }],
+    [{type: 'bazel', dir: 'a', action: 'test', args: []}],
     [
-      { type: 'bazel', dir: 'b', action: 'test', args: [] },
-      { type: 'bazel', dir: 'b', action: 'lint', args: [] },
+      {type: 'bazel', dir: 'b', action: 'test', args: []},
+      {type: 'bazel', dir: 'b', action: 'lint', args: []},
     ],
-    [{ type: 'bazel', dir: 'c', action: 'test', args: [] }],
+    [{type: 'bazel', dir: 'c', action: 'test', args: []}],
   ]);
 
   const bazelByEight = await getTestGroups({
@@ -1531,12 +1531,12 @@ async function testGetTestGroups() {
     nodes: 8,
   });
   assert.deepEqual(bazelByEight, [
-    [{ type: 'bazel', dir: 'a', action: 'flow', args: [] }],
-    [{ type: 'bazel', dir: 'a', action: 'lint', args: [] }],
-    [{ type: 'bazel', dir: 'a', action: 'test', args: [] }],
-    [{ type: 'bazel', dir: 'b', action: 'lint', args: [] }],
-    [{ type: 'bazel', dir: 'b', action: 'test', args: [] }],
-    [{ type: 'bazel', dir: 'c', action: 'test', args: [] }],
+    [{type: 'bazel', dir: 'a', action: 'flow', args: []}],
+    [{type: 'bazel', dir: 'a', action: 'lint', args: []}],
+    [{type: 'bazel', dir: 'a', action: 'test', args: []}],
+    [{type: 'bazel', dir: 'b', action: 'lint', args: []}],
+    [{type: 'bazel', dir: 'b', action: 'test', args: []}],
+    [{type: 'bazel', dir: 'c', action: 'test', args: []}],
   ]);
 
   const dirByTwo = await getTestGroups({
@@ -1546,14 +1546,14 @@ async function testGetTestGroups() {
   });
   assert.deepEqual(dirByTwo, [
     [
-      { type: 'dir', dir: 'a', action: 'test', args: [] },
-      { type: 'dir', dir: 'a', action: 'lint', args: [] },
-      { type: 'dir', dir: 'a', action: 'flow', args: [] },
+      {type: 'dir', dir: 'a', action: 'test', args: []},
+      {type: 'dir', dir: 'a', action: 'lint', args: []},
+      {type: 'dir', dir: 'a', action: 'flow', args: []},
     ],
     [
-      { type: 'dir', dir: 'b', action: 'test', args: [] },
-      { type: 'dir', dir: 'b', action: 'lint', args: [] },
-      { type: 'dir', dir: 'c', action: 'test', args: [] },
+      {type: 'dir', dir: 'b', action: 'test', args: []},
+      {type: 'dir', dir: 'b', action: 'lint', args: []},
+      {type: 'dir', dir: 'c', action: 'test', args: []},
     ],
   ]);
 
@@ -1564,15 +1564,15 @@ async function testGetTestGroups() {
   });
   assert.deepEqual(dirByFour, [
     [
-      { type: 'dir', dir: 'a', action: 'lint', args: [] },
-      { type: 'dir', dir: 'a', action: 'flow', args: [] },
+      {type: 'dir', dir: 'a', action: 'lint', args: []},
+      {type: 'dir', dir: 'a', action: 'flow', args: []},
     ],
-    [{ type: 'dir', dir: 'a', action: 'test', args: [] }],
+    [{type: 'dir', dir: 'a', action: 'test', args: []}],
     [
-      { type: 'dir', dir: 'b', action: 'test', args: [] },
-      { type: 'dir', dir: 'b', action: 'lint', args: [] },
+      {type: 'dir', dir: 'b', action: 'test', args: []},
+      {type: 'dir', dir: 'b', action: 'lint', args: []},
     ],
-    [{ type: 'dir', dir: 'c', action: 'test', args: [] }],
+    [{type: 'dir', dir: 'c', action: 'test', args: []}],
   ]);
 }
 
@@ -1585,131 +1585,131 @@ async function testGroupByDepsets() {
   const bMeta = JSON.parse(await read(`${root}/b/package.json`, 'utf8'));
   const cMeta = JSON.parse(await read(`${root}/c/package.json`, 'utf8'));
   const metas = [
-    { dir: `${root}/a`, depth: 0, meta: aMeta },
-    { dir: `${root}/b`, depth: 0, meta: bMeta },
-    { dir: `${root}/c`, depth: 0, meta: cMeta },
+    {dir: `${root}/a`, depth: 0, meta: aMeta},
+    {dir: `${root}/b`, depth: 0, meta: bMeta},
+    {dir: `${root}/c`, depth: 0, meta: cMeta},
   ];
   const group = [
-    { type: 'bazel', dir: 'a', action: 'test', args: [] },
-    { type: 'bazel', dir: 'a', action: 'lint', args: [] },
-    { type: 'bazel', dir: 'a', action: 'flow', args: [] },
-    { type: 'bazel', dir: 'b', action: 'test', args: [] },
-    { type: 'bazel', dir: 'b', action: 'lint', args: [] },
-    { type: 'bazel', dir: 'b', action: 'flow', args: [] },
-    { type: 'bazel', dir: 'c', action: 'test', args: [] },
-    { type: 'bazel', dir: 'c', action: 'lint', args: [] },
-    { type: 'bazel', dir: 'c', action: 'flow', args: [] },
+    {type: 'bazel', dir: 'a', action: 'test', args: []},
+    {type: 'bazel', dir: 'a', action: 'lint', args: []},
+    {type: 'bazel', dir: 'a', action: 'flow', args: []},
+    {type: 'bazel', dir: 'b', action: 'test', args: []},
+    {type: 'bazel', dir: 'b', action: 'lint', args: []},
+    {type: 'bazel', dir: 'b', action: 'flow', args: []},
+    {type: 'bazel', dir: 'c', action: 'test', args: []},
+    {type: 'bazel', dir: 'c', action: 'lint', args: []},
+    {type: 'bazel', dir: 'c', action: 'flow', args: []},
   ];
-  assert.deepEqual(groupByDepsets({ root, metas, group }), [
+  assert.deepEqual(groupByDepsets({root, metas, group}), [
     [
-      { type: 'bazel', dir: 'a', action: 'test', args: [] },
-      { type: 'bazel', dir: 'a', action: 'lint', args: [] },
-      { type: 'bazel', dir: 'a', action: 'flow', args: [] },
-      { type: 'bazel', dir: 'b', action: 'test', args: [] },
-      { type: 'bazel', dir: 'b', action: 'lint', args: [] },
-      { type: 'bazel', dir: 'b', action: 'flow', args: [] },
+      {type: 'bazel', dir: 'a', action: 'test', args: []},
+      {type: 'bazel', dir: 'a', action: 'lint', args: []},
+      {type: 'bazel', dir: 'a', action: 'flow', args: []},
+      {type: 'bazel', dir: 'b', action: 'test', args: []},
+      {type: 'bazel', dir: 'b', action: 'lint', args: []},
+      {type: 'bazel', dir: 'b', action: 'flow', args: []},
     ],
     [
-      { type: 'bazel', dir: 'c', action: 'test', args: [] },
-      { type: 'bazel', dir: 'c', action: 'lint', args: [] },
-      { type: 'bazel', dir: 'c', action: 'flow', args: [] },
+      {type: 'bazel', dir: 'c', action: 'test', args: []},
+      {type: 'bazel', dir: 'c', action: 'lint', args: []},
+      {type: 'bazel', dir: 'c', action: 'flow', args: []},
     ],
   ]);
 }
 
 async function testIsYarnResolution() {
   const exact = isYarnResolution({
-    meta: { resolutions: { a: '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {a: '0.0.0'}, name: '', version: ''},
     name: 'a',
   });
   assert.equal(exact, true);
 
   const namespaced = isYarnResolution({
-    meta: { resolutions: { '@a/b': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'@a/b': '0.0.0'}, name: '', version: ''},
     name: '@a/b',
   });
   assert.equal(namespaced, true);
 
   const globbed = isYarnResolution({
-    meta: { resolutions: { '**/a': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'**/a': '0.0.0'}, name: '', version: ''},
     name: 'a',
   });
   assert.equal(globbed, true);
 
   const globbedNs = isYarnResolution({
-    meta: { resolutions: { '**/@a/b': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'**/@a/b': '0.0.0'}, name: '', version: ''},
     name: '@a/b',
   });
   assert.equal(globbedNs, true);
 
   const direct = isYarnResolution({
-    meta: { resolutions: { 'a/b': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'a/b': '0.0.0'}, name: '', version: ''},
     name: 'b',
   });
   assert.equal(direct, true);
 
   const directNs = isYarnResolution({
-    meta: { resolutions: { 'a/@b/c': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'a/@b/c': '0.0.0'}, name: '', version: ''},
     name: '@b/c',
   });
   assert.equal(directNs, true);
 
   const directOfNs = isYarnResolution({
-    meta: { resolutions: { '@a/b/c': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'@a/b/c': '0.0.0'}, name: '', version: ''},
     name: 'c',
   });
   assert.equal(directOfNs, true);
 
   const directNsOfNs = isYarnResolution({
-    meta: { resolutions: { '@a/b/@c/d': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'@a/b/@c/d': '0.0.0'}, name: '', version: ''},
     name: '@c/d',
   });
   assert.equal(directNsOfNs, true);
 
   const transitive = isYarnResolution({
-    meta: { resolutions: { 'a/**/b': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'a/**/b': '0.0.0'}, name: '', version: ''},
     name: 'b',
   });
   assert.equal(transitive, true);
 
   const transitiveNs = isYarnResolution({
-    meta: { resolutions: { 'a/**/@b/c': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'a/**/@b/c': '0.0.0'}, name: '', version: ''},
     name: '@b/c',
   });
   assert.equal(transitiveNs, true);
 
   const transitiveOfNs = isYarnResolution({
-    meta: { resolutions: { '@a/b/**/c': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'@a/b/**/c': '0.0.0'}, name: '', version: ''},
     name: 'c',
   });
   assert.equal(transitiveOfNs, true);
 
   const transitiveNsOfNs = isYarnResolution({
-    meta: { resolutions: { '@a/b/**/@c/d': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'@a/b/**/@c/d': '0.0.0'}, name: '', version: ''},
     name: '@c/d',
   });
   assert.equal(transitiveNsOfNs, true);
 
   const nested = isYarnResolution({
-    meta: { resolutions: { 'a/b/c': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'a/b/c': '0.0.0'}, name: '', version: ''},
     name: 'c',
   });
   assert.equal(nested, true);
 
   const nestedOfNs = isYarnResolution({
-    meta: { resolutions: { 'a/@b/c/d': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'a/@b/c/d': '0.0.0'}, name: '', version: ''},
     name: 'd',
   });
   assert.equal(nestedOfNs, true);
 
   const positional = isYarnResolution({
-    meta: { resolutions: { 'a/b': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'a/b': '0.0.0'}, name: '', version: ''},
     name: 'a',
   });
   assert.equal(positional, false);
 
   const positionalNs = isYarnResolution({
-    meta: { resolutions: { '@a/a/b': '0.0.0' }, name: '', version: '' },
+    meta: {resolutions: {'@a/a/b': '0.0.0'}, name: '', version: ''},
     name: 'a',
   });
   assert.equal(positionalNs, false);
@@ -1785,13 +1785,13 @@ async function testReportMismatchedTopLevelDeps() {
   });
   assert.deepEqual(withoutLockstep, {
     valid: false,
-    policy: { lockstep: false, exceptions: ['no-bugs', '@uber/mismatched'] },
+    policy: {lockstep: false, exceptions: ['no-bugs', '@uber/mismatched']},
     reported: {
       'no-bugs': {
         '^1.0.0': ['@uber/a', '@uber/b'],
         'npm:function-bind': ['@uber/c'],
       },
-      '@uber/mismatched': { '^2.0.0': ['@uber/b'], '^1.0.0': ['@uber/a'] },
+      '@uber/mismatched': {'^2.0.0': ['@uber/b'], '^1.0.0': ['@uber/a']},
     },
   });
 
@@ -1805,9 +1805,9 @@ async function testReportMismatchedTopLevelDeps() {
   });
   assert.deepEqual(withoutPartialLockstep, {
     valid: false,
-    policy: { lockstep: false, exceptions: ['@uber/mismatched'] },
+    policy: {lockstep: false, exceptions: ['@uber/mismatched']},
     reported: {
-      '@uber/mismatched': { '^2.0.0': ['@uber/b'], '^1.0.0': ['@uber/a'] },
+      '@uber/mismatched': {'^2.0.0': ['@uber/b'], '^1.0.0': ['@uber/a']},
     },
   });
 
@@ -1821,9 +1821,9 @@ async function testReportMismatchedTopLevelDeps() {
   });
   assert.deepEqual(withLockstep, {
     valid: false,
-    policy: { lockstep: true, exceptions: ['no-bugs'] },
+    policy: {lockstep: true, exceptions: ['no-bugs']},
     reported: {
-      '@uber/mismatched': { '^2.0.0': ['@uber/b'], '^1.0.0': ['@uber/a'] },
+      '@uber/mismatched': {'^2.0.0': ['@uber/b'], '^1.0.0': ['@uber/a']},
     },
   });
 
@@ -1837,7 +1837,7 @@ async function testReportMismatchedTopLevelDeps() {
   });
   assert.deepEqual(withAllExceptions, {
     valid: true,
-    policy: { lockstep: true, exceptions: ['no-bugs', '@uber/mismatched'] },
+    policy: {lockstep: true, exceptions: ['no-bugs', '@uber/mismatched']},
     reported: {},
   });
 
@@ -1846,16 +1846,16 @@ async function testReportMismatchedTopLevelDeps() {
     dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: false,
-      exceptions: [{ name: '@uber/mismatched', versions: ['^1.0.0'] }],
+      exceptions: [{name: '@uber/mismatched', versions: ['^1.0.0']}],
     },
   });
   assert.deepEqual(withVersionedExceptions, {
     valid: false,
     policy: {
       lockstep: false,
-      exceptions: [{ name: '@uber/mismatched', versions: ['^1.0.0'] }],
+      exceptions: [{name: '@uber/mismatched', versions: ['^1.0.0']}],
     },
-    reported: { '@uber/mismatched': { '^2.0.0': ['@uber/b'] } },
+    reported: {'@uber/mismatched': {'^2.0.0': ['@uber/b']}},
   });
 
   const withAllVersionedExceptions = await reportMismatchedTopLevelDeps({
@@ -1863,14 +1863,14 @@ async function testReportMismatchedTopLevelDeps() {
     dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: false,
-      exceptions: [{ name: '@uber/mismatched', versions: ['^1.0.0', '^2.0.0'] }],
+      exceptions: [{name: '@uber/mismatched', versions: ['^1.0.0', '^2.0.0']}],
     },
   });
   assert.deepEqual(withAllVersionedExceptions, {
     valid: true,
     policy: {
       lockstep: false,
-      exceptions: [{ name: '@uber/mismatched', versions: ['^1.0.0', '^2.0.0'] }],
+      exceptions: [{name: '@uber/mismatched', versions: ['^1.0.0', '^2.0.0']}],
     },
     reported: {},
   });
@@ -1880,16 +1880,16 @@ async function testReportMismatchedTopLevelDeps() {
     dirs: [`${root}/packages/a`, `${root}/packages/b`, `${root}/packages/c`],
     versionPolicy: {
       lockstep: true,
-      exceptions: ['no-bugs', { name: '@uber/mismatched', versions: ['^1.0.0'] }],
+      exceptions: ['no-bugs', {name: '@uber/mismatched', versions: ['^1.0.0']}],
     },
   });
   assert.deepEqual(withLockstepVersionedExceptions, {
     valid: false,
     policy: {
       lockstep: true,
-      exceptions: ['no-bugs', { name: '@uber/mismatched', versions: ['^1.0.0'] }],
+      exceptions: ['no-bugs', {name: '@uber/mismatched', versions: ['^1.0.0']}],
     },
-    reported: { '@uber/mismatched': { '^2.0.0': ['@uber/b'] } },
+    reported: {'@uber/mismatched': {'^2.0.0': ['@uber/b']}},
   });
 
   const withLockstepAllVersionedExceptions = await reportMismatchedTopLevelDeps(
@@ -1900,7 +1900,7 @@ async function testReportMismatchedTopLevelDeps() {
         lockstep: true,
         exceptions: [
           'no-bugs',
-          { name: '@uber/mismatched', versions: ['^1.0.0', '^2.0.0'] },
+          {name: '@uber/mismatched', versions: ['^1.0.0', '^2.0.0']},
         ],
       },
     }
@@ -1911,7 +1911,7 @@ async function testReportMismatchedTopLevelDeps() {
       lockstep: true,
       exceptions: [
         'no-bugs',
-        { name: '@uber/mismatched', versions: ['^1.0.0', '^2.0.0'] },
+        {name: '@uber/mismatched', versions: ['^1.0.0', '^2.0.0']},
       ],
     },
     reported: {},
@@ -2021,7 +2021,7 @@ async function testVersionOnboarding() {
       exceptions: ['foo'],
     };
     const name = 'foo';
-    assert(!shouldSync({ versionPolicy, name }));
+    assert(!shouldSync({versionPolicy, name}));
   }
   {
     const versionPolicy = {
@@ -2029,7 +2029,7 @@ async function testVersionOnboarding() {
       exceptions: ['foo'],
     };
     const name = 'foo';
-    assert(shouldSync({ versionPolicy, name }));
+    assert(shouldSync({versionPolicy, name}));
   }
   {
     const versionPolicy = {
@@ -2037,7 +2037,7 @@ async function testVersionOnboarding() {
       exceptions: ['foo'],
     };
     const name = 'bar';
-    assert(shouldSync({ versionPolicy, name }));
+    assert(shouldSync({versionPolicy, name}));
   }
   {
     const versionPolicy = {
@@ -2045,33 +2045,7 @@ async function testVersionOnboarding() {
       exceptions: ['foo'],
     };
     const name = 'bar';
-    assert(!shouldSync({ versionPolicy, name }));
-  }
-  {
-    const versionPolicy = {
-      lockstep: true,
-      exceptions: [
-        {
-          name: 'foo',
-          versions: ['^1.0.0'],
-        },
-      ],
-    };
-    const name = 'foo';
-    assert(shouldSync({ versionPolicy, name }));
-  }
-  {
-    const versionPolicy = {
-      lockstep: false,
-      exceptions: [
-        {
-          name: 'foo',
-          versions: ['^1.0.0'],
-        },
-      ],
-    };
-    const name = 'foo';
-    assert(shouldSync({ versionPolicy, name }));
+    assert(!shouldSync({versionPolicy, name}));
   }
   {
     const versionPolicy = {
@@ -2083,8 +2057,34 @@ async function testVersionOnboarding() {
         },
       ],
     };
+    const name = 'foo';
+    assert(shouldSync({versionPolicy, name}));
+  }
+  {
+    const versionPolicy = {
+      lockstep: false,
+      exceptions: [
+        {
+          name: 'foo',
+          versions: ['^1.0.0'],
+        },
+      ],
+    };
+    const name = 'foo';
+    assert(shouldSync({versionPolicy, name}));
+  }
+  {
+    const versionPolicy = {
+      lockstep: true,
+      exceptions: [
+        {
+          name: 'foo',
+          versions: ['^1.0.0'],
+        },
+      ],
+    };
     const name = 'bar';
-    assert(shouldSync({ versionPolicy, name }));
+    assert(shouldSync({versionPolicy, name}));
   }
   {
     const versionPolicy = {
@@ -2097,7 +2097,7 @@ async function testVersionOnboarding() {
       ],
     };
     const name = 'bar';
-    assert(!shouldSync({ versionPolicy, name }));
+    assert(!shouldSync({versionPolicy, name}));
   }
   {
     const name = 'foo';
@@ -2114,7 +2114,7 @@ async function testVersionOnboarding() {
         depth: 0,
       },
     ];
-    assert.equal(getVersion({ name, deps }), '^1.0.0');
+    assert.equal(getVersion({name, deps}), '^1.0.0');
   }
   {
     const name = 'foo';
@@ -2153,7 +2153,7 @@ async function testVersionOnboarding() {
         depth: 0,
       },
     ];
-    assert.equal(getVersion({ name, deps }), '^2.0.0');
+    assert.equal(getVersion({name, deps}), '^2.0.0');
   }
   {
     const name = 'foo';
@@ -2181,7 +2181,7 @@ async function testVersionOnboarding() {
         depth: 0,
       },
     ];
-    assert.equal(getVersion({ name, deps }), '~1.0.0');
+    assert.equal(getVersion({name, deps}), '~1.0.0');
   }
   {
     const name = 'foo';
@@ -2220,7 +2220,7 @@ async function testVersionOnboarding() {
         depth: 0,
       },
     ];
-    assert.equal(getVersion({ name, deps }), '^2.0.0'); // do not use 'resolutions' version
+    assert.equal(getVersion({name, deps}), '^2.0.0'); // do not use 'resolutions' version
   }
 }
 
@@ -2238,7 +2238,7 @@ async function testYarnCommands() {
   ];
   const root = `${tmp}/tmp/yarn-commands`;
 
-  await install({ root, cwd: `${root}/a` });
+  await install({root, cwd: `${root}/a`});
 
   // build
   const buildStreamFile = `${tmp}/tmp/yarn-commands/build-stream.txt`;
@@ -2328,7 +2328,7 @@ async function testCommand() {
   const streamFile = `${tmp}/tmp/bin/stream.txt`;
   const stream = createWriteStream(streamFile);
   await new Promise(resolve => stream.on('open', resolve));
-  await exec(`${jazelle}`, { cwd }, [stream, stream]);
+  await exec(`${jazelle}`, {cwd}, [stream, stream]);
   assert((await read(streamFile, 'utf8')).includes('Usage: jazelle [command]'));
 }
 
@@ -2342,13 +2342,13 @@ async function testYarnCommand() {
   const yarnStreamFile = `${tmp}/tmp/bin/yarn-stream.txt`;
   const yarnStream = createWriteStream(yarnStreamFile);
   await new Promise(resolve => yarnStream.on('open', resolve));
-  await exec(`${jazelle} yarn --version --cwd a`, { cwd }, [yarnStream]);
+  await exec(`${jazelle} yarn --version --cwd a`, {cwd}, [yarnStream]);
   assert((await read(yarnStreamFile, 'utf8')).includes('.'));
 
   const cwdStreamFile = `${tmp}/tmp/bin/cwd-stream.txt`;
   const cwdStream = createWriteStream(cwdStreamFile);
   await new Promise(resolve => cwdStream.on('open', resolve));
-  await exec(`${jazelle} yarn --version`, { cwd: `${cwd}/a` }, [cwdStream]);
+  await exec(`${jazelle} yarn --version`, {cwd: `${cwd}/a`}, [cwdStream]);
   assert((await read(cwdStreamFile, 'utf8')).includes('.'));
 }
 
@@ -2362,7 +2362,7 @@ async function testBazelCommand() {
   const bazelStreamFile = `${tmp}/tmp/bin/bazel-stream.txt`;
   const bazelStream = createWriteStream(bazelStreamFile);
   await new Promise(resolve => bazelStream.on('open', resolve));
-  await exec(`${jazelle} bazel version`, { cwd }, [bazelStream]);
+  await exec(`${jazelle} bazel version`, {cwd}, [bazelStream]);
   assert((await read(bazelStreamFile, 'utf8')).includes('Build label:'));
 }
 
@@ -2387,7 +2387,7 @@ async function testDevCommand() {
   const devStream = createWriteStream(devStreamFile);
   await new Promise(resolve => devStream.on('open', resolve));
 
-  await install({ root: cwd, cwd: `${cwd}/a` });
+  await install({root: cwd, cwd: `${cwd}/a`});
 
   await spawn('./test-sigint.sh', [], {
     env: {
@@ -2428,9 +2428,9 @@ async function testStartCommand() {
   const startStream = createWriteStream(startStreamFile);
   await new Promise(resolve => startStream.on('open', resolve));
 
-  await install({ root: cwd, cwd: `${cwd}/a` });
+  await install({root: cwd, cwd: `${cwd}/a`});
 
-  await exec(`${jazelle} start`, { cwd: `${cwd}/a` }, [startStream]);
+  await exec(`${jazelle} start`, {cwd: `${cwd}/a`}, [startStream]);
   assert((await read(startStreamFile, 'utf8')).includes('\nstart\n'));
 }
 
@@ -2460,9 +2460,9 @@ async function testBazelDependentBuilds() {
   assert((await read(b)).includes('module.exports = 111'));
   assert((await read(a)).includes('require(\\"b\\") + require(\\"c\\")'));
 
-  await install({ root: cwd, cwd: `${cwd}/a` });
+  await install({root: cwd, cwd: `${cwd}/a`});
 
-  await exec(`${jazelle} start`, { cwd: `${cwd}/a` }, [startStream]);
+  await exec(`${jazelle} start`, {cwd: `${cwd}/a`}, [startStream]);
   assert.equal(await read(startStreamFile, 'utf8'), '333\n');
   assert(await exists(`${cwd}/a/foo/foo.js`));
   assert(await exists(`${cwd}/b/compiled/foo.js`));
@@ -2491,11 +2491,11 @@ async function testBazelDependentFailure() {
   const c = `${cwd}/c/package.json`;
   assert((await read(c, 'utf8')).includes('mkdir -p dist && mkdir dist'));
 
-  await install({ root: cwd, cwd: `${cwd}/a` });
+  await install({root: cwd, cwd: `${cwd}/a`});
 
   // $FlowFixMe `assert` typedef is missing `rejects` method
   await assert.rejects(
-    exec(`${jazelle} start`, { cwd: `${cwd}/a` }, [startStream, startStream])
+    exec(`${jazelle} start`, {cwd: `${cwd}/a`}, [startStream, startStream])
   );
 }
 
@@ -2558,7 +2558,7 @@ async function testLocalize() {
   await exec(cmd);
 
   const root = `${tmp}/tmp/localize`;
-  await localize({ root });
+  await localize({root});
   const meta = JSON.parse(await read(`${root}/b/package.json`, 'utf8'));
   assert.equal(meta.dependencies.a, '0.0.0-monorepo');
   assert.equal(meta.devDependencies.a, '0.0.0-monorepo');
@@ -2591,7 +2591,7 @@ async function testCheck() {
   );
 
   // Check with --all
-  result = await check({ root, json: true, all: true });
+  result = await check({root, json: true, all: true});
   if (!result) {
     assert.ok(result);
     return;
@@ -2624,7 +2624,7 @@ async function testOutdated() {
   const root = `${tmp}/tmp/outdated`;
 
   // Sanity check
-  await outdated({ root, logger });
+  await outdated({root, logger});
 
   // helper function to sort an array of objects by their
   // 'packageName' property.
@@ -2648,7 +2648,7 @@ async function testOutdated() {
   flush();
 
   // Test --dedup option
-  await outdated({ root, logger, dedup: true });
+  await outdated({root, logger, dedup: true});
   data.sort();
   assert.equal(data[0], 'only-version-one-zero-zero 0.1.0 0.2.0 1.0.0');
   assert.equal(data[1].substring(0, 'semver ^6.2.0 '.length), 'semver ^6.2.0 ');
@@ -2660,7 +2660,7 @@ async function testOutdated() {
 
   // Test --json option w/out --dedup
   {
-    await outdated({ root, logger, json: true, dedup: false });
+    await outdated({root, logger, json: true, dedup: false});
     let parsed /*: Array<{[string]: string}> */ = [];
     try {
       parsed = JSON.parse(data.join(''));
@@ -2705,7 +2705,7 @@ async function testOutdated() {
 
   // Test --json option w/ --dedup
   {
-    await outdated({ root, logger, json: true, dedup: true });
+    await outdated({root, logger, json: true, dedup: true});
 
     let parsed /*: Array<{[string]: string}> */ = [];
     try {
@@ -2752,9 +2752,9 @@ async function testShouldInstall() {
   const root = `${tmp}/tmp/should-install`;
 
   // should bypass yarn install due to bool_shouldinstall
-  await install({ root, cwd: root });
+  await install({root, cwd: root});
   assert.equal(await read(`${root}/yarn.lock`), '');
 
-  await focus({ root, cwd: root, packages: ['a'] });
+  await focus({root, cwd: root, packages: ['a']});
   assert.equal(await read(`${root}/yarn.lock`), '');
 }
