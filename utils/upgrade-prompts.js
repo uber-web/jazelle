@@ -1,6 +1,6 @@
 // @flow
-const prompts = require('prompts');
-const {rsort} = require('semver');
+const prompts = require('../vendor/prompts');
+const {rsort} = require('../vendor/semver');
 
 /*::
 type PromptForTypesVersion = (

@@ -72,13 +72,11 @@ const upgrade /*: Upgrade */ = async ({root, args, interactive = true}) => {
       return name + (range ? `@${range}` : '');
     });
 
+    // In non-interactive mode, skip prompting by returning null
+    const promptFn = interactive ? promptForTypesVersion : async () => null;
+
     // Add @types packages
-    const typesDeps = await getTypesPackages(
-      externals,
-      root,
-      roots,
-      promptForTypesVersion
-    );
+    const typesDeps = await getTypesPackages(externals, root, roots, promptFn);
 
     await spawn(
       node,

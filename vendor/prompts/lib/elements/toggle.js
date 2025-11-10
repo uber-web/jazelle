@@ -1,7 +1,7 @@
-const color = require('kleur');
+const color = require('../../../kleur');
 const Prompt = require('./prompt');
 const { style, clear } = require('../util');
-const { cursor, erase } = require('sisteransi');
+const { cursor, erase } = require('../../../sisteransi');
 
 /**
  * TogglePrompt Base Element

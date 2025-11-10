@@ -1,7 +1,6 @@
 // @flow
 const {maxSatisfying, rsort} = require('../vendor/semver/semver.js');
 const {exec} = require('./node-helpers.js');
-const {node, yarn} = require('./binary-paths.js');
 
 /*::
 type ExternalDep = {name: string, range?: string};
@@ -34,7 +33,7 @@ const checkBundledTypes /*: CheckBundledTypes */ = async (
 ) => {
   try {
     const versionSpec = versionRange || 'latest';
-    const cmd = `${node} ${yarn} info ${packageName}@${versionSpec} --json`;
+    const cmd = `npm view ${packageName}@${versionSpec} --json`;
     const result = await exec(cmd, {cwd: root, maxBuffer: MAX_BUFFER_SIZE});
     const data = JSON.parse(result.trim());
     return !!(data.types || data.typings);
@@ -53,11 +52,10 @@ const findBestTypesVersion /*: FindBestTypesVersion */ = async (
   promptForTypesVersion
 ) => {
   try {
-    // Get all versions
-    const cmd = `${node} ${yarn} info ${typesPackageName} versions --json`;
+    const cmd = `npm view ${typesPackageName} versions --json`;
     const result = await exec(cmd, {cwd: root, maxBuffer: MAX_BUFFER_SIZE});
     const data = JSON.parse(result.trim());
-    const versions = data.versions || data || [];
+    const versions = data || [];
 
     if (versions.length === 0) {
       console.warn(`No versions found for ${typesPackageName}`);

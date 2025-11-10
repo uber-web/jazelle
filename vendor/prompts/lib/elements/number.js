@@ -1,6 +1,6 @@
-const color = require('kleur');
+const color = require('../../../kleur');
 const Prompt = require('./prompt');
-const { cursor, erase } = require('sisteransi');
+const { cursor, erase } = require('../../../sisteransi');
 const { style, figures, clear, lines } = require('../util');
 
 const isNumber = /[0-9]/;

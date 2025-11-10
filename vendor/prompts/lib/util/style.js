@@ -1,6 +1,6 @@
 'use strict';
 
-const c = require('kleur');
+const c = require('../../../kleur');
 const figures = require('./figures');
 
 // rendering user input.

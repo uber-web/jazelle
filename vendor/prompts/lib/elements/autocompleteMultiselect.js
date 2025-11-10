@@ -1,7 +1,7 @@
 'use strict';
 
-const color = require('kleur');
-const { cursor } = require('sisteransi');
+const color = require('../../../kleur');
+const { cursor } = require('../../../sisteransi');
 const MultiselectPrompt = require('./multiselect');
 const { clear, style, figures } = require('../util');
 /**

@@ -1,7 +1,7 @@
 'use strict';
 
-const color = require('kleur');
-const { cursor } = require('sisteransi');
+const color = require('../../../kleur');
+const { cursor } = require('../../../sisteransi');
 const Prompt = require('./prompt');
 const { clear, figures, style, wrap, entriesToDisplay } = require('../util');
 
