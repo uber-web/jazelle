@@ -1,6 +1,6 @@
 // @flow
 const prompts = require('../vendor/prompts');
-const { rsort } = require('../vendor/semver');
+const {rsort} = require('../vendor/semver');
 
 /*::
 type PromptForTypesVersion = (
@@ -12,14 +12,14 @@ type PromptForTypesVersion = (
 */
 
 const createPromptChoices = latest => [
-  { title: `Use latest version (${latest})`, value: 'latest' },
-  { title: 'Enter a specific version manually', value: 'manual' },
-  { title: 'Skip this package', value: 'skip' },
-  { title: 'Abort the upgrade process', value: 'abort' },
+  {title: `Use latest version (${latest})`, value: 'latest'},
+  {title: 'Enter a specific version manually', value: 'manual'},
+  {title: 'Skip this package', value: 'skip'},
+  {title: 'Abort the upgrade process', value: 'abort'},
 ];
 
 const promptForManualVersion = async versions => {
-  const { manualVersion } = await prompts({
+  const {manualVersion} = await prompts({
     type: 'text',
     name: 'manualVersion',
     message: 'Enter the specific version:',
@@ -63,7 +63,8 @@ const promptForTypesVersion /*: PromptForTypesVersion */ = async (
   const recentVersions = sortedVersions.slice(0, 10); // Show top 10 versions
 
   console.log(
-    `\nNo compatible @types version found for ${typesPackageName} with range "${originalRange || 'unspecified'
+    `\nNo compatible @types version found for ${typesPackageName} with range "${
+      originalRange || 'unspecified'
     }"`
   );
   console.log(`Available versions: ${recentVersions.join(', ')}`);
@@ -76,7 +77,7 @@ const promptForTypesVersion /*: PromptForTypesVersion */ = async (
 
   const choices = createPromptChoices(latest);
 
-  const { action } = await prompts({
+  const {action} = await prompts({
     type: 'select',
     name: 'action',
     message: `What would you like to do for ${typesPackageName}?`,

@@ -17,6 +17,7 @@ export type UpgradeArgs = {
   root: string,
   args: Array<string>,
   interactive?: boolean,
+  skipInstall?: boolean,
 };
 export type Upgrade = (UpgradeArgs) => Promise<void>;
 type ExternalDep = {name: string, range?: string};
@@ -27,7 +28,12 @@ type RemoveTypesPackage = (string, Array<string>) => Promise<void>;
 type PromptForTypesVersion = (string, ?string, Array<string>, boolean) => Promise<?string>;
 */
 
-const upgrade /*: Upgrade */ = async ({root, args, interactive = true}) => {
+const upgrade /*: Upgrade */ = async ({
+  root,
+  args,
+  interactive = true,
+  skipInstall = false,
+}) => {
   const {projects} = await getManifest({root});
   const roots = projects.map(dir => `${root}/${dir}`);
 
@@ -73,21 +79,26 @@ const upgrade /*: Upgrade */ = async ({root, args, interactive = true}) => {
     });
 
     // Add @types packages
-    const typesDeps = await getTypesPackages(
-      externals,
-      root,
-      roots,
-      promptForTypesVersion
-    );
+    // In non-interactive mode, skip prompting (return null to skip package)
+    const promptFn = interactive
+      ? promptForTypesVersion
+      : async (name, range, versions, shouldPrompt) => {
+          console.log(`Skipping ${name} (non-interactive mode)`);
+          return null;
+        };
 
-    await spawn(
-      node,
-      [yarn, 'up', '-C', ...deps, ...typesDeps, '--mode', 'skip-build'],
-      {
-        cwd: root,
-        stdio: 'inherit',
-      }
-    );
+    const typesDeps = await getTypesPackages(externals, root, roots, promptFn);
+
+    if (!skipInstall) {
+      await spawn(
+        node,
+        [yarn, 'up', '-C', ...deps, ...typesDeps, '--mode', 'skip-build'],
+        {
+          cwd: root,
+          stdio: 'inherit',
+        }
+      );
+    }
   }
 };
 
