@@ -1,6 +1,6 @@
 // @flow
-const { maxSatisfying, rsort } = require('../vendor/semver/semver.js');
-const { exec } = require('./node-helpers.js');
+const {maxSatisfying, rsort} = require('../vendor/semver/semver.js');
+const {exec} = require('./node-helpers.js');
 
 /*::
 type ExternalDep = {name: string, range?: string};
@@ -34,7 +34,7 @@ const checkBundledTypes /*: CheckBundledTypes */ = async (
   try {
     const versionSpec = versionRange || 'latest';
     const cmd = `npm view ${packageName}@${versionSpec} --json`;
-    const result = await exec(cmd, { cwd: root, maxBuffer: MAX_BUFFER_SIZE });
+    const result = await exec(cmd, {cwd: root, maxBuffer: MAX_BUFFER_SIZE});
     const data = JSON.parse(result.trim());
     return !!(data.types || data.typings);
   } catch (error) {
@@ -53,7 +53,7 @@ const findBestTypesVersion /*: FindBestTypesVersion */ = async (
 ) => {
   try {
     const cmd = `npm view ${typesPackageName} versions --json`;
-    const result = await exec(cmd, { cwd: root, maxBuffer: MAX_BUFFER_SIZE });
+    const result = await exec(cmd, {cwd: root, maxBuffer: MAX_BUFFER_SIZE});
     const data = JSON.parse(result.trim());
     const versions = data || [];
 
@@ -109,7 +109,7 @@ const getTypesPackages /*: GetTypesPackages */ = async (
 ) => {
   const typesDeps = [];
 
-  for (const { name, range } of externals) {
+  for (const {name, range} of externals) {
     // Skip if already a @types package
     if (name.startsWith('@types/')) continue;
 
@@ -153,7 +153,7 @@ const removeTypesPackage /*: RemoveTypesPackage */ = async (
   packageName,
   roots
 ) => {
-  const { read, write } = require('./node-helpers.js');
+  const {read, write} = require('./node-helpers.js');
   // Convert scoped packages: @babel/core → @types/babel__core
   const typesPackageName = packageName.startsWith('@')
     ? `@types/${packageName.slice(1).replace('/', '__')}`
