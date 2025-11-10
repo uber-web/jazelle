@@ -1,16 +1,16 @@
 // @flow
-const {minVersion, satisfies, valid} = require('../utils/cached-semver');
-const {getManifest} = require('../utils/get-manifest.js');
-const {findLocalDependency} = require('../utils/find-local-dependency.js');
-const {read, write, spawn} = require('../utils/node-helpers.js');
-const {node, yarn} = require('../utils/binary-paths.js');
+const { minVersion, satisfies, valid } = require('../utils/cached-semver');
+const { getManifest } = require('../utils/get-manifest.js');
+const { findLocalDependency } = require('../utils/find-local-dependency.js');
+const { read, write, spawn } = require('../utils/node-helpers.js');
+const { node, yarn } = require('../utils/binary-paths.js');
 const {
   getTypesPackages,
   checkBundledTypes,
   findBestTypesVersion,
   removeTypesPackage,
 } = require('../utils/types-manager.js');
-const {promptForTypesVersion} = require('../utils/upgrade-prompts.js');
+const { promptForTypesVersion } = require('../utils/upgrade-prompts.js');
 
 /*::
 export type UpgradeArgs = {
@@ -27,8 +27,8 @@ type RemoveTypesPackage = (string, Array<string>) => Promise<void>;
 type PromptForTypesVersion = (string, ?string, Array<string>, boolean) => Promise<?string>;
 */
 
-const upgrade /*: Upgrade */ = async ({root, args, interactive = true}) => {
-  const {projects} = await getManifest({root});
+const upgrade /*: Upgrade */ = async ({ root, args, interactive = true }) => {
+  const { projects } = await getManifest({ root });
   const roots = projects.map(dir => `${root}/${dir}`);
 
   // group by whether the dep is local (listed in manifest.json) or external (from registry)
@@ -36,9 +36,9 @@ const upgrade /*: Upgrade */ = async ({root, args, interactive = true}) => {
   const externals = [];
   for (const arg of args) {
     let [, name, version] = arg.match(/(@?[^@]*)@?(.*)/) || [];
-    const local = await findLocalDependency({root, name});
-    if (local) locals.push({local, name, version});
-    else externals.push({name, range: version});
+    const local = await findLocalDependency({ root, name });
+    if (local) locals.push({ local, name, version });
+    else externals.push({ name, range: version });
   }
 
   if (locals.length > 0) {
@@ -46,7 +46,7 @@ const upgrade /*: Upgrade */ = async ({root, args, interactive = true}) => {
       roots.map(async cwd => {
         const meta = JSON.parse(await read(`${cwd}/package.json`, 'utf8'));
 
-        for (const {local, name, version} of locals) {
+        for (const { local, name, version } of locals) {
           if (version && version !== local.meta.version) {
             const error = `You must use version ${name}@${local.meta.version}`;
             throw new Error(error);
@@ -68,17 +68,20 @@ const upgrade /*: Upgrade */ = async ({root, args, interactive = true}) => {
   }
 
   if (externals.length > 0) {
-    const deps = externals.map(({name, range}) => {
+    const deps = externals.map(({ name, range }) => {
       return name + (range ? `@${range}` : '');
     });
 
     // Add @types packages
-    const typesDeps = await getTypesPackages(
-      externals,
-      root,
-      roots,
-      promptForTypesVersion
-    );
+    // In non-interactive mode, skip prompting (return null to skip package)
+    const promptFn = interactive
+      ? promptForTypesVersion
+      : async (name, range, versions, shouldPrompt) => {
+        console.log(`Skipping ${name} (non-interactive mode)`);
+        return null;
+      };
+
+    const typesDeps = await getTypesPackages(externals, root, roots, promptFn);
 
     await spawn(
       node,
