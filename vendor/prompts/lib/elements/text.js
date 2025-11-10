@@ -1,6 +1,6 @@
-const color = require('kleur');
+const color = require('../../../kleur');
 const Prompt = require('./prompt');
-const { erase, cursor } = require('sisteransi');
+const { erase, cursor } = require('../../../sisteransi');
 const { style, clear, lines, figures } = require('../util');
 
 /**

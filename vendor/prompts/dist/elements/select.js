@@ -1,6 +1,6 @@
 'use strict';
 
-const color = require('kleur');
+const color = require('../../../kleur');
 
 const Prompt = require('./prompt');
 
@@ -11,7 +11,7 @@ const _require = require('../util'),
       wrap = _require.wrap,
       entriesToDisplay = _require.entriesToDisplay;
 
-const _require2 = require('sisteransi'),
+const _require2 = require('../../../sisteransi'),
       cursor = _require2.cursor;
 /**
  * SelectPrompt Base Element

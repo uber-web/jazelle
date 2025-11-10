@@ -3,8 +3,8 @@
 const readline = require('readline');
 const { action } = require('../util');
 const EventEmitter = require('events');
-const { beep, cursor } = require('sisteransi');
-const color = require('kleur');
+const { beep, cursor } = require('../../../sisteransi');
+const color = require('../../../kleur');
 
 /**
  * Base prompt skeleton

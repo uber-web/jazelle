@@ -1,7 +1,7 @@
-const color = require('kleur');
+const color = require('../../../kleur');
 const Prompt = require('./prompt');
 const { style, clear } = require('../util');
-const { erase, cursor } = require('sisteransi');
+const { erase, cursor } = require('../../../sisteransi');
 
 /**
  * ConfirmPrompt Base Element

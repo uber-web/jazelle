@@ -1,9 +1,9 @@
 'use strict';
 
-const color = require('kleur');
+const color = require('../../../kleur');
 const Prompt = require('./prompt');
 const { style, clear, figures, wrap, entriesToDisplay } = require('../util');
-const { cursor } = require('sisteransi');
+const { cursor } = require('../../../sisteransi');
 
 /**
  * SelectPrompt Base Element

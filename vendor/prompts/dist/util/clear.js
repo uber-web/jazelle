@@ -8,7 +8,7 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
 
 const strip = require('./strip');
 
-const _require = require('sisteransi'),
+const _require = require('../../../sisteransi'),
       erase = _require.erase,
       cursor = _require.cursor;
 

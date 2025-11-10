@@ -7,11 +7,11 @@ const _require = require('../util'),
 
 const EventEmitter = require('events');
 
-const _require2 = require('sisteransi'),
+const _require2 = require('../../../sisteransi'),
       beep = _require2.beep,
       cursor = _require2.cursor;
 
-const color = require('kleur');
+const color = require('../../../kleur');
 /**
  * Base prompt skeleton
  * @param {Stream} [opts.stdin] The Readable stream to listen to

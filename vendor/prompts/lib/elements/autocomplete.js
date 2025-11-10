@@ -1,8 +1,8 @@
 'use strict';
 
-const color = require('kleur');
+const color = require('../../../kleur');
 const Prompt = require('./prompt');
-const { erase, cursor } = require('sisteransi');
+const { erase, cursor } = require('../../../sisteransi');
 const { style, clear, figures, wrap, entriesToDisplay } = require('../util');
 
 const getVal = (arr, i) => arr[i] && (arr[i].value || arr[i].title || arr[i]);

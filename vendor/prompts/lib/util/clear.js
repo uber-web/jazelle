@@ -1,7 +1,7 @@
 'use strict';
 
 const strip = require('./strip');
-const { erase, cursor } = require('sisteransi');
+const { erase, cursor } = require('../../../sisteransi');
 
 const width = str => [...strip(str)].length;
 

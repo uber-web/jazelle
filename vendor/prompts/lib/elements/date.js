@@ -1,9 +1,9 @@
 'use strict';
 
-const color = require('kleur');
+const color = require('../../../kleur');
 const Prompt = require('./prompt');
 const { style, clear, figures } = require('../util');
-const { erase, cursor } = require('sisteransi');
+const { erase, cursor } = require('../../../sisteransi');
 const { DatePart, Meridiem, Day, Hours, Milliseconds, Minutes, Month, Seconds, Year } = require('../dateparts');
 
 const regex = /\\(.)|"((?:\\["\\]|[^"])+)"|(D[Do]?|d{3,4}|d)|(M{1,4})|(YY(?:YY)?)|([aA])|([Hh]{1,2})|(m{1,2})|(s{1,2})|(S{1,4})|./g;
