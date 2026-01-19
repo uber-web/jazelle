@@ -466,11 +466,15 @@ Upgrades a dependency across all local projects that use it
 
 ### `jazelle purge`
 
-Removes generated files (i.e. `node_modules` folders and bazel output files)
+Removes generated files and caches to give you a clean slate:
 
-`jazelle purge --force`
+- Jazelle's temporary directory
+- Repository and project-specific npm modules directories (e.g. `node_modules/`)
+- Repository Yarn PnP, cache, and state files (e.g. `.pnp.cjs`, `.yarn/cache`, `.yarn/build-state.yml`)
+- Global Yarn cache (e.g. `~/.yarn/berry/cache/`)
+- Bazel outputs and cache (e.g. `bazel clean --expunge`)
 
-- `--force` - Whether to also purge Bazel cache. Defaults to false
+`jazelle purge`
 
 ### `jazelle check`
 
