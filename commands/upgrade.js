@@ -28,7 +28,12 @@ type RemoveTypesPackage = (string, Array<string>) => Promise<void>;
 type PromptForTypesVersion = (string, ?string, Array<string>, boolean) => Promise<?string>;
 */
 
-const upgrade /*: Upgrade */ = async ({root, args, interactive = true, skipTypes = false}) => {
+const upgrade /*: Upgrade */ = async ({
+  root,
+  args,
+  interactive = true,
+  skipTypes = false,
+}) => {
   const {projects} = await getManifest({root});
   const roots = projects.map(dir => `${root}/${dir}`);
 
