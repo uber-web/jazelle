@@ -176,8 +176,9 @@ const runCLI /*: RunCLI */ = async argv => {
       upgrade: [
         `Upgrade a package version across all projects
 
-        [args...]                     Packages to upgrade and optionally their version ranges. e.g., foo@^1.2.3 bar@^1.2.3`,
-        async () => upgrade({root: await rootOf(args), args: rest}),
+        [args...]                     Packages to upgrade and optionally their version ranges. e.g., foo@^1.2.3 bar@^1.2.3
+        --skip-types                  Skip automatic @types package syncing`,
+        async ({'skip-types': skipTypes}) => upgrade({root: await rootOf(args), args: rest.filter(a => a !== '--skip-types'), skipTypes: Boolean(skipTypes)}),
       ],
       purge: [
         `Remove generated files (i.e. node_modules folders and bazel output files)`,

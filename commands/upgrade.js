@@ -17,6 +17,7 @@ export type UpgradeArgs = {
   root: string,
   args: Array<string>,
   interactive?: boolean,
+  skipTypes?: boolean,
 };
 export type Upgrade = (UpgradeArgs) => Promise<void>;
 type ExternalDep = {name: string, range?: string};
@@ -27,7 +28,7 @@ type RemoveTypesPackage = (string, Array<string>) => Promise<void>;
 type PromptForTypesVersion = (string, ?string, Array<string>, boolean) => Promise<?string>;
 */
 
-const upgrade /*: Upgrade */ = async ({root, args, interactive = true}) => {
+const upgrade /*: Upgrade */ = async ({root, args, interactive = true, skipTypes = false}) => {
   const {projects} = await getManifest({root});
   const roots = projects.map(dir => `${root}/${dir}`);
 
@@ -76,7 +77,9 @@ const upgrade /*: Upgrade */ = async ({root, args, interactive = true}) => {
     const promptFn = interactive ? promptForTypesVersion : async () => null;
 
     // Add @types packages
-    const typesDeps = await getTypesPackages(externals, root, roots, promptFn);
+    const typesDeps = skipTypes
+      ? []
+      : await getTypesPackages(externals, root, roots, promptFn);
 
     await spawn(
       node,
