@@ -183,6 +183,7 @@ async function runTests() {
     t(testFocus),
     t(testUpgrade),
     t(testUpgradeTypes),
+    t(testUpgradeSkipTypes),
     t(testPurge),
     t(testBump),
     // t(testEach),
@@ -485,6 +486,26 @@ async function testUpgradeTypes() {
 
   // Test 5: Interactive mode behavior (mocked, fast)
   await testUpgradeTypesInteractiveMode();
+}
+
+async function testUpgradeSkipTypes() {
+  const testRoot = `${tmp}/tmp/upgrade-skip-types`;
+  await exec(`cp -r ${__dirname}/fixtures/upgrade-types/ ${testRoot}`);
+  const meta = `${testRoot}/test-app/package.json`;
+
+  await upgrade({
+    root: testRoot,
+    args: ['lodash@4.17.21'],
+    skipTypes: true,
+  });
+
+  const pkg = JSON.parse(await read(meta, 'utf8'));
+  assert(pkg.dependencies.lodash === '4.17.21', 'Should upgrade lodash');
+  assert(
+    !pkg.devDependencies['@types/lodash'] ||
+      pkg.devDependencies['@types/lodash'] === '4.14.180',
+    'Should not upgrade @types/lodash when skipTypes is true'
+  );
 }
 
 async function testUpgradeTypesVersionRanges() {
