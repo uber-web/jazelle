@@ -460,9 +460,10 @@ Removes a dependency from the project's package.json, syncing the `yarn.lock` fi
 
 Upgrades a dependency across all local projects that use it
 
-`jazelle upgrade [args...]`
+`jazelle upgrade [args...] [--skip-types]`
 
 - `args` - Space-separated list of dependency names and optionally their desired version ranges. e.g., `foo@^1.2.3`. If version is not specified, defaults to `npm info [name] version` for 3rd party packages, or the local version for local packages. Note that local packages must be pinned to an exact version.
+- `--skip-types` - Skip automatic `@types` package syncing. Useful for automated pipelines (e.g. minor/patch upgrades) where `@types` syncing is not required.
 
 ### `jazelle purge`
 
@@ -885,9 +886,10 @@ Removes a dependency from the project's package.json, syncing the `yarn.lock` fi
 
 Upgrades a dependency across all local projects that use it
 
-`let upgrade: ({root: string, args: Array<string>}) => Promise<void>`
+`let upgrade: ({root: string, args: Array<string>, skipTypes?: boolean}) => Promise<void>`
 
 - `args` - Space-separated list of dependency names and optionally their desired version ranges. e.g., `foo@^1.2.3`. If version is not specified, defaults to `npm info [name] version` for 3rd party packages, or the local version for local packages. Note that local packages must be pinned to an exact version.
+- `skipTypes` - Skip automatic `@types` package syncing. Defaults to `false`.
 
 ### `purge`
 
