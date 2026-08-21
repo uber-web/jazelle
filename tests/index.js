@@ -962,6 +962,36 @@ async function testBazelBuild() {
   });
   const lintData = await read(lintStreamFile, 'utf8');
   assert(lintData.includes('\n111\n'));
+  assert(!lintData.includes('exec ${PAGER:-/usr/bin/less} "$0" || exit 1'));
+  assert(lintData.includes('Executing tests from //projects/a:lint'));
+
+  const packageFile = `${tmp}/tmp/bazel-rules/projects/a/package.json`;
+  const packageData = await read(packageFile, 'utf8');
+  await write(
+    packageFile,
+    packageData.replace(
+      '"lint": "echo 111"',
+      '"lint": "echo lint failed && exit 1"'
+    ),
+    'utf8'
+  );
+  const failedLintStreamFile = `${tmp}/tmp/bazel-rules/failed-lint-stream.txt`;
+  const failedLintStream = createWriteStream(failedLintStreamFile);
+  await new Promise(resolve => failedLintStream.on('open', resolve));
+  await expectProcessExit(1, () =>
+    bazelCmds.lint({
+      root: `${tmp}/tmp/bazel-rules`,
+      cwd: `${tmp}/tmp/bazel-rules/projects/a`,
+      args: [],
+      stdio: ['ignore', failedLintStream, failedLintStream],
+    })
+  );
+  const failedLintData = await read(failedLintStreamFile, 'utf8');
+  assert(failedLintData.includes('lint failed'));
+  assert(
+    !failedLintData.includes('exec ${PAGER:-/usr/bin/less} "$0" || exit 1')
+  );
+  assert(failedLintData.includes('Executing tests from //projects/a:lint'));
 
   // flow
   const flowStreamFile = `${tmp}/tmp/bazel-rules/flow-stream.txt`;
