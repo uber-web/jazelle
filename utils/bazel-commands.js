@@ -65,6 +65,7 @@ export type RunArgs = {
   args: Array<string>,
   name?: string,
   stdio?: Stdio,
+  filterOutput?: (line: string, type: 'stdout' | 'stderr') => boolean,
 };
 type Run = (RunArgs) => Promise<void>;
 */
@@ -74,6 +75,7 @@ const run /*: Run */ = async ({
   args,
   name = basename(cwd),
   stdio = 'inherit',
+  filterOutput,
 }) => {
   cwd = relative(root, cwd);
   const runParams = args.length > 0 ? ['--', ...args] : [];
@@ -81,6 +83,7 @@ const run /*: Run */ = async ({
     stdio,
     env: {...process.env},
     cwd: root,
+    filterOutput,
   });
 };
 
@@ -107,7 +110,16 @@ export type LintArgs = {
 type Lint = (LintArgs) => Promise<void>;
 */
 const lint /*: Lint */ = async ({root, cwd, args, stdio = 'inherit'}) => {
-  await run({root, cwd, args, name: 'lint', stdio});
+  await run({
+    root,
+    cwd,
+    args,
+    name: 'lint',
+    stdio,
+    filterOutput(line) {
+      return line.trimEnd() !== 'exec ${PAGER:-/usr/bin/less} "$0" || exit 1';
+    },
+  });
 };
 
 /*::

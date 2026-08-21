@@ -2,6 +2,7 @@
 const proc = require('child_process');
 const {promisify} = require('util');
 const {tmpdir} = require('os');
+const {Writable: WritableStream} = require('stream');
 const {
   readFile,
   writeFile,
@@ -145,13 +146,15 @@ const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
   async function filter(readable, writable, type) {
     for await (const line of chunksToLinesAsync(readable)) {
       // $FlowFixMe
-      if (opts.filterOutput(line, type)) {
+      if (opts.filterOutput(line, type) && writable) {
         await streamWrite(writable, line);
       }
     }
   }
 
   return new Promise((resolve, reject) => {
+    const stdio = opts.stdio;
+    let outputPromises = [];
     if (opts && typeof opts.filterOutput === 'function') {
       opts.stdio = ['ignore', 'pipe', 'pipe'];
     }
@@ -166,8 +169,22 @@ const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
     addActiveChild(child);
 
     if (opts && typeof opts.filterOutput === 'function') {
-      filter(child.stdout, process.stdout, 'stdout');
-      filter(child.stderr, process.stderr, 'stderr');
+      const getWritable = (type, index) => {
+        const processStream =
+          type === 'stdout' ? process.stdout : process.stderr;
+        if (stdio == null || stdio === 'inherit') return processStream;
+        if (!Array.isArray(stdio)) return null;
+
+        const writable = stdio[index];
+        if (writable === 'inherit') return processStream;
+        if (writable === index) return processStream;
+        if (writable instanceof WritableStream) return writable;
+        return null;
+      };
+      outputPromises = [
+        filter(child.stdout, getWritable('stdout', 1), 'stdout'),
+        filter(child.stderr, getWritable('stderr', 2), 'stderr'),
+      ];
     }
 
     child.on('error', e => {
@@ -175,9 +192,15 @@ const spawn /*: Spawn */ = (cmd, argv, opts = {}) => {
 
       reject(new Error(e));
     });
-    child.on('close', code => {
+    child.on('close', async code => {
       removeActiveChild(child);
 
+      try {
+        await Promise.all(outputPromises);
+      } catch (e) {
+        reject(e);
+        return;
+      }
       if (code > 0) {
         const args = argv.join(' ');
         const cwd = opts && opts.cwd ? `at ${opts.cwd} ` : '';
