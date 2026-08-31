@@ -28,6 +28,10 @@ findroot() {
 
 ROOT=$(findroot)
 BIN=$(dirname $(realpath "$0"))
+source "$BIN/repo-mapping.sh"
+RUNFILES="$ROOT/bazel-bin/jazelle.runfiles"
+REPO_MAPPING="$RUNFILES/_repo_mapping"
+JAZELLE_REPO=$(resolve_canonical_repo "$REPO_MAPPING" "jazelle")
 
 run() {
   # determine required bazel version
@@ -40,15 +44,16 @@ run() {
   then
     BAZELISK_PATH="$BAZEL"
   else
-    BAZELISK_PATH="$ROOT/bazel-bin/jazelle.runfiles/jazelle/bin/bazelisk"
+    BAZELISK_PATH="$RUNFILES/$JAZELLE_REPO/bin/bazelisk"
     if [ ! -f "$BAZELISK_PATH" ]
     then
       BAZELISK_PATH="$BIN/bazelisk"
     fi
 
-    # if actual version is not the one listed in WORKSPACE, update
-    ACTUAL_VERSION=$(cat "$ROOT/bazel-bin/jazelle.runfiles/jazelle/package.json" | grep version | awk '{print substr($2, 2, length($2) - 3)}')
-    if ! grep "$ACTUAL_VERSION" "$ROOT/WORKSPACE" || [[ $ACTUAL_VERSION = "" ]] || [ ! -f "$ROOT/bazel-bin/jazelle.runfiles/jazelle/bin/cli.sh" ]
+    # if actual version is not the one listed in WORKSPACE (legacy) or
+    # MODULE.bazel (bzlmod), update
+    ACTUAL_VERSION=$(cat "$RUNFILES/$JAZELLE_REPO/package.json" | grep version | awk '{print substr($2, 2, length($2) - 3)}')
+    if ! grep -q "$ACTUAL_VERSION" "$ROOT/WORKSPACE" "$ROOT/MODULE.bazel" 2>/dev/null || [[ $ACTUAL_VERSION = "" ]] || [ ! -f "$RUNFILES/$JAZELLE_REPO/bin/cli.sh" ]
     then
       "$BAZELISK_PATH" run //:jazelle -- setup 2>/tmp/jazelle.log || true
     fi
@@ -57,7 +62,7 @@ run() {
 
 TIME=$((time -p run) 2>&1 | grep real | awk '{print int(1000 * $2)}')
 
-CLI="$ROOT/bazel-bin/jazelle.runfiles/jazelle/bin/cli.sh"
+CLI="$RUNFILES/$JAZELLE_REPO/bin/cli.sh"
 if [ ! -f $CLI ]
 then
   CLI="$BIN/cli.sh"

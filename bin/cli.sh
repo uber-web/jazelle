@@ -26,9 +26,15 @@ findroot() {
   fi
 }
 
+source "$(dirname "${BASH_SOURCE[0]}")/repo-mapping.sh"
+
 ROOT=$(findroot)
 GLOBAL_BIN="$BIN"
-BIN="$ROOT/bazel-bin/jazelle.runfiles/jazelle/bin"
+RUNFILES="$ROOT/bazel-bin/jazelle.runfiles"
+REPO_MAPPING="$RUNFILES/_repo_mapping"
+JAZELLE_REPO=$(resolve_canonical_repo "$REPO_MAPPING" "jazelle")
+JAZELLE_DEPENDENCIES_REPO=$(resolve_canonical_repo "$REPO_MAPPING" "jazelle_dependencies")
+BIN="$RUNFILES/$JAZELLE_REPO/bin"
 START=$(bash -p "$GLOBAL_BIN/now")
 
 if [ ! -d "$BIN" ]
@@ -40,9 +46,9 @@ if [ "$1" = "init" ]
 then
   source "$BIN/init.sh"
 else
-  NODE="$ROOT/bazel-bin/jazelle.runfiles/jazelle_dependencies/bin/node"
-  YARN="$ROOT/bazel-bin/jazelle.runfiles/jazelle_dependencies/bin/yarn.js"
-  JAZELLE="$ROOT/bazel-bin/jazelle.runfiles/jazelle/cli.js"
+  NODE="$RUNFILES/$JAZELLE_DEPENDENCIES_REPO/bin/node"
+  YARN="$RUNFILES/$JAZELLE_DEPENDENCIES_REPO/bin/yarn.js"
+  JAZELLE="$RUNFILES/$JAZELLE_REPO/cli.js"
 
   # if we can't find Bazel workspace, fall back to system node and jazelle's pinned yarn
   if [ ! -f "$NODE" ] || [ ! -f "$YARN" ] || [ ! -f "$JAZELLE" ]
