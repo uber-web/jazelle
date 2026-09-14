@@ -60,12 +60,15 @@ run() {
   fi
 }
 
-# `grep` is anchored to the `real <secs>` line that `time -p` emits. An unanchored
-# match also picks up any line of `run`'s output that happens to contain the substring
-# "real" -- which is easy to hit, since a repo path like /code/realtime-app appears in
-# Bazel's output -- and awk then emits one number per matching line, leaving TIME
-# multi-line and breaking the arithmetic in cli.sh that consumes it.
-TIME=$((time -p run) 2>&1 | grep -E '^real[[:space:]]' | awk '{print int(1000 * $2)}')
+# `run`'s own output is discarded before the timing report is captured, so the stream
+# awk reads contains only the three lines `time -p` emits. Filtering a stream that also
+# carries `run`'s output is not reliable: `run` invokes Bazel, whose output includes the
+# workspace path, so a repo directory named e.g. realtime-app puts the substring "real"
+# on its own line, awk emits a number per match, and TIME ends up multi-line -- which
+# then breaks the arithmetic in cli.sh that consumes it. Anchoring the match is not
+# enough either, since a final line of `run` output with no trailing newline runs
+# straight into the `real <secs>` line.
+TIME=$( { time -p run >/dev/null 2>&1; } 2>&1 | awk '/^real/{print int(1000 * $2)}' )
 
 CLI="$RUNFILES/$JAZELLE_REPO/bin/cli.sh"
 if [ ! -f $CLI ]
