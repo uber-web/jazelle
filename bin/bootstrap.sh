@@ -60,7 +60,12 @@ run() {
   fi
 }
 
-TIME=$((time -p run) 2>&1 | grep real | awk '{print int(1000 * $2)}')
+# `grep` is anchored to the `real <secs>` line that `time -p` emits. An unanchored
+# match also picks up any line of `run`'s output that happens to contain the substring
+# "real" -- which is easy to hit, since a repo path like /code/realtime-app appears in
+# Bazel's output -- and awk then emits one number per matching line, leaving TIME
+# multi-line and breaking the arithmetic in cli.sh that consumes it.
+TIME=$((time -p run) 2>&1 | grep -E '^real[[:space:]]' | awk '{print int(1000 * $2)}')
 
 CLI="$RUNFILES/$JAZELLE_REPO/bin/cli.sh"
 if [ ! -f $CLI ]
