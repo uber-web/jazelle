@@ -70,7 +70,11 @@ else
   PRECOMMAND=$("$NODE" -p "(require('$ROOT/manifest.json').hooks || {}).precommand || ':'" 2>/dev/null || ":")
   POSTCOMMAND=$("$NODE" -p "(require('$ROOT/manifest.json').hooks || {}).postcommand || ':'" 2>/dev/null || ":")
   VERSION=$("$NODE" -p "require('$BIN/../package.json').version")
-  BOOTSTRAP_TIME=${BOOTSTRAP_TIME-0} # default to zero
+  # Default to zero, and fall back to zero for anything non-numeric. A bad value here
+  # is not worth failing the command over, and it would: an invalid arithmetic
+  # expression makes a non-interactive shell exit, so `jazelle <anything>` would abort
+  # before running its payload.
+  case "${BOOTSTRAP_TIME-}" in '' | *[!0-9]*) BOOTSTRAP_TIME=0 ;; esac
 
   # precommand hook
   NOW=$(bash -p "$GLOBAL_BIN/now")

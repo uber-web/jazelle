@@ -227,6 +227,7 @@ async function runTests() {
   await t(testInstallAddUpgradeRemove);
   await t(testBatchTestGroup);
   await t(testCommand);
+  await t(testNonNumericBootstrapTime);
   await t(testYarnCommand);
   await t(testBazelCommand);
   await t(testDevCommand);
@@ -2381,6 +2382,27 @@ async function testCommand() {
   await new Promise(resolve => stream.on('open', resolve));
   await exec(`${jazelle}`, {cwd}, [stream, stream]);
   assert((await read(streamFile, 'utf8')).includes('Usage: jazelle [command]'));
+}
+
+async function testNonNumericBootstrapTime() {
+  const cmd = `cp -r ${__dirname}/fixtures/bin ${tmp}/tmp/bootstrap-time`;
+  await exec(cmd);
+
+  const cwd = `${tmp}/tmp/bootstrap-time`;
+  const cli = `${__dirname}/../bin/cli.sh`;
+
+  // A non-numeric BOOTSTRAP_TIME must not take the whole command down with it.
+  // `$(( ))` on an invalid expression is a syntax error, and that exits a
+  // non-interactive shell, so cli.sh used to abort before running its payload.
+  const streamFile = `${tmp}/tmp/bootstrap-time/stream.txt`;
+  const stream = createWriteStream(streamFile);
+  await new Promise(resolve => stream.on('open', resolve));
+  const env = {...process.env, BOOTSTRAP_TIME: '0\n123'};
+  await exec(`${cli}`, {cwd, env}, [stream, stream]);
+
+  const output = await read(streamFile, 'utf8');
+  assert(output.includes('Usage: jazelle [command]'));
+  assert(!output.includes('syntax error in expression'));
 }
 
 async function testYarnCommand() {
